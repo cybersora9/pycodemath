@@ -1,0 +1,307 @@
+"""Pycodemath IR — the shared expression tree (contract between the engine and the generator).
+
+The cornerstone of the project. Both module 1 (the math engine) and module 2
+(the code generator) operate on the same ``Expr`` object. It is a thin but
+proprietary layer over SymPy expressions: it gives us a concise API, a stable
+interface, and a place where we will later hook in the masking stage.
+
+The "token-cutting" goal: writing math should be short (``E("sin(x)*x")``),
+and expansion into code happens only in the generator.
+"""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from typing import Callable, Iterable
+
+import sympy as sp
+
+from .errors import PycodemathError
+
+
+@lru_cache(maxsize=512)
+def _lambdify_cached(sy: sp.Expr, syms: tuple) -> Callable:
+    """Compile (and memoize) a SymPy expression into a numeric function.
+
+    ``lambdify`` is code generation + exec — a single call costs ~ms, so
+    without a cache, methods called repeatedly on the same expression (loops,
+    tests, REPL) would pay for compilation every time. The key (expression,
+    symbols) is hashable, because SymPy expressions are immutable.
+    """
+    return sp.lambdify(syms, sy, modules=["math", "numpy"])
+
+
+class Expr:
+    """Wrapper around a SymPy expression with its own concise API.
+
+    We keep a ``sympy.Expr`` inside (``self.sy``). All mathematical operations
+    are delegated to SymPy, but the user/agent sees only the stable Pycodemath
+    interface.
+    """
+
+    __slots__ = ("sy",)
+
+    sy: "sp.Expr"
+
+    def __init__(self, expr: "sp.Expr | Expr | str | int | float"):
+        if isinstance(expr, Expr):
+            self.sy = expr.sy
+        else:
+            # str, int, float, sympy.Expr — a single entry point via sympify.
+            # Note: for ``str`` this is SymPy evaluation (the same surface as
+            # in the parser) — do not feed it untrusted text without being
+            # aware that sympify is NOT a sandbox.
+            self.sy = sp.sympify(expr)
+
+    # --- introspection --------------------------------------------------
+    @property
+    def free_symbols(self) -> tuple[sp.Symbol, ...]:
+        """Symbols (variables) occurring in the expression, in a stable order."""
+        return tuple(sorted(self.sy.free_symbols, key=lambda s: s.name))
+
+    def symbol_names(self) -> list[str]:
+        return [s.name for s in self.free_symbols]
+
+    # --- symbolic operations (delegated, but return Expr) ---------------
+    def simplify(self) -> "Expr":
+        return Expr(sp.simplify(self.sy))
+
+    def expand(self) -> "Expr":
+        return Expr(sp.expand(self.sy))
+
+    def diff(self, var: str) -> "Expr":
+        return Expr(sp.diff(self.sy, sp.Symbol(var)))
+
+    def integrate(self, var: str) -> "Expr":
+        res = sp.integrate(self.sy, sp.Symbol(var))
+        # An unevaluated Integral in the result is junk that breaks the contract
+        # (analogous to the res.has(sp.Sum) guard in summation) — we refuse
+        # clearly.
+        if res.has(sp.Integral):
+            raise PycodemathError(
+                "integrate: no closed form — compute numerically "
+                "or simplify the expression"
+            )
+        return Expr(res)
+
+    def subs(self, mapping: dict[str, "float | int | str"]) -> "Expr":
+        # String values go through the guarded parser (whitelist of tokens
+        # and names), NOT through bare sympify — otherwise subs would be a
+        # second sympify surface with the full namespace, bypassing the parser.
+        # Local import: frontend.parser imports core.ir (cycle).
+        from ..frontend.parser import parse
+
+        m = {
+            sp.Symbol(k): parse(v).sy if isinstance(v, str) else sp.sympify(v)
+            for k, v in mapping.items()
+        }
+        return Expr(self.sy.subs(m))
+
+    def evalf(self, **values: float) -> float:
+        """Numeric evaluation after substituting values for symbols."""
+        m = {sp.Symbol(k): v for k, v in values.items()}
+        result = self.sy.evalf(subs=m)
+        try:
+            return float(result)
+        except TypeError as exc:
+            # Complex or still-symbolic result — a readable error instead of a
+            # raw TypeError from ``float()``.
+            raise PycodemathError(
+                f"cannot return a real number from {result} "
+                f"(complex result or unsubstituted symbols)"
+            ) from exc
+
+    def compiled(self, vars: "Iterable[str]") -> Callable:
+        """Compile the expression into a fast numeric function (``lambdify``).
+
+        Numeric engine contract: compile ONCE before the loop, iterate without
+        SymPy overhead (``evalf`` remains the contract for a SINGLE evaluation).
+        ``math`` first — domain errors are a plain ``ValueError``, scalars are
+        fast; ``numpy`` as a fallback for functions that math lacks. The
+        returned function takes values positionally, in the order of ``vars``.
+        Compilations are cached (LRU) by the (expression, symbols) pair.
+        """
+        return _lambdify_cached(self.sy, tuple(sp.Symbol(v) for v in vars))
+
+    # --- serialization (concise, token-friendly) ------------------------
+    def to_source(self) -> str:
+        """Short, unambiguous text form — round-trips with the parser."""
+        return str(self.sy)
+
+    def equivalent(self, other: "Expr | str | int | float") -> bool:
+        """Mathematical equality: does ``self - other`` simplify to zero.
+
+        Slower than ``==`` (runs ``simplify``), but catches the equivalence of
+        expressions with different structure, e.g. ``(x+1)**2`` and
+        ``x**2 + 2*x + 1``. ``==`` remains a structural comparison, consistent
+        with ``__hash__``.
+        """
+        other = other if isinstance(other, Expr) else Expr(other)
+        return bool(sp.simplify(self.sy - other.sy) == 0)
+
+    def __eq__(self, other: object) -> bool:
+        # STRUCTURAL comparison (consistent with ``__hash__``) — fast and
+        # safe for set/dict. For mathematical equality: ``equivalent``.
+        if isinstance(other, Expr):
+            return bool(self.sy == other.sy)
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.sy)
+
+    def __repr__(self) -> str:
+        return f"Expr({self.sy!s})"
+
+    def __str__(self) -> str:
+        return str(self.sy)
+
+
+class Matrix:
+    """Wrapper around a SymPy matrix/vector — IR extension for linear algebra.
+
+    We keep a ``sympy.MatrixBase`` inside (``self.sy``). A vector is simply an
+    ``n × 1`` column matrix. The notation stays concise: ``M("[[1,2],[3,4]]")``,
+    ``V("[1,2,3]")`` — while the heavy operations are done by the engine
+    (``engine.linalg``).
+    """
+
+    __slots__ = ("sy",)
+
+    sy: "sp.MatrixBase"
+
+    def __init__(self, data: "sp.MatrixBase | Matrix | str | list | tuple"):
+        if isinstance(data, Matrix):
+            self.sy = data.sy
+        elif isinstance(data, sp.MatrixBase):
+            self.sy = data
+        elif isinstance(data, str):
+            self.sy = _parse_matrix(data)
+        else:
+            try:
+                self.sy = sp.Matrix(data)
+            except (ValueError, TypeError) as exc:
+                # e.g. rows of different lengths — a readable error instead of a
+                # raw ValueError from deep inside SymPy (contract: always PycodemathError)
+                raise PycodemathError(f"invalid matrix: {exc}") from exc
+
+    # --- introspection --------------------------------------------------
+    @property
+    def shape(self) -> tuple[int, int]:
+        return self.sy.shape
+
+    @property
+    def rows(self) -> int:
+        return self.sy.rows
+
+    @property
+    def cols(self) -> int:
+        return self.sy.cols
+
+    @property
+    def free_symbols(self) -> tuple[sp.Symbol, ...]:
+        return tuple(sorted(self.sy.free_symbols, key=lambda s: s.name))
+
+    def symbol_names(self) -> list[str]:
+        return [s.name for s in self.free_symbols]
+
+    def tolist(self) -> list[list]:
+        return self.sy.tolist()
+
+    # --- operations (delegated, but return IR) --------------------------
+    @property
+    def T(self) -> "Matrix":
+        """Transpose."""
+        return Matrix(self.sy.T)
+
+    def __matmul__(self, other: "Matrix") -> "Matrix":
+        return Matrix(self.sy * Matrix(other).sy)
+
+    def __mul__(self, other: "Matrix | int | float | Expr") -> "Matrix":
+        if isinstance(other, Matrix):
+            return Matrix(self.sy * other.sy)
+        if isinstance(other, Expr):
+            return Matrix(self.sy * other.sy)
+        return Matrix(self.sy * sp.sympify(other))
+
+    __rmul__ = __mul__
+
+    def __add__(self, other: "Matrix") -> "Matrix":
+        return Matrix(self.sy + Matrix(other).sy)
+
+    def __sub__(self, other: "Matrix") -> "Matrix":
+        return Matrix(self.sy - Matrix(other).sy)
+
+    def __getitem__(self, key):
+        return self.sy[key]
+
+    def __iter__(self):
+        return iter(self.sy)
+
+    # --- serialization / comparison -------------------------------------
+    def to_source(self) -> str:
+        """Concise literal form: ``[[1, 2], [3, 4]]`` (round-trips with ``M``)."""
+        return str(self.sy.tolist())
+
+    def equivalent(self, other: "Matrix | sp.MatrixBase | str | list") -> bool:
+        """MATHEMATICAL equality: does ``self - other`` simplify to zero.
+
+        Slower than ``==`` (runs ``simplify`` on the entries), but catches the
+        equivalence of matrices with differently structured entries. ``==``
+        remains a structural comparison, consistent with ``__hash__``
+        (analogous to ``Expr``).
+        """
+        other = other if isinstance(other, Matrix) else Matrix(other)
+        if self.sy.shape != other.sy.shape:
+            return False
+        diff = (self.sy - other.sy).applyfunc(sp.simplify)
+        return bool(diff.is_zero_matrix)
+
+    def __eq__(self, other: object) -> bool:
+        # STRUCTURAL comparison (consistent with ``__hash__``) — fast and safe
+        # for set/dict. For mathematical equality: ``equivalent``.
+        if isinstance(other, Matrix):
+            return bool(self.sy == other.sy)
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        # A matrix is mutable, but we hash its immutable counterpart —
+        # "structurally equal → equal hash", as for ``Expr``.
+        return hash(sp.ImmutableMatrix(self.sy))
+
+    def __repr__(self) -> str:
+        return f"Matrix({self.sy.tolist()!r})"
+
+    def __str__(self) -> str:
+        return str(self.sy)
+
+
+def _parse_matrix(source: str) -> sp.MatrixBase:
+    """Parse a matrix/vector literal: ``[[1,2],[3,4]]`` or ``[1,2,3]``."""
+    try:
+        obj = sp.sympify(source)
+        return sp.Matrix(obj)
+    except (sp.SympifyError, ValueError, TypeError) as exc:
+        raise PycodemathError(f"cannot parse matrix {source!r}: {exc}") from exc
+
+
+def E(source: "str | sp.Expr | Expr | int | float") -> Expr:
+    """IR constructor shortcut: ``E("sin(x)*x")``."""
+    return Expr(source)
+
+
+def M(data: "sp.MatrixBase | Matrix | str | list | tuple") -> Matrix:
+    """IR matrix constructor shortcut: ``M("[[1,2],[3,4]]")``."""
+    return Matrix(data)
+
+
+def V(data: "sp.MatrixBase | Matrix | str | list | tuple") -> Matrix:
+    """IR vector constructor shortcut (column matrix): ``V("[1,2,3]")``."""
+    return Matrix(data)
+
+
+def symbols(names: "str | Iterable[str]") -> tuple[Expr, ...]:
+    """Create symbols as IR expressions: ``x, y = symbols("x y")``."""
+    syms = sp.symbols(names)
+    if not isinstance(syms, (tuple, list)):
+        syms = (syms,)
+    return tuple(Expr(s) for s in syms)

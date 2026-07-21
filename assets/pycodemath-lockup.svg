@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="120" viewBox="0 0 620 120" role="img" aria-label="pycodemath">
+  <title>pycodemath — lockup (dark background)</title>
+  <g stroke-linecap="round">
+    <path d="M68,20 C69,11 57,12 55,23 C51,40 54,50 46,62 C38,74 41,82 36,94 C33,105 22,105 20,95"
+          fill="none" stroke="#e11d33" stroke-width="9"/>
+    <path d="M96,44 L120,63 L96,82" fill="none" stroke="#f6f2f3" stroke-width="9" stroke-linejoin="round"/>
+  </g>
+  <rect x="138" y="76" width="30" height="10" rx="3" fill="#e11d33"/>
+  <text x="200" y="82" font-family="ui-monospace,'JetBrains Mono','Cascadia Code',Consolas,monospace"
+        font-size="60" font-weight="600" letter-spacing="-1">
+    <tspan fill="#9aa0aa">py</tspan><tspan fill="#f6f2f3">codemath</tspan>
+  </text>
+</svg>
