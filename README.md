@@ -96,6 +96,82 @@ Exposes one tool, `math_eval`, that accepts the same commands as the REPL —
 an agent sends `diff sin(x)*x dx` and receives `x*cos(x) + sin(x)` exactly,
 with zero mental arithmetic.
 
+### Use it as a Claude Code skill
+
+The MCP server above is the portable path — it plugs into **any** MCP client.
+If you specifically use [Claude Code](https://claude.com/claude-code), you can
+also wire Pycodemath in as a **skill**, so Claude reaches for the engine on its
+own whenever a prompt needs real math (no MCP process to keep running).
+
+**What it changes:** instead of computing "in its head" — where a large model
+can quietly get arithmetic, an integral, or an eigenvalue wrong — Claude shells
+out to the engine and pastes back an exact SymPy/NumPy result. One short command
+in, one exact line out: fewer tokens, no silent mistakes.
+
+**Deploy (once):**
+
+```bash
+pip install pycodemath          # or: pip install -e .   (from a clone)
+mkdir -p ~/.claude/skills/pycodemath
+```
+
+Save the following as `~/.claude/skills/pycodemath/SKILL.md`:
+
+```markdown
+---
+name: pycodemath
+description: Compute math with the local Pycodemath engine (SymPy+NumPy) instead
+  of in your head — derivatives, integrals, solving equations and systems
+  (linear and nonlinear), determinants/inverses/eigenvalues, gradients/Jacobians/
+  Hessians, function minima, ODEs, and optimized Python/NumPy code generation
+  (CSE). Use whenever the user asks to compute or verify symbolic/numerical math,
+  or to generate code from a formula.
+---
+
+# Pycodemath — local math engine
+
+One command = one call (the package is pip-installed, so any working directory):
+
+    python -m pycodemath "<command>"
+
+Result goes to stdout (exit 0); errors to stderr (exit 1). Power notation: `^` or `**`.
+On Windows consoles, set `PYTHONUTF8=1`.
+
+## Commands
+
+| Command | Example |
+|---|---|
+| `<expression>` — simplify | `python -m pycodemath "sin(x)^2 + cos(x)^2"` → `1` |
+| `diff <expr> d<var>` — derivative | `"diff sin(x)*x dx"` → `x*cos(x) + sin(x)` |
+| `integrate <expr> d<var>` — symbolic integral | `"integrate 2*x dx"` → `x**2` |
+| `solve <expr> for <var>` — solve = 0 | `"solve x^2-4 for x"` → `-2, 2` |
+| `code <expr>` — CSE-optimized NumPy code | `"code (sin(x)+cos(x))^2"` |
+| `det / inv / transpose / eig <A>` | `"eig [[2,1],[1,2]]"` → `3, 1` |
+| `solve_system <A> = <b>` — linear system | `"solve_system [[2,1],[1,3]] = [3,5]"` |
+| `root <expr> for <var> at <x0>` — numeric root | `"root x^2-2 for x at 1"` |
+| `min <expr> for <var> at <x0> [method newton|bfgs]` — 1D minimum | `"min (x-3)^2 for x at 0"` |
+| `grad <expr> for <x,y,...>` — symbolic gradient | `"grad x^2*y for x,y"` |
+| `solve_nd <f1>; <f2> for <x,y> at <x0,y0>` — nonlinear system | `"solve_nd x^2+y^2-4; x-y for x,y at 1,1"` |
+| `min_nd <expr> for <x,y> at <x0,y0> [method newton|bfgs]` — N-D minimum | `"min_nd (1-x)^2+100*(y-x^2)^2 for x,y at -1.2,1 method bfgs"` |
+| limits / series / sums / ODEs | `"limit sin(x)/x for x to 0"`, `"sum 1/k^2 for k from 1 to oo"` |
+
+Type `help` in the REPL (`python -m pycodemath`) for the full command table.
+
+## Rules
+
+- **When to use:** the user wants a concrete math result (derivative, integral,
+  equation, matrix, minimum, ODE) or optimized code from a formula. The engine is
+  exact — trust its output over mental arithmetic.
+- **When not to use:** trivial arithmetic or conceptual questions with no compute.
+- A `error: ...` line on stderr (exit 1) usually means a typo in the command, a
+  numerical method that did not converge, or no real solution — read the message,
+  it is specific.
+```
+
+Restart Claude Code (or open a new session) and it will invoke the skill
+automatically when a task needs exact math. To confirm it registered, run `/help`
+and look for `pycodemath` in the skills list.
+
 ## Limits, series and symbolic sums
 
 Beyond `diff`/`integrate`/`solve`, the engine handles limits (including
