@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab.svg">
   <img alt="230 tests passing" src="https://img.shields.io/badge/tests-230%20passing-2ea043.svg">
@@ -38,9 +39,14 @@ text → [parser] → IR (expression tree) → [engine]     evaluate / simplify 
 ## Install
 
 ```bash
-pip install -e .                  # core: sympy + numpy
-pip install -e .[mcp]             # + MCP server for AI agents
-pip install -e .[dev]             # + pytest
+pip install pycodemath            # core: sympy + numpy
+pip install pycodemath[mcp]       # + MCP server for AI agents
+```
+
+From a clone, for development (editable install):
+
+```bash
+pip install -e .[dev]             # editable + pytest + mypy
 ```
 
 Requires Python ≥ 3.11.
