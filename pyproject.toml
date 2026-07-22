@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "Token-efficient exact math for AI agents: symbolic engine, ODE suite, optimizer and an optimized-code generator (SymPy + NumPy)."
 readme = "README.md"
 license = {text = "MIT"}
-authors = [{name = "maisa"}]
+authors = [{name = "cybersora"}]
 keywords = ["math", "symbolic", "ode", "codegen", "mcp", "ai-agents", "sympy", "numpy"]
 classifiers = [
     "License :: OSI Approved :: MIT License",
