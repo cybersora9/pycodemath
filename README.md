@@ -18,6 +18,10 @@
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
+<p align="center">
+  <img alt="pycodemath demo — one command in, one exact result out" src="assets/demo.svg" width="760">
+</p>
+
 Write math in a few characters, get an exact answer or standalone, optimized
 Python/NumPy code back — instead of asking a language model to "do arithmetic
 in its head" or to hand-write numerical loops.

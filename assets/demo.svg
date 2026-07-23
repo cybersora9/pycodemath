@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 400" width="820" height="400" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace">
+  <style>
+    .ln  { font-size: 17px; }
+    .p   { fill: #e11d33; }
+    .cmd { fill: #e6edf3; }
+    .out { fill: #7ee787; }
+    .dim { fill: #8b949e; }
+    .l1 { animation: r1 14s infinite; }
+    .l2 { animation: r2 14s infinite; }
+    .l3 { animation: r3 14s infinite; }
+    .l4 { animation: r4 14s infinite; }
+    .l5 { animation: r5 14s infinite; }
+    .l6 { animation: r6 14s infinite; }
+    .l7 { animation: r7 14s infinite; }
+    .l8 { animation: r8 14s infinite; }
+    .cur { animation: blink 1.05s steps(1) infinite; fill: #e6edf3; }
+    @keyframes r1 { 0%,2%{opacity:0}  4%,100%{opacity:1} }
+    @keyframes r2 { 0%,8%{opacity:0}  10%,100%{opacity:1} }
+    @keyframes r3 { 0%,18%{opacity:0} 20%,100%{opacity:1} }
+    @keyframes r4 { 0%,26%{opacity:0} 28%,100%{opacity:1} }
+    @keyframes r5 { 0%,36%{opacity:0} 38%,100%{opacity:1} }
+    @keyframes r6 { 0%,44%{opacity:0} 46%,100%{opacity:1} }
+    @keyframes r7 { 0%,54%{opacity:0} 56%,100%{opacity:1} }
+    @keyframes r8 { 0%,62%{opacity:0} 64%,100%{opacity:1} }
+    @keyframes blink { 50%{opacity:0} }
+  </style>
+
+  <rect x="1" y="1" width="818" height="398" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <rect x="1" y="1" width="818" height="37" rx="12" fill="#161b22"/>
+  <rect x="1" y="26" width="818" height="12" fill="#161b22"/>
+  <line x1="1" y1="38" x2="819" y2="38" stroke="#30363d"/>
+  <circle cx="22" cy="19" r="6" fill="#ff5f56"/>
+  <circle cx="42" cy="19" r="6" fill="#ffbd2e"/>
+  <circle cx="62" cy="19" r="6" fill="#27c93f"/>
+  <text x="410" y="24" text-anchor="middle" font-size="13" class="dim">pycodemath — exact math for AI agents</text>
+
+  <!-- pair 1 -->
+  <text class="ln l1" x="24" y="74"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "diff sin(x)*x dx"</tspan></text>
+  <text class="ln l2 out" x="24" y="102">  x*cos(x) + sin(x)</text>
+
+  <!-- pair 2 -->
+  <text class="ln l3" x="24" y="146"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "solve x^2 - 4 for x"</tspan></text>
+  <text class="ln l4 out" x="24" y="174">  -2, 2</text>
+
+  <!-- pair 3 -->
+  <text class="ln l5" x="24" y="218"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "sum 1/k^2 for k from 1 to oo"</tspan></text>
+  <text class="ln l6 out" x="24" y="246">  pi**2/6</text>
+
+  <!-- pair 4 -->
+  <text class="ln l7" x="24" y="290"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "min_nd (1-x)^2+100*(y-x^2)^2 for x,y at -1.2,1 method bfgs"</tspan></text>
+  <text class="ln l8 out" x="24" y="318">  x = 0.999999999999454, y = 0.9999999999989762</text>
+
+  <!-- prompt cursor -->
+  <text class="ln" x="24" y="362"><tspan class="p">$ </tspan><tspan class="cur">&#9608;</tspan></text>
+</svg>
