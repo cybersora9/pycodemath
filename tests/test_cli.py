@@ -1,7 +1,7 @@
-"""Interface tests: REPL (command dispatcher), MCP server, one-shot CLI.
+"""Testy interfejsów: REPL (dispatcher komend), serwer MCP, one-shot CLI.
 
-Split of tests/test_pycodemath.py into per-area files (step 0 of the
-development session) — test content moved unchanged.
+Rozbicie tests/test_pycodemath.py na pliki per obszar (krok 0 sesji
+rozwojowej) — treść testów przeniesiona bez zmian.
 """
 
 from __future__ import annotations
@@ -18,12 +18,12 @@ from pycodemath.core.errors import PycodemathError
 
 
 def test_repl_error_is_caught():
-    # bad input does not crash the session — the REPL returns an "error: ..." message
-    # (handle() may raise, run() catches it; we check both variants consistently)
+    # błędne wejście nie wywraca sesji — REPL zwraca komunikat "błąd: ..."
+    # (handle() może rzucić, run() go łapie; sprawdzamy oba warianty spójnie)
     try:
-        out = repl.handle("det [[1,2],[3]]")  # invalid matrix
+        out = repl.handle("det [[1,2],[3]]")  # niepoprawna macierz
     except Exception as exc:
-        out = f"error: {exc}"
+        out = f"błąd: {exc}"
     assert "error" in out or "Error" in out or out != ""
 
 
@@ -37,16 +37,16 @@ def test_repl_numerics_commands():
 
 
 def test_repl_command_edge_cases():
-    # the command word is case-insensitive (as with startswith on lower)
+    # słowo komendy jest niewrażliwe na wielkość liter (jak przy startswith na lower)
     assert repl.handle("DET [[1,2],[3,4]]").strip() == "-2"
-    # extra spaces between tokens do not break parsing
+    # nadmiarowe spacje między tokenami nie psują parsowania
     assert repl.handle("diff   x^2   dx").strip() == "2*x"
-    # ' d' inside the expression: d<var> is the LAST segment (like the former rsplit)
+    # ' d' wewnątrz wyrażenia: d<var> to OSTATNI segment (jak dawny rsplit)
     assert repl.handle("diff d*x dx").strip() == "d"
-    # incomplete command -> usage message, not an exception or silent parsing
+    # niekompletna komenda -> komunikat użycia, nie wyjątek ani ciche parsowanie
     assert repl.handle("diff x^2").startswith("Usage")
     assert repl.handle("solve x^2-4").startswith("Usage")
-    # a negative starting point passes through the number pattern
+    # ujemny punkt startowy przechodzi przez wzorzec liczby
     root = repl.handle("root x^2-2 for x at -1")
     assert float(root) == pytest.approx(-math.sqrt(2))
 
@@ -74,17 +74,17 @@ def test_repl_nd_commands():
 
 
 def test_repl_min_method_option():
-    # module 15: optional [method newton|bfgs] in min / min_nd
+    # moduł 15: opcjonalny [method newton|bfgs] w min / min_nd
     val = repl.handle("min (x-3)^2 for x at 0 method newton")
     assert float(val) == pytest.approx(3.0, abs=1e-12)
-    # BFGS on the Rosenbrock valley (gd would fail here — contrast from module 15)
+    # BFGS na dolinie Rosenbrocka (gd by tu odmówił — kontrast z modułu 15)
     sol = repl.handle("min_nd (1-x)^2 + 100*(y-x^2)^2 for x,y at -1.2,1 method bfgs")
     vals = [float(p.split("=")[1]) for p in sol.split(",")]
     assert vals == pytest.approx([1.0, 1.0], abs=1e-8)
-    # unknown method -> readable error message (PycodemathError contract)
+    # nieznana metoda -> czytelny polski błąd (kontrakt PycodemathError)
     with pytest.raises(PycodemathError):
         repl.handle("min (x-3)^2 for x at 0 method sgd")
-    # without the method flag, behavior unchanged (gd)
+    # bez flagi method zachowanie bez zmian (gd)
     assert float(repl.handle("min (x-3)^2 for x at 0")) == pytest.approx(3.0, abs=1e-4)
 
 
@@ -94,38 +94,44 @@ def test_repl_symbolic_integrate():
     assert repl.handle("integrate x^2").startswith("Usage")
 
 
-# --- MCP server -----------------------------------------------------------
+# --- serwer MCP -----------------------------------------------------------
 def test_mcp_tool_math_eval():
     pytest.importorskip("mcp")
     from pycodemath.cli.mcp_server import math_eval, server
 
-    # the tool is registered under its own name
+    # narzędzie zarejestrowane pod swoją nazwą
     assert "math_eval" in [t.name for t in server._tool_manager.list_tools()]
-    # delegates to the REPL dispatcher
-    assert math_eval("diff x^2 dx") == "2*x"
-    # error comes back as text (the agent does not get a traceback)
-    assert math_eval("det [[1,2],[3]]").startswith("error")
+    # MODUŁ 6 ŚWIADOMIE ZMIENIŁ TEN KONTRAKT: narzędzie zwraca ustrukturyzowany
+    # payload, a nie goły string — o to w tym module chodziło (dowody modułów 3–5
+    # ginęły na granicy procesu). Czytelna odpowiedź NIE znika: jest polem
+    # ``text``, bo moduł 1 zmierzył, że structuredContent wypiera blok tekstowy.
+    # Kształt payloadu i granica „porażka vs odmowa" mają własny plik: test_mcp.py.
+    assert math_eval("diff x^2 dx")["text"] == "2*x"
+    # błąd wraca jako DANE (agent nie dostaje tracebacku ani samej prozy)
+    assert math_eval("det [[1,2],[3]]")["error"]["type"] == "ParseError"
 
 
 def test_mcp_server_import_lazy_without_mcp(monkeypatch):
-    # round 2 (Block D): a missing 'mcp' package must not crash the module IMPORT
-    # with a traceback — refusal (clean message) only in run()
+    # runda 2 (Blok D): brak pakietu 'mcp' nie może wywracać IMPORTU modułu
+    # tracebackiem — odmowa (czysty komunikat) dopiero w run()
     import importlib
     import sys
 
     import pycodemath.cli.mcp_server as ms
 
-    monkeypatch.setitem(sys.modules, "mcp", None)  # forces ImportError
+    monkeypatch.setitem(sys.modules, "mcp", None)  # wymusza ImportError
     monkeypatch.setitem(sys.modules, "mcp.server.fastmcp", None)
     try:
-        importlib.reload(ms)  # does not raise
+        importlib.reload(ms)  # nie rzuca
         assert ms.server is None
-        assert ms.math_eval("diff x^2 dx") == "2*x"  # dispatcher lives without the server
+        # dispatcher żyje bez serwera — a od modułu 6 także CAŁY payload
+        # (zwykły dict, żadnej zależności od pydantic/mcp)
+        assert ms.math_eval("diff x^2 dx")["text"] == "2*x"
         with pytest.raises(SystemExit, match="mcp"):
             ms.run()
     finally:
         monkeypatch.undo()
-        importlib.reload(ms)  # restore state for the remaining tests
+        importlib.reload(ms)  # przywróć stan dla pozostałych testów
 
 
 # --- one-shot CLI ---------------------------------------------------------
@@ -140,20 +146,20 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
 
 
 def test_cli_one_shot_success():
-    # a single command from argv: result on stdout, exit code 0, no REPL loop
+    # jedna komenda z argv: wynik na stdout, kod wyjścia 0, bez pętli REPL
     proc = _run_cli("diff x^2 dx")
     assert proc.returncode == 0
     assert proc.stdout.strip() == "2*x"
 
 
 def test_cli_one_shot_error_exit_code():
-    # bad input: message on stderr and exit code 1 (scriptability)
+    # błędne wejście: komunikat na stderr i kod wyjścia 1 (skryptowalność)
     proc = _run_cli("det [[1,2],[3]]")
     assert proc.returncode == 1
     assert "error" in proc.stderr
 
 
-# --- ODE commands in the REPL -----------------------------------------------
+# --- komendy ODE w REPL -----------------------------------------------------
 def test_repl_ode_commands():
     out = repl.handle("dsolve y for y(t)")
     assert "C1" in out and "y(t) =" in out
@@ -161,20 +167,20 @@ def test_repl_ode_commands():
     assert float(val.split("=")[1]) == pytest.approx(math.e, abs=1e-6)
     val200 = repl.handle("ode y for y(t) from 0 to 1 at 1 steps 200")
     assert float(val200.split("=")[1]) == pytest.approx(math.e, abs=1e-6)
-    # incomplete command -> usage message, not an exception
+    # niekompletna komenda -> komunikat użycia, nie wyjątek
     assert repl.handle("dsolve y").startswith("Usage")
     assert repl.handle("ode y for y(t)").startswith("Usage")
 
 
 def test_repl_ode_adaptive_command():
     val = repl.handle("ode_adaptive y for y(t) from 0 to 1 at 1")
-    # format: "y(1) = <number>  (<k> adaptive steps)"
+    # format: "y(1) = <liczba>  (<k> kroków adaptacyjnych)"
     assert val.startswith("y(1) =") and "steps" in val
     approx_e = float(val.split("=")[1].split("(")[0])
     assert approx_e == pytest.approx(math.e, abs=1e-5)
     val_tol = repl.handle("ode_adaptive y for y(t) from 0 to 1 at 1 rtol 1e-9")
     assert float(val_tol.split("=")[1].split("(")[0]) == pytest.approx(math.e, abs=1e-7)
-    # incomplete command -> usage message, not an exception
+    # niekompletna komenda -> komunikat użycia, nie wyjątek
     assert repl.handle("ode_adaptive y for y(t)").startswith("Usage")
 
 
@@ -183,26 +189,26 @@ def test_repl_odedense_command():
     assert val.startswith("y(0.37) =") and "dense output" in val
     approx = float(val.split("=")[1].split("(")[0])
     assert approx == pytest.approx(math.exp(0.37), abs=1e-5)
-    # incomplete command -> usage message, not an exception
+    # niekompletna komenda -> komunikat użycia, nie wyjątek
     assert repl.handle("odedense y for y(t) from 0 to 1 at 1").startswith("Usage")
 
 
 def test_repl_odeevents_stop_flag():
     out = repl.handle("odeevents -1 for y(t) from 0 to 3 at 1 zero y stop")
     assert out.startswith("stop at t=1") and "stopped" in out
-    # stop combines with dir: the first rising zero of sin(t) is 2π
+    # stop łączy się z dir: pierwsze narastające zero sin(t) to 2π
     up = repl.handle(
         "odeevents cos(t) for y(t) from 0.5 to 10 at 0.479425539 zero y dir +1 stop"
     )
     assert up.startswith("stop at t=6.28319")
-    # without the stop flag: three events as in module 9
+    # bez flagi stop: trzy zdarzenia jak w module 9
     full = repl.handle("odeevents -1 for y(t) from 0 to 3 at 1 zero y")
     assert not full.startswith("stop") and full.count("t=") == 1
 
 
-# --- odestiff command (module 12) --------------------------------------------
-# exact solution of the reference problem y' = -1000·(y - cos(t)), y(0)=0
-# (the same constants as in test_ode.py — helper duplicated during the split)
+# --- komenda odestiff (moduł 12) --------------------------------------------
+# rozwiązanie dokładne problemu wzorcowego y' = -1000·(y - cos(t)), y(0)=0
+# (te same stałe co w test_ode.py — pomocnik zduplikowany przy rozbiciu)
 _STIFF_A = 1_000_000 / 1_000_001
 _STIFF_B = 1_000 / 1_000_001
 
@@ -219,18 +225,18 @@ def test_repl_odestiff_command():
     assert val.startswith("y(1) =") and "BDF2" in val
     approx = float(val.split("=")[1].split("(")[0])
     assert approx == pytest.approx(_stiff_exact(1.0), abs=1e-6)
-    # incomplete command -> usage message, not an exception
+    # niekompletna komenda -> komunikat użycia, nie wyjątek
     assert repl.handle("odestiff y for y(t)").startswith("Usage")
 
 
 def test_repl_odestiff_adaptive_command():
-    # module 17: variable step — measured y(1) = 0.54114326 (error 2.3e-8),
-    # 313 implicit steps at the default rtol 1e-6
+    # moduł 17: zmienny krok — zmierzone y(1) = 0.54114326 (błąd 2.3e-8),
+    # 313 kroków niejawnych przy domyślnym rtol 1e-6
     val = repl.handle("odestiff_adaptive -1000*(y-cos(t)) for y(t) from 0 to 1 at 0")
     assert val.startswith("y(1) =") and "adaptive BDF" in val
     approx = float(val.split("=")[1].split("(")[0])
     assert approx == pytest.approx(_stiff_exact(1.0), abs=1e-6)
-    # rtol explicitly + incomplete command
+    # rtol jawnie + niekompletna komenda
     tight = repl.handle(
         "odestiff_adaptive -1000*(y-cos(t)) for y(t) from 0 to 1 at 0 rtol 1e-8"
     )
@@ -240,9 +246,9 @@ def test_repl_odestiff_adaptive_command():
     assert repl.handle("odestiff_adaptive y for y(t)").startswith("Usage")
 
 
-# --- audit before extension: PycodemathError contract in commands -------------
+# --- audyt przed dobudową: kontrakt PycodemathError w komendach -------------
 def test_repl_bad_number_raises_pycodemath():
-    # the _NUM pattern lets "1e" through — only _num() gives a readable error message
+    # wzorzec _NUM przepuszcza "1e" — dopiero _num() daje czytelny polski błąd
     with pytest.raises(PycodemathError):
         repl.handle("root x^2-2 for x at 1e")
     with pytest.raises(PycodemathError):
@@ -251,15 +257,15 @@ def test_repl_bad_number_raises_pycodemath():
 
 def test_repl_odeevents_command():
     out = repl.handle("odeevents cos(t) for y(t) from 0.5 to 10 at 0.479425539 zero y")
-    # three events separated by a semicolon
+    # trzy zdarzenia rozdzielone średnikiem
     assert out.count("t=") == 3
     first_t = float(out.split("t=")[1].split(" ")[0])
     assert first_t == pytest.approx(math.pi, abs=1e-4)
-    # direction filter: only rising -> one event (2π)
+    # filtr kierunku: tylko narastające -> jedno zdarzenie (2π)
     up = repl.handle("odeevents cos(t) for y(t) from 0.5 to 10 at 0.479425539 zero y dir +1")
     assert up.count("t=") == 1
-    # no events -> readable message, not an exception
+    # brak zdarzeń -> czytelny komunikat, nie wyjątek
     none = repl.handle("odeevents cos(t) for y(t) from 0.5 to 10 at 0.479425539 zero y+2")
     assert none == "(no events)"
-    # incomplete command -> usage message
+    # niekompletna komenda -> komunikat użycia
     assert repl.handle("odeevents cos(t) for y(t) from 0.5 to 10 at 1").startswith("Usage")

@@ -4,7 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pycodemath"
-version = "0.2.0"
+# The version lives in ONE place — ``pycodemath.__version__`` (read statically by
+# setuptools, so building needs no import and no SymPy).
+dynamic = ["version"]
 description = "Token-efficient exact math for AI agents: symbolic engine, ODE suite, optimizer and an optimized-code generator (SymPy + NumPy)."
 readme = "README.md"
 license = {text = "MIT"}
@@ -17,6 +19,9 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Mathematics",
+    # the machine-readable half of the py.typed marker below — this is what an
+    # index and a dependency auditor read to know the package ships its own types
+    "Typing :: Typed",
 ]
 requires-python = ">=3.11"
 dependencies = [
@@ -27,14 +32,24 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7", "mypy>=1.8"]
-mcp = ["mcp>=1.0"]
+mcp = ["mcp>=1.0,<2.0"]
 
 [project.scripts]
 pycodemath = "pycodemath.cli.repl:run"
 pycodemath-mcp = "pycodemath.cli.mcp_server:run"
 
+[tool.setuptools.dynamic]
+version = {attr = "pycodemath.__version__"}
+
 [tool.setuptools.packages.find]
 include = ["pycodemath*"]
+
+# PEP 561: the marker that tells an installed caller's type checker the package
+# ships its own types. Without it every @overload in ``engine.numerics`` is
+# invisible from outside the repo, and an external mypy silently falls back to
+# ``Any`` for everything imported from pycodemath.
+[tool.setuptools.package-data]
+pycodemath = ["py.typed"]
 
 [tool.mypy]
 # Reasonable baseline (not strict): the whole package must pass, without stubs

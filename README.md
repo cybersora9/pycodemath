@@ -13,7 +13,7 @@
   <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab.svg">
-  <img alt="230 tests passing" src="https://img.shields.io/badge/tests-230%20passing-2ea043.svg">
+  <img alt="668 tests passing" src="https://img.shields.io/badge/tests-668%20passing-2ea043.svg">
   <img alt="mypy: clean" src="https://img.shields.io/badge/mypy-clean-2ea043.svg">
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -292,6 +292,53 @@ ev = solve_ode_events(parse("cos(t)"), "t", 0.0, (0.0, 10.0), parse("y"), rtol=1
 ev.event_times   # -> [3.141593, 6.283185, 9.424778]   (π, 2π, 3π)
 ```
 
+## Structured results: the evidence behind the answer
+
+Every solver in this package now has a `full_result=True` form that returns
+evidence instead of a bare number — a frozen `SolveResult` (value,
+iterations, residual, converged, status) for `root_find` / `root_find_nd` /
+`minimize` / `minimize_nd`, and a `QuadratureResult` (adds `error_estimate`)
+for `integrate_num`. Default calls are unchanged, bit-identical to before.
+
+```pycon
+>>> from pycodemath import root_find, minimize, integrate_num, parse
+>>> root_find(parse("x^2 - 2"), "x", 1.0, full_result=True)
+SolveResult(value=1.4142135623746899, iterations=5, residual=4.510614104447086e-12, converged=True, status='converged')
+
+>>> minimize(parse("-x^2"), "x", 1.0, full_result=True)
+SolveResult(value=1085298990978.309, iterations=152, residual=2170597981956.618, converged=False, status='diverged')
+
+>>> integrate_num(parse("sqrt(x)"), "x", 0.0, 1.0, tol=1e-10, full_result=True)
+QuadratureResult(value=0.6666666666666469, error_estimate=2.4271240969151142e-11, evaluations=1005, refinements=201, converged=True, status='converged')
+```
+
+`converged` is the only field worth branching on, and it is corroborated, not
+just "the tolerance test fired": a vanishing gradient at a saddle or a
+maximum reports `status='not_a_minimum'` rather than a false convergence.
+
+The MCP server carries the same structure over the wire as `structuredContent`
+(`text` / `solve` / `quadrature` / `error` fields), not just prose — a client
+validates it against the declared schema instead of parsing text.
+
+**Trailing options** put those same knobs on the REPL/one-shot grammar:
+
+```console
+$ python -m pycodemath "min x^4 for x at 1 tol 1e-5"
+0.029229144526165384
+
+$ python -m pycodemath "nintegrate sqrt(x) dx from 0 to 1 tol 1e-10"
+0.6666666666666469
+```
+
+`tol <t>` (on `min` / `min_nd` / `nintegrate`), `max_iter <k>` (on `min` /
+`min_nd`) and `budget <s>` (on the symbolic commands, bounding a call the
+same way `pycodemath.time_budget(seconds)` does in Python) are `key value`
+pairs at the end of a command, in any order.
+
+A symbolic call that refuses says which of two things happened:
+`NoClosedFormError` (the engine searched and found nothing — try numerically)
+or `UnsupportedFormError` (no method exists for this shape at all).
+
 ## Design contracts
 
 - One IR (`Expr`/`Matrix`) shared by the engine and the generator.
@@ -304,7 +351,11 @@ ev.event_times   # -> [3.141593, 6.283185, 9.424778]   (π, 2π, 3π)
   access are rejected outright, and evaluation cost is bounded so a single
   expression (e.g. `9**9**9`) can't exhaust memory.
 - Tests measure real numbers first, then assert them with a margin —
-  **230 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+  **668 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+- Every failure is a specific `PycodemathError` subclass (`ParseError`,
+  `DomainError`, `DivergenceError`, `StagnationError`, `NonConvergenceError`,
+  `NoClosedFormError`, `UnsupportedFormError`, `TimeBudgetError`) — a caller
+  can catch the mathematical outcome, not string-match a message.
 
 ## License
 

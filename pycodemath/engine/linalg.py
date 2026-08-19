@@ -7,6 +7,15 @@ a numeric NumPy path.
 
 Operations: multiplication, transpose, determinant, inverse, solving systems
 ``A x = b``, and eigenvalues and eigenvectors.
+
+Every entry point here runs under the wall-clock budget of module 9 (see
+``core.budget``): the symbolic path is SymPy, and a symbolic determinant or
+eigenvalue problem is as capable of not returning as an integral is. Note that
+``_FALLBACK_ERRORS`` below catches ``ValueError``, ``TypeError`` and
+``NotImplementedError`` in order to drop to NumPy — which is precisely why the
+guard's interrupt derives from ``BaseException`` and not from ``Exception``: an
+``Exception`` would be caught here, and a timed-out symbolic run would silently
+become a numeric one instead of a refusal.
 """
 
 from __future__ import annotations
@@ -19,7 +28,8 @@ try:  # SymPy >= 1.13
 except ImportError:  # SymPy 1.12
     from sympy.matrices.common import MatrixError
 
-from ..core.errors import PycodemathError
+from ..core.budget import under_budget
+from ..core.errors import DomainError
 from ..core.ir import Expr, Matrix
 
 # Exceptions after which we may drop to the numeric fallback: these are
@@ -42,7 +52,7 @@ def _to_float(m: Matrix) -> np.ndarray:
     """
     if m.sy.free_symbols:
         names = ", ".join(sorted(s.name for s in m.sy.free_symbols))
-        raise PycodemathError(
+        raise DomainError(
             f"the numeric path requires a matrix without symbols; parameters given: {names}"
         )
     return np.array(m.sy.tolist(), dtype=float)
@@ -68,19 +78,20 @@ def _numeric(fn, *args, **kwargs):
     try:
         return fn(*args, **kwargs)
     except np.linalg.LinAlgError as exc:
-        raise PycodemathError(
+        raise DomainError(
             f"numeric linear algebra failed "
             f"(singular or ill-conditioned matrix): {exc}"
         ) from exc
 
 
 # --- basic operations --------------------------------------------------
+@under_budget("multiply")
 def multiply(a, b) -> Matrix:
     """Matrix product ``A · B`` (also works for matrix × vector)."""
     A, B = _mat(a), _mat(b)
     # a mismatched shape used to raise a raw sympy.ShapeError outside the contract
     if A.sy.cols != B.sy.rows:
-        raise PycodemathError(
+        raise DomainError(
             f"multiply: incompatible dimensions {A.sy.rows}×{A.sy.cols} · "
             f"{B.sy.rows}×{B.sy.cols} — the number of columns of A must equal "
             f"the number of rows of B"
@@ -88,18 +99,20 @@ def multiply(a, b) -> Matrix:
     return Matrix(A.sy * B.sy)
 
 
+@under_budget("transpose")
 def transpose(a) -> Matrix:
     """Transpose ``Aᵀ``."""
     return Matrix(_mat(a).sy.T)
 
 
+@under_budget("det")
 def det(a, numeric: bool = False) -> Expr:
     """Determinant ``det(A)`` (IR scalar). Symbolic, with a numeric fallback."""
     A = _mat(a)
     # a non-square matrix used to raise a raw NonSquareMatrixError, and after
     # the numeric fallback — a misleading message about singularity
     if A.sy.rows != A.sy.cols:
-        raise PycodemathError(
+        raise DomainError(
             f"det: the matrix must be square, but its dimensions are "
             f"{A.sy.rows}×{A.sy.cols}"
         )
@@ -111,6 +124,7 @@ def det(a, numeric: bool = False) -> Expr:
     return _num_to_expr(_numeric(np.linalg.det, _to_float(A)))
 
 
+@under_budget("inv")
 def inv(a, numeric: bool = False) -> Matrix:
     """Inverse matrix ``A⁻¹``. Symbolic, with a numeric fallback."""
     A = _mat(a)
@@ -123,6 +137,7 @@ def inv(a, numeric: bool = False) -> Matrix:
 
 
 # --- systems of equations ----------------------------------------------
+@under_budget("solve_system")
 def solve_system(A, b, numeric: bool = False) -> Matrix:
     """Solve the system ``A x = b`` and return the solution vector ``x``.
 
@@ -138,7 +153,7 @@ def solve_system(A, b, numeric: bool = False) -> Matrix:
     # misleading message about parameters/singularity instead of pointing to
     # the wrong dimensions
     if A.sy.rows != b.sy.rows:
-        raise PycodemathError(
+        raise DomainError(
             f"solve_system: incompatible dimensions — A has {A.sy.rows} rows, "
             f"but b has {b.sy.rows} elements"
         )
@@ -160,6 +175,7 @@ def solve_system(A, b, numeric: bool = False) -> Matrix:
 
 
 # --- spectrum ----------------------------------------------------------
+@under_budget("eigenvalues")
 def eigenvalues(a, numeric: bool = False) -> list[Expr]:
     """Eigenvalues — a list of IR scalars (with multiplicities)."""
     A = _mat(a)
@@ -174,6 +190,7 @@ def eigenvalues(a, numeric: bool = False) -> list[Expr]:
     return [_num_to_expr(v) for v in _numeric(np.linalg.eigvals, _to_float(A))]
 
 
+@under_budget("eigenvectors")
 def eigenvectors(a, numeric: bool = False) -> list[tuple[Expr, Matrix]]:
     """Eigenvectors — a list of pairs ``(eigenvalue, vector)``.
 

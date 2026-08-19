@@ -4,7 +4,8 @@ Operates on IR (``Expr``). The equation is written via the RIGHT-hand side
 ``y'(t) = f(t, y)``, in which the unknown function appears as an ordinary
 symbol (``y``) — only ``dsolve`` substitutes ``sympy.Function`` for it.
 When SymPy does not find a closed form (or finds only an implicit one),
-we get a ``PycodemathError`` with a hint to drop down to numerics.
+we get a ``NoClosedFormError`` with a hint to drop down to numerics and
+``route="ode"`` — the numerical command that answers the same question.
 
 Numerics: the classic fixed-step RK4. As throughout the engine, the
 right-hand side is compiled ONCE before the loop (``Expr.compiled`` via
@@ -46,8 +47,12 @@ Functions:
                          dense/events for systems (per-coordinate interpolant,
                          event g(t, y1..yn) = 0, also terminal).
 
-Divergence / bad domain / no closed form -> ``PycodemathError``
-with a readable message (consistent with ``numerics``).
+Every failure raises a ``PycodemathError`` subclass with a readable message
+(consistent with ``numerics``): a bad domain or a singular step matrix gives
+``DomainError``, a NaN/inf solution ``DivergenceError``, a step shrinking below
+``hmin`` ``StagnationError``, an exhausted step count ``NonConvergenceError``;
+"no closed form" from ``dsolve`` is ``NoClosedFormError`` (module 10 — it used to
+be a bare ``PycodemathError``, which said nothing an agent could branch on).
 
 All numerical solvers also accept a DECREASING interval (t1 < t0)
 — BACKWARD integration, step h < 0 (module 13). Beyond scope: PDEs.
@@ -60,7 +65,13 @@ from typing import Callable, Sequence, cast
 import numpy as np
 import sympy as sp
 
-from ..core.errors import PycodemathError
+from ..core.errors import (
+    DivergenceError,
+    DomainError,
+    NoClosedFormError,
+    NonConvergenceError,
+    StagnationError,
+)
 from ..core.ir import Expr
 from .numerics import _check_vars, _point, _vector_fn
 
@@ -74,25 +85,34 @@ def dsolve(expr: Expr, func: str = "y", var: str = "t") -> list[Expr]:
     — the right-hand sides of EXPLICIT solutions (with constants ``C1``… as
     symbols), consistent with ``symbolic.solve``.
 
-    No closed form or an implicit solution -> ``PycodemathError``
-    with a hint to use ``solve_ode_num``.
+    No closed form or an implicit solution -> ``NoClosedFormError`` with a hint to
+    use ``solve_ode_num`` and ``route="ode"`` (module 10). Both refusals below are
+    that class rather than ``UnsupportedFormError``, and the reason is how
+    ``sp.dsolve`` works: it CLASSIFIES the equation first and raises
+    ``NotImplementedError`` only once its classification has found nothing that
+    fits. That is a search that came back empty, not a refusal to start one — the
+    line ``UnsupportedFormError`` draws in ``engine.symbolic``.
     """
     rhs = Expr(expr)
     if func == var:
-        raise PycodemathError(
+        raise DomainError(
             "dsolve: function name and independent variable name must differ"
         )
     t = sp.Symbol(var)
     Y = sp.Function(func)
     equation = sp.Eq(Y(t).diff(t), rhs.sy.subs(sp.Symbol(func), Y(t)))
-    hint = (
-        f"dsolve: cannot find a closed-form solution for "
-        f"{func}'({var}) = {rhs} — use solve_ode_num"
-    )
+
+    def refuse() -> NoClosedFormError:
+        return NoClosedFormError(
+            f"dsolve: cannot find a closed-form solution for "
+            f"{func}'({var}) = {rhs} — use solve_ode_num",
+            route="ode",
+        )
+
     try:
         raw = sp.dsolve(equation, Y(t))
     except (NotImplementedError, ValueError, TypeError) as exc:
-        raise PycodemathError(hint) from exc
+        raise refuse() from exc
 
     solutions = raw if isinstance(raw, list) else [raw]
     out: list[Expr] = []
@@ -100,7 +120,7 @@ def dsolve(expr: Expr, func: str = "y", var: str = "t") -> list[Expr]:
         # explicitness: y(t) = <expression without y(t)> — an implicit solution
         # does not fit the IR Expr contract (an algebraic expression)
         if sol.lhs != Y(t) or sol.rhs.has(sp.core.function.AppliedUndef):
-            raise PycodemathError(hint)
+            raise refuse()
         out.append(Expr(sol.rhs))
     return out
 
@@ -115,9 +135,9 @@ def _span(t_span: "Sequence[float]", what: str) -> tuple[float, float]:
     try:
         t0, t1 = (float(v) for v in t_span)
     except (TypeError, ValueError) as exc:
-        raise PycodemathError(f"{what}: t_span must be a pair of numbers (t0, t1)") from exc
+        raise DomainError(f"{what}: t_span must be a pair of numbers (t0, t1)") from exc
     if t1 == t0:
-        raise PycodemathError(
+        raise DomainError(
             f"{what}: interval cannot have zero length "
             f"(given {t0:g} .. {t1:g})"
         )
@@ -127,7 +147,7 @@ def _span(t_span: "Sequence[float]", what: str) -> tuple[float, float]:
 def _tols(rtol: float, atol: float, what: str) -> tuple[float, float]:
     """Validate the adaptive solver tolerances; return ``(rtol, atol)``."""
     if not (rtol > 0.0 and atol > 0.0):
-        raise PycodemathError(f"{what}: rtol and atol must be positive")
+        raise DomainError(f"{what}: rtol and atol must be positive")
     return float(rtol), float(atol)
 
 
@@ -147,7 +167,7 @@ def _system_inputs(
     fs = [Expr(e) for e in rhs]
     funcs = list(funcs)
     if not fs or len(fs) != len(funcs):
-        raise PycodemathError(
+        raise DomainError(
             f"{what} requires a square system: "
             f"{len(fs)} equations, {len(funcs)} functions"
         )
@@ -159,7 +179,7 @@ def _system_inputs(
 def _grid(t_span: "Sequence[float]", n: int, what: str) -> tuple[float, float, float]:
     """Validate the interval and the number of steps; return ``(t0, t1, h)``."""
     if int(n) < 1:
-        raise PycodemathError(f"{what}: number of steps n must be positive")
+        raise DomainError(f"{what}: number of steps n must be positive")
     t0, t1 = _span(t_span, what)
     return t0, t1, (t1 - t0) / int(n)
 
@@ -188,14 +208,14 @@ def _rk4(
         k3 = None if k2 is None else sample(np.concatenate(([t + h / 2], y + h / 2 * k2)))
         k4 = None if k3 is None else sample(np.concatenate(([t + h], y + h * k3)))
         if k1 is None or k2 is None or k3 is None or k4 is None:
-            raise PycodemathError(
+            raise DomainError(
                 f"{what}: cannot sample the right-hand side at t={t:g} "
                 f"(outside the domain, complex result, or divergence)"
             )
         y = y + h / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
         t = t0 + i * h  # node from multiplication, not summation — no float drift
         if not np.all(np.isfinite(y)):
-            raise PycodemathError(
+            raise DivergenceError(
                 f"{what}: solution diverges at t={t:g} (NaN/inf) — "
                 f"narrow the interval or increase n"
             )
@@ -331,13 +351,13 @@ def _dopri45(
     steps = 0
     k1 = sample(np.concatenate(([t], y)))  # first stage (FSAL reuses the next ones)
     if k1 is None:
-        raise PycodemathError(
+        raise DomainError(
             f"{what}: cannot sample the right-hand side at the start point "
             f"t={t:g} (outside the domain or complex result)"
         )
     while (t1 - t) * sgn > 0:
         if steps >= max_steps:
-            raise PycodemathError(
+            raise NonConvergenceError(
                 f"{what}: exceeded {max_steps} steps at t={t:g} — "
                 f"the solution is probably singular (narrow the interval)"
             )
@@ -348,7 +368,7 @@ def _dopri45(
         if stepped is None:  # right-hand side outside the domain — try shorter
             h *= 0.5  # k1 still valid: t, y unchanged (sign preserved)
             if abs(h) < hmin:
-                raise PycodemathError(
+                raise DomainError(
                     f"{what}: cannot sample the right-hand side at t={t:g} "
                     f"(singularity, complex result, or outside the domain)"
                 )
@@ -381,7 +401,7 @@ def _dopri45(
         else:  # --- step rejected: reduce and repeat ---
             h *= max(0.2, 0.9 * e ** -0.2)  # k1 unchanged; positive multiplier — sign preserved
             if abs(h) < hmin:
-                raise PycodemathError(
+                raise StagnationError(
                     f"{what}: step shrank below the limit at t={t:g} — "
                     f"singularity (integration refuses to jump over it)"
                 )
@@ -469,7 +489,7 @@ class DenseSolution:
         # boundary tolerance: allow a small float overshoot at the ends
         eps = 1e-9 * max(1.0, abs(lo), abs(hi))
         if tq < lo - eps or tq > hi + eps:
-            raise PycodemathError(
+            raise DomainError(
                 f"DenseSolution: t={tq:g} outside the interval "
                 f"[{self.t0:g}, {self.t1:g}]"
             )
@@ -569,7 +589,7 @@ def _find_events(
         vec = sol._eval_vec(t)
         val = g_fn(np.concatenate(([float(t)], vec)))
         if val is None:
-            raise PycodemathError(
+            raise DomainError(
                 f"{what}: event function outside the domain at t={t:g} "
                 f"(complex result or NaN/inf)"
             )
@@ -631,7 +651,7 @@ def _terminal_stop(
         def G(tq: float) -> float:
             val = g_fn(np.concatenate(([tq], _seg_eval(seg, tq))))
             if val is None:
-                raise PycodemathError(
+                raise DomainError(
                     f"{what}: event function outside the domain at t={tq:g} "
                     f"(complex result or NaN/inf)"
                 )
@@ -694,7 +714,7 @@ def solve_ode_events(
     _check_vars([r], [var, func], "solve_ode_events")  # duplicates catch func == var
     _check_vars([g], [var, func], "solve_ode_events (event function)")
     if direction not in (-1, 0, 1):
-        raise PycodemathError("solve_ode_events: direction must be -1, 0, or +1")
+        raise DomainError("solve_ode_events: direction must be -1, 0, or +1")
     t0, t1 = _span(t_span, "solve_ode_events")
     rtol, atol = _tols(rtol, atol, "solve_ode_events")
     sample = _vector_fn([r], [var, func])  # compiled once — before the loop
@@ -787,7 +807,7 @@ def solve_ode_stiff(
         for _ in range(50):
             fu = _sample1(f_fn, t_new, u)
             if fu is None:
-                raise PycodemathError(
+                raise DomainError(
                     f"solve_ode_stiff: cannot sample the right-hand side at "
                     f"t={t_new:g} (outside the domain or complex result)"
                 )
@@ -797,17 +817,17 @@ def solve_ode_stiff(
             dfu = _sample1(df_fn, t_new, u)
             slope = None if dfu is None else 1.0 - coef * dfu
             if slope is None or slope == 0.0:
-                raise PycodemathError(
+                raise DomainError(
                     f"solve_ode_stiff: Newton on the implicit step cannot proceed at "
                     f"t={t_new:g} (derivative outside the domain or singular)"
                 )
             u = u - res / slope
             if not np.isfinite(u):
-                raise PycodemathError(
+                raise DivergenceError(
                     f"solve_ode_stiff: solution diverges at "
                     f"t={t_new:g} (NaN/inf) — narrow the interval or increase n"
                 )
-        raise PycodemathError(
+        raise NonConvergenceError(
             f"solve_ode_stiff: Newton does not converge at t={t_new:g} — increase n"
         )
 
@@ -870,7 +890,7 @@ def solve_ode_system_stiff(
         for _ in range(50):
             Fu = F_fn(np.concatenate(([t_new], u)))
             if Fu is None:
-                raise PycodemathError(
+                raise DomainError(
                     f"solve_ode_system_stiff: cannot sample the right-hand side "
                     f"at t={t_new:g} (outside the domain or complex result)"
                 )
@@ -881,24 +901,24 @@ def solve_ode_system_stiff(
                 return u
             Ju = J_fn(np.concatenate(([t_new], u)))
             if Ju is None:
-                raise PycodemathError(
+                raise DomainError(
                     f"solve_ode_system_stiff: cannot sample the Jacobian "
                     f"at t={t_new:g} (outside the domain or complex result)"
                 )
             try:
                 delta = np.linalg.solve(eye - coef * Ju.reshape(m, m), -res)
             except np.linalg.LinAlgError as exc:
-                raise PycodemathError(
+                raise DomainError(
                     f"solve_ode_system_stiff: implicit step matrix is singular "
                     f"at t={t_new:g} — Newton cannot proceed (increase n)"
                 ) from exc
             u = u + delta
             if not np.all(np.isfinite(u)):
-                raise PycodemathError(
+                raise DivergenceError(
                     f"solve_ode_system_stiff: solution diverges at "
                     f"t={t_new:g} (NaN/inf) — narrow the interval or increase n"
                 )
-        raise PycodemathError(
+        raise NonConvergenceError(
             f"solve_ode_system_stiff: Newton does not converge at t={t_new:g} — increase n"
         )
 
@@ -1004,7 +1024,7 @@ def _bdf_adaptive(
     steps = 0
     while (t1 - t) * sgn > 0:
         if steps >= max_steps:
-            raise PycodemathError(
+            raise NonConvergenceError(
                 f"{what}: exceeded {max_steps} steps at t={t:g} — "
                 f"the solution is probably singular (narrow the interval)"
             )
@@ -1046,7 +1066,7 @@ def _bdf_adaptive(
         if u is None:  # Newton/domain did not deliver — try shorter
             h *= 0.5
             if abs(h) < hmin:
-                raise PycodemathError(
+                raise StagnationError(
                     f"{what}: step shrank below the limit at t={t:g} — "
                     f"singularity (integration refuses to jump over it)"
                 )
@@ -1070,7 +1090,7 @@ def _bdf_adaptive(
         else:  # --- step rejected: reduce and repeat ---
             h *= max(0.2, 0.9 * e**-expo)
             if abs(h) < hmin:
-                raise PycodemathError(
+                raise StagnationError(
                     f"{what}: step shrank below the limit at t={t:g} — "
                     f"singularity (integration refuses to jump over it)"
                 )
@@ -1248,7 +1268,7 @@ def solve_ode_system_events(
     g = Expr(event)
     _check_vars([g], [var, *funcs], "solve_ode_system_events (event function)")
     if direction not in (-1, 0, 1):
-        raise PycodemathError(
+        raise DomainError(
             "solve_ode_system_events: direction must be -1, 0, or +1"
         )
     t0, t1 = _span(t_span, "solve_ode_system_events")

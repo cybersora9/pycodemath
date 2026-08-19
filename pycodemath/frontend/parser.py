@@ -11,16 +11,22 @@ import math
 import token as _token
 from tokenize import TokenError
 
+import re
+
 import sympy as sp
 from sympy import SympifyError
 from sympy.parsing.sympy_parser import (
+    _token_splittable,
     convert_xor,
-    implicit_multiplication_application,
+    function_exponentiation,
+    implicit_application,
+    implicit_multiplication,
     parse_expr,
+    split_symbols_custom,
     standard_transformations,
 )
 
-from ..core.errors import PycodemathError
+from ..core.errors import ParseError
 from ..core.ir import Expr
 
 # Tokens that make no sense in math notation but open up an eval surface:
@@ -41,22 +47,61 @@ def _deny_unsafe_tokens(tokens, local_dict, global_dict):
     """Guard transformation: rejects tokens outside math notation."""
     for tok_type, tok_val in tokens:
         if tok_type in _DENIED_TOKEN_TYPES:
-            raise PycodemathError(
+            raise ParseError(
                 f"text literals are not a mathematical expression: {tok_val!r}"
             )
         if tok_type == _token.OP and tok_val == ".":
-            raise PycodemathError(
+            raise ParseError(
                 "attribute access (dot) is not mathematical notation"
             )
     return tokens
 
 
+# letters+trailing digits (v0, x1, q2, R1, t12) stay ONE symbol. Default
+# split_symbols would break "q1" into Symbol('q') * <the digit '1'> — and the
+# digit half is built via a bare ``Number(...)`` call the whitelist's
+# global_dict does not define (only Symbol/Function/Integer/Float/Rational
+# are), so this crashed with a leaked ``NameError: name 'Number' is not
+# defined`` for EVERY variable name in this extremely common physics/
+# engineering convention. (Plain sympy without the whitelist does not crash
+# here, but is worse: it silently drops the digit — "q1" reads as "q", "q2"
+# as "2*q", so "q1*q2" becomes "2*q**2".) split_symbols_custom keeps the
+# documented "unknown multi-letter name splits into a product of single
+# letters" behaviour (foo(x) -> f*o*o*x — the price of "2x" notation) for
+# pure-letter names; only a trailing digit run is now excluded from splitting.
+_LETTER_DIGIT_SUFFIX = re.compile(r"[A-Za-z]+\d+")
+
+
+def _splittable(symbol: str) -> bool:
+    if not _token_splittable(symbol):
+        return False
+    return not _LETTER_DIGIT_SUFFIX.fullmatch(symbol)
+
+
+_implicit_multiplication_application = (
+    split_symbols_custom(_splittable),
+    implicit_multiplication,
+    implicit_application,
+    function_exponentiation,
+)
+
 # Token guard BEFORE everything, then ^ as exponentiation + implicit
 # multiplication (2x -> 2*x), as in math notation.
-_TRANSFORMS = (_deny_unsafe_tokens,) + standard_transformations + (
-    convert_xor,
-    implicit_multiplication_application,
+_TRANSFORMS = (
+    (_deny_unsafe_tokens,)
+    + standard_transformations
+    + (convert_xor,)
+    + _implicit_multiplication_application
 )
+
+# Matrix-literal transforms: the SAME token guard + whitelist namespace (so the
+# security boundary is identical — attribute access and text literals are
+# rejected, no builtin is reachable), but WITHOUT implicit multiplication or
+# ``^``-as-power. A matrix entry is a plain literal (as under the previous bare
+# ``sympify``): multi-letter names stay one symbol (``np`` is Symbol('np'), not
+# ``n*p``) and ``^`` keeps its Python meaning — parse semantics are unchanged,
+# only the eval surface is closed.
+_MATRIX_TRANSFORMS = (_deny_unsafe_tokens,) + standard_transformations
 
 # Parser whitelist: the ONLY names that resolve to SymPy objects.
 # Everything off the list becomes a Symbol/undefined function (auto_symbol),
@@ -195,12 +240,20 @@ def _int_value_bounded(node: sp.Basic) -> int | None:
     return None  # Symbol/Float/non-integer Rational/other function → not a "big int"
 
 
-def _check_cost(node: sp.Basic) -> None:
+def _check_cost(node: "sp.Basic | list | tuple") -> None:
     """Walk the tree and reject any CONCRETE subexpression whose evaluation
     would build a number that is too large. ``_int_value_bounded`` closes over the whole
     subgraph built from numbers (raising ``_CostExceeded``); for subgraphs with symbols
     we descend deeper to catch a dangerous nested fragment (e.g. in ``sin(9**9**9)``).
+
+    Matrix literals parse (under ``evaluate=False``) to nested Python lists, so the
+    walk also descends into ``list``/``tuple`` containers — a matrix entry gets the
+    same DoS guard as a scalar (e.g. ``[[9**9**9]]`` is refused before evaluation).
     """
+    if isinstance(node, (list, tuple)):
+        for item in node:
+            _check_cost(item)
+        return
     if _int_value_bounded(node) is not None:
         return
     for arg in node.args:
@@ -259,8 +312,9 @@ def parse(source: str) -> Expr:
     Unknown names: single-letter ``f(x)`` reads as multiplication ``f*x``,
     multi-letter ``foo(x)`` breaks up into a product of letters (``split_symbols``
     from ``implicit_multiplication_application`` — the price of ``2x`` notation);
-    names with ``_`` (e.g. ``x_1``) stay a single symbol. None of these
-    paths calls Python code.
+    names with ``_`` (e.g. ``x_1``) or a trailing digit run (e.g. ``x1``, ``v0``,
+    ``R1`` — the other common way to write a subscript) stay a single symbol.
+    None of these paths calls Python code.
     Building ``Expr`` is in the same ``try`` because ``sympify`` in
     ``Expr.__init__`` can also raise ``SympifyError`` on the parser's output.
 
@@ -272,7 +326,7 @@ def parse(source: str) -> Expr:
     try:
         _guard_cost(source)
     except _CostExceeded as exc:
-        raise PycodemathError(
+        raise ParseError(
             f"expression {source!r} is too costly to compute "
             f"({exc}) — the result would exceed the safe size"
         ) from exc
@@ -296,4 +350,45 @@ def parse(source: str) -> Expr:
         NameError,
         AttributeError,
     ) as exc:
-        raise PycodemathError(f"cannot understand expression {source!r}: {exc}") from exc
+        raise ParseError(f"cannot understand expression {source!r}: {exc}") from exc
+
+
+def parse_matrix(source: str) -> sp.MatrixBase:
+    """Parse a matrix/vector literal (``[[1,2],[3,4]]`` / ``[1,2,3]``) into a SymPy matrix.
+
+    Matrix entries are ordinary math expressions, so this text must go through
+    the SAME whitelist as scalar :func:`parse`: bare ``sympify`` here would be a
+    second eval surface with the full namespace and attribute access
+    (``().__class__.__bases__`` reaches ``object`` — the classic sympify gadget
+    chain). We reuse the token guard + whitelisted namespace + cost guard, then
+    hand the resulting nested list to ``sympy.Matrix``. Legitimate literals are
+    unaffected; only the eval surface is closed.
+    """
+    try:
+        _guard_cost(source)
+    except _CostExceeded as exc:
+        raise ParseError(
+            f"matrix {source!r} is too costly to compute "
+            f"({exc}) — the result would exceed the safe size"
+        ) from exc
+    try:
+        obj = parse_expr(
+            source,
+            local_dict=dict(_LOCAL_DICT),
+            global_dict=dict(_GLOBAL_DICT),
+            transformations=_MATRIX_TRANSFORMS,
+            evaluate=True,
+        )
+        return sp.Matrix(obj)
+    # Same refusal set as scalar parse; the token guard's PycodemathError
+    # (attribute access, text literals) propagates through unchanged.
+    except (
+        SympifyError,
+        SyntaxError,
+        TokenError,
+        TypeError,
+        ValueError,
+        NameError,
+        AttributeError,
+    ) as exc:
+        raise ParseError(f"cannot parse matrix {source!r}: {exc}") from exc

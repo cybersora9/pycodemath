@@ -7,6 +7,21 @@ interface, and a place where we will later hook in the masking stage.
 
 The "token-cutting" goal: writing math should be short (``E("sin(x)*x")``),
 and expansion into code happens only in the generator.
+
+MODULE 9: the four methods here that reach an UNBOUNDED SymPy call —
+``Expr.simplify``, ``Expr.expand``, ``Expr.integrate`` and the two ``equivalent``
+methods, which run ``simplify`` on a difference — carry the wall-clock guard as
+well as their ``engine.symbolic`` wrappers do. Not belt and braces: these are the
+Python API a caller reaches directly (``E("1/(x^5+x+1)").integrate("x")`` never
+goes through ``engine.symbolic``), and ``codegen.pipeline.generate`` calls
+``Expr.simplify`` rather than the engine function. Nesting costs one dict lookup:
+a guard that finds a budget already running in this thread adopts it instead of
+arming a second one (``core.budget._budget_for``).
+
+``diff``, ``subs``, ``evalf`` and ``compiled`` are deliberately NOT guarded.
+Differentiation is syntax-directed and terminates in time proportional to the
+expression; the other three are the numeric path, where a guard would sit inside
+the loop the single-IR rule exists to keep SymPy out of.
 """
 
 from __future__ import annotations
@@ -16,7 +31,8 @@ from typing import Callable, Iterable
 
 import sympy as sp
 
-from .errors import PycodemathError
+from .budget import under_budget
+from .errors import DomainError, NoClosedFormError, ParseError
 
 
 @lru_cache(maxsize=512)
@@ -63,24 +79,47 @@ class Expr:
         return [s.name for s in self.free_symbols]
 
     # --- symbolic operations (delegated, but return Expr) ---------------
+    @under_budget("simplify")
     def simplify(self) -> "Expr":
         return Expr(sp.simplify(self.sy))
 
+    @under_budget("expand")
     def expand(self) -> "Expr":
         return Expr(sp.expand(self.sy))
 
     def diff(self, var: str) -> "Expr":
-        return Expr(sp.diff(self.sy, sp.Symbol(var)))
+        # A plain (assumption-free) Symbol is not known to be real to SymPy, so
+        # several of the parser's whitelisted functions (module P1) do not
+        # differentiate: Abs(y).diff(y) does not reduce to sign(y), it stays an
+        # unevaluated Derivative(re(y), y) — silently wrong from a bare `diff`
+        # command, and a raw sympy PrintMethodNotImplementedError (not a
+        # PycodemathError) crash from anything that differentiates internally
+        # (min/min_nd's gradient, solve_nd/odestiff's Jacobian) on such an
+        # expression. Every value this engine computes is real (the codegen
+        # target is NumPy; there is no complex-analysis workflow on this
+        # surface), so we differentiate under a real-valued stand-in for the
+        # requested variable and substitute it back out — this changes no
+        # symbol identity anywhere else (solve's fresh-Symbol name matching,
+        # subs, codegen all still see the original plain Symbol), only what
+        # happens inside this one call.
+        sym = sp.Symbol(var)
+        real_sym = sp.Symbol(var, real=True)
+        result = sp.diff(self.sy.subs(sym, real_sym), real_sym).subs(real_sym, sym)
+        return Expr(result)
 
+    @under_budget("integrate")
     def integrate(self, var: str) -> "Expr":
         res = sp.integrate(self.sy, sp.Symbol(var))
         # An unevaluated Integral in the result is junk that breaks the contract
         # (analogous to the res.has(sp.Sum) guard in summation) — we refuse
-        # clearly.
+        # clearly. The integrator RAN and came back empty-handed, which is
+        # NoClosedFormError rather than UnsupportedFormError (module 10), and the
+        # route says in data what the message has always said in prose.
         if res.has(sp.Integral):
-            raise PycodemathError(
+            raise NoClosedFormError(
                 "integrate: no closed form — compute numerically "
-                "or simplify the expression"
+                "or simplify the expression",
+                route="nintegrate",
             )
         return Expr(res)
 
@@ -106,7 +145,7 @@ class Expr:
         except TypeError as exc:
             # Complex or still-symbolic result — a readable error instead of a
             # raw TypeError from ``float()``.
-            raise PycodemathError(
+            raise DomainError(
                 f"cannot return a real number from {result} "
                 f"(complex result or unsubstituted symbols)"
             ) from exc
@@ -128,6 +167,7 @@ class Expr:
         """Short, unambiguous text form — round-trips with the parser."""
         return str(self.sy)
 
+    @under_budget("equivalent")
     def equivalent(self, other: "Expr | str | int | float") -> bool:
         """Mathematical equality: does ``self - other`` simplify to zero.
 
@@ -182,7 +222,7 @@ class Matrix:
             except (ValueError, TypeError) as exc:
                 # e.g. rows of different lengths — a readable error instead of a
                 # raw ValueError from deep inside SymPy (contract: always PycodemathError)
-                raise PycodemathError(f"invalid matrix: {exc}") from exc
+                raise ParseError(f"invalid matrix: {exc}") from exc
 
     # --- introspection --------------------------------------------------
     @property
@@ -242,6 +282,7 @@ class Matrix:
         """Concise literal form: ``[[1, 2], [3, 4]]`` (round-trips with ``M``)."""
         return str(self.sy.tolist())
 
+    @under_budget("equivalent")
     def equivalent(self, other: "Matrix | sp.MatrixBase | str | list") -> bool:
         """MATHEMATICAL equality: does ``self - other`` simplify to zero.
 
@@ -276,12 +317,17 @@ class Matrix:
 
 
 def _parse_matrix(source: str) -> sp.MatrixBase:
-    """Parse a matrix/vector literal: ``[[1,2],[3,4]]`` or ``[1,2,3]``."""
-    try:
-        obj = sp.sympify(source)
-        return sp.Matrix(obj)
-    except (sp.SympifyError, ValueError, TypeError) as exc:
-        raise PycodemathError(f"cannot parse matrix {source!r}: {exc}") from exc
+    """Parse a matrix/vector literal: ``[[1,2],[3,4]]`` or ``[1,2,3]``.
+
+    Delegates to the whitelisted parser (NOT bare ``sympify``): matrix text is
+    user input reachable from the REPL and MCP, so its entries must resolve
+    through the same token guard/whitelist as scalar expressions — otherwise
+    attribute access (``().__class__``) would evaluate here. Local import:
+    ``frontend.parser`` imports ``core.ir`` (cycle), as in ``Expr.subs``.
+    """
+    from ..frontend.parser import parse_matrix
+
+    return parse_matrix(source)
 
 
 def E(source: "str | sp.Expr | Expr | int | float") -> Expr:

@@ -1,6 +1,35 @@
 """Pycodemath — heavy computational math + Python.
 
-Top-level public API.
+Top-level public API. Everything a caller needs is importable from here:
+
+``parse`` / ``E`` / ``M`` / ``V``
+    text -> the single IR (``Expr`` / ``Matrix``) the engine and the code
+    generator share.
+``symbolic`` / ``linalg`` / ``numerics`` / ``ode``
+    the engines. The numerical entry points that carry structured results are
+    re-exported by name as well: ``root_find``, ``minimize``, ``root_find_nd``,
+    ``minimize_nd``, ``integrate_num``.
+``PycodemathError`` and its eight subclasses
+    what a failure IS, as a type — the thing to branch on instead of reading a
+    message. ``ParseError`` / ``DomainError`` are refusals of the INPUT;
+    ``DivergenceError`` / ``StagnationError`` / ``NonConvergenceError`` /
+    ``NotAMinimumError`` / ``BudgetExhaustedError`` are outcomes of a RUN; and
+    ``TimeBudgetError`` (module 9) is the run that had no outcome at all because
+    the wall clock ran out first.
+``time_budget`` / ``DEFAULT_TIME_BUDGET``
+    how long the symbolic engine may spend before it refuses. Every symbolic entry
+    point is bounded — ``integrate 1/(x^5+x+1) dx`` used to hang forever — and
+    ``with time_budget(seconds):`` is how a caller says in advance how long it is
+    willing to wait.
+``SolveResult`` / ``QuadratureResult`` / ``SolveStatus`` / ``SOLVE_STATUSES``
+    what a run LEARNED, returned by the calls above under ``full_result=True``.
+    ``converged`` is the only field to branch on — and since module 8 it answers
+    the question that was ASKED (a ROOT, a MINIMUM), not merely "did an exit test
+    fire". The package ships ``py.typed``,
+    so the overloads that make ``full_result`` change the return TYPE are visible
+    to an installed caller's type checker — no cast anywhere.
+
+The README documents each of these with runnable examples.
 """
 
 from __future__ import annotations
@@ -13,13 +42,38 @@ from .codegen.pipeline import (
     generate_ode_dense,
     generate_system,
 )
+from .core.budget import DEFAULT_TIME_BUDGET, time_budget
+from .core.errors import (
+    NUMERIC_ROUTES,
+    ROUTES,
+    BudgetExhaustedError,
+    DivergenceError,
+    DomainError,
+    NoClosedFormError,
+    NonConvergenceError,
+    NotAMinimumError,
+    ParseError,
+    PycodemathError,
+    StagnationError,
+    TimeBudgetError,
+    UnsupportedFormError,
+)
 from .core.ir import E, Expr, M, Matrix, V, symbols
+from .core.result import (
+    SOLVE_STATUSES,
+    QuadratureResult,
+    SolveResult,
+    SolveStatus,
+)
 from .engine import linalg, numerics, ode, symbolic
 from .engine.numerics import (
     gradient,
     hessian,
+    integrate_num,
     jacobian,
+    minimize,
     minimize_nd,
+    root_find,
     root_find_nd,
 )
 from .engine.ode import (
@@ -43,7 +97,7 @@ from .engine.ode import (
 from .engine.symbolic import limit, series, summation
 from .frontend.parser import parse
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "E",
@@ -53,6 +107,25 @@ __all__ = [
     "Matrix",
     "symbols",
     "parse",
+    "PycodemathError",
+    "ParseError",
+    "DomainError",
+    "DivergenceError",
+    "StagnationError",
+    "NonConvergenceError",
+    "NotAMinimumError",
+    "BudgetExhaustedError",
+    "TimeBudgetError",
+    "NoClosedFormError",
+    "UnsupportedFormError",
+    "ROUTES",
+    "NUMERIC_ROUTES",
+    "time_budget",
+    "DEFAULT_TIME_BUDGET",
+    "SolveResult",
+    "QuadratureResult",
+    "SolveStatus",
+    "SOLVE_STATUSES",
     "symbolic",
     "linalg",
     "numerics",
@@ -69,8 +142,15 @@ __all__ = [
     "gradient",
     "jacobian",
     "hessian",
+    # The five functions that RETURN the types just above. Before module 7 only the
+    # ``_nd`` pair was exported, so ``from pycodemath import SolveResult`` worked
+    # while ``from pycodemath import root_find`` — the very call that produces one —
+    # did not. Same module, same contract, same @overload: the split was an accident.
+    "root_find",
+    "minimize",
     "root_find_nd",
     "minimize_nd",
+    "integrate_num",
     "dsolve",
     "solve_ode_num",
     "solve_ode_stiff",

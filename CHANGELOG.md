@@ -5,6 +5,66 @@ All notable changes to Pycodemath are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-19
+
+Every failure and every success now carries evidence an agent can branch on,
+instead of a bare value or a string to pattern-match.
+
+### Added
+- **Typed exception hierarchy** under `PycodemathError`: `ParseError`,
+  `DomainError`, `DivergenceError`, `StagnationError`, `NonConvergenceError`.
+  A caller can catch the specific outcome instead of string-matching the
+  English message; `except PycodemathError` still catches everything.
+- **Structured solver results**: `root_find`, `root_find_nd`, `minimize` and
+  `minimize_nd` take a keyword-only `full_result=True` and return a
+  `SolveResult` (value / iterations / residual / converged / status).
+  `integrate_num` likewise returns a `QuadratureResult` (adds an
+  `error_estimate`) and gained an adaptive `tol` that refines panels until the
+  estimate fits inside it, instead of always running a fixed 100-panel grid.
+  Default calls are unchanged, bit-identical to 0.2.0.
+- **`converged` is now corroborated**, not just "the tolerance test fired": a
+  vanishing gradient at a saddle or a maximum, or `|f| < tol` reached because
+  `f` decayed rather than because `x` is a root, no longer reports false
+  convergence.
+- **A symbolic refusal taxonomy**: `NoClosedFormError` (the engine searched
+  and found nothing) vs. `UnsupportedFormError` (no method for this shape at
+  all) — so a caller knows whether to stop or re-ask numerically instead of
+  parsing English.
+- **A time budget for symbolic calls**: `pycodemath.time_budget(seconds)` (a
+  context manager) and a `budget <s>` trailing REPL/MCP option bound how long
+  a symbolic call may run and raise `TimeBudgetError` instead of hanging a
+  tool call forever with no result.
+- **REPL/MCP grammar reaches solver knobs the Python API already had**:
+  trailing `tol <t>` / `max_iter <k>` options on `min` / `min_nd` /
+  `nintegrate`, and `budget <s>` on the symbolic commands.
+- **The MCP surface carries the structured results**: `math_eval` returns
+  `structuredContent` (`text` / `solve` / `quadrature` / `error` fields) that
+  a client validates against the declared schema, not just prose text. A
+  raising call now always returns rather than throwing past the tool
+  boundary.
+- `py.typed` + packaging fixes: an external `mypy` now actually sees the
+  package's types (previously silently fell back to `Any`), and every symbol
+  a public function returns (e.g. `SolveResult`) is importable from the
+  top-level package.
+
+### Fixed
+- **Security**: matrix literals (`matrix`/`det`/`inv`/`eig`/`solve_system`/
+  `M`/`V`) parsed user text with bare `sp.sympify()`, so attribute access
+  evaluated (`().__class__.__bases__` reaches `object`). Routed through the
+  same whitelist parser scalars already use.
+- Identifiers with a trailing digit (`q1`, `x2`, `v0`, `R1` — a common
+  physics/engineering subscript convention) crashed the parser with a leaked
+  `NameError` instead of a clean `ParseError`.
+- `Abs` / `sign` / `Min` / `Max` did not differentiate on a plain
+  (assumption-free) symbol — silently wrong output from `diff`, and a raw
+  SymPy crash instead of a `PycodemathError` from anything that
+  differentiates internally (`min`, `solve_nd`, the stiff-ODE Jacobian).
+- A non-finite `tol` (e.g. `tol inf`) certified an unmoved starting guess as
+  converged; tolerances are now validated finite.
+- `mcp` dependency pinned to `>=1.0,<2.0` — the unbounded constraint let a
+  fresh install pick up `mcp` 2.0.0, which removed an API the MCP test
+  helper and integration path both relied on.
+
 ## [0.2.0] - 2026-07-10
 
 First public release (sdist + wheel; MIT license, English README).

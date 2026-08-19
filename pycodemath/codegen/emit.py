@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import sympy as sp
 from sympy.printing.numpy import NumPyPrinter
 
-from ..core.errors import PycodemathError
+from ..core.errors import DomainError
 from ..core.ir import Expr, Matrix
 from ..engine.numerics import _DOMAIN_ERRORS
 from ..engine.ode import _DP_A, _DP_B5, _DP_C, _DP_E, _DP_P
@@ -38,13 +38,13 @@ def _check_names(names, what: str) -> None:
     # we reject them before they reach compile()
     invalid = sorted(n for n in names if not str(n).isidentifier())
     if invalid:
-        raise PycodemathError(
+        raise DomainError(
             f"{what}: name {', '.join(map(repr, invalid))} is not a valid "
             f"Python identifier — use letters/digits/underscores"
         )
     bad = sorted(_RESERVED_NAMES & set(names))
     if bad:
-        raise PycodemathError(
+        raise DomainError(
             f"{what}: name {', '.join(bad)} collides with the NumPy alias "
             f"in the generated code — rename the symbol"
         )
@@ -60,7 +60,7 @@ def _check_ode_params(var: str, func: str, func_name: str, what: str) -> None:
     """
     _check_names([var, func, func_name], what)
     if var == func:
-        raise PycodemathError(
+        raise DomainError(
             f"{what}: the name of the independent variable and the function must differ "
             f"(both are {var!r}) — otherwise '_rhs({var}, {func})' has a duplicate argument"
         )
@@ -142,7 +142,7 @@ def emit_ode(
     _check_ode_params(var, func, func_name, "emit_ode")
     extra = sorted(set(rhs.symbol_names()) - {var, func})
     if extra:
-        raise PycodemathError(
+        raise DomainError(
             f"emit_ode: the right-hand side also depends on {', '.join(extra)} — "
             f"substitute parameter values before generation"
         )
@@ -233,7 +233,7 @@ def emit_ode_adaptive(
     _check_ode_params(var, func, func_name, "emit_ode_adaptive")
     extra = sorted(set(rhs.symbol_names()) - {var, func})
     if extra:
-        raise PycodemathError(
+        raise DomainError(
             f"emit_ode_adaptive: the right-hand side also depends on {', '.join(extra)} — "
             f"substitute parameter values before generation"
         )
@@ -358,7 +358,7 @@ def emit_ode_dense(
     _check_ode_params(var, func, func_name, "emit_ode_dense")
     extra = sorted(set(rhs.symbol_names()) - {var, func})
     if extra:
-        raise PycodemathError(
+        raise DomainError(
             f"emit_ode_dense: the right-hand side also depends on {', '.join(extra)} — "
             f"substitute parameter values before generation"
         )
