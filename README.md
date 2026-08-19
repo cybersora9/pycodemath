@@ -26,6 +26,8 @@ Write math in a few characters, get an exact answer or standalone, optimized
 Python/NumPy code back — instead of asking a language model to "do arithmetic
 in its head" or to hand-write numerical loops.
 
+*New to terms like "MCP", "symbolic", or "ODE"? Jump to the [Glossary](#glossary).*
+
 Built as a thin, disciplined layer over SymPy + NumPy:
 
 1. **Cut tokens** — one short command in, one exact result out. Perfect as an
@@ -356,6 +358,36 @@ or `UnsupportedFormError` (no method exists for this shape at all).
   `DomainError`, `DivergenceError`, `StagnationError`, `NonConvergenceError`,
   `NoClosedFormError`, `UnsupportedFormError`, `TimeBudgetError`) — a caller
   can catch the mathematical outcome, not string-match a message.
+
+## Glossary
+
+Plain-language definitions for the jargon used above — for anyone reading
+this repo who isn't a programmer.
+
+| Term | What it means |
+| --- | --- |
+| **Symbolic math** | Math done with exact letters and formulas (like `x^2 + 1`), the way it's done on paper — as opposed to plugging in decimal numbers. The answer is exact, not an approximation. |
+| **Numerical math** | Math done with actual decimal numbers (like `1.41421356...`), computed by an algorithm that gets closer and closer to the right answer. Fast, but approximate. |
+| **SymPy / NumPy** | The two open-source Python libraries this project is built on. SymPy does the exact/symbolic math; NumPy does the fast numerical math. |
+| **Parser** | The part of the program that reads what you type (e.g. `diff sin(x)*x dx`) and figures out what math it describes. |
+| **Engine** | The part that actually does the math once the parser has understood the question — computes the derivative, solves the equation, etc. |
+| **Code generator ("codegen")** | The part that, instead of just giving you an answer, writes a ready-to-use block of Python code that computes your formula. |
+| **CSE (common-subexpression elimination)** | An optimization: if a formula repeats the same calculation twice, the generated code computes it once and reuses the result, instead of redoing the work. |
+| **REPL** | "Read-Eval-Print Loop" — an interactive prompt: you type one command, get one answer, type the next command, and so on (like a calculator you talk to in a terminal). |
+| **MCP (Model Context Protocol)** | An open standard that lets an AI assistant (like Claude) call outside tools — in this case, so the AI can hand off a real math problem to this engine instead of guessing the answer itself. |
+| **AI agent** | An AI assistant that can take actions and use tools on its own (not just chat) — e.g. Claude Code, or any MCP-compatible assistant. |
+| **Token** | The small chunks of text an AI language model reads and writes in. Fewer tokens = a cheaper, faster exchange with the AI — one of the reasons this tool returns short, exact answers instead of a wall of text. |
+| **Typed exception** | An error that comes labeled with a specific, named type (e.g. "the equation has no real solution" vs. "you typed something invalid") instead of just a generic error message — so a program can react correctly to *why* something failed. |
+| **`SolveResult` / `QuadratureResult`** | Structured "evidence" objects this engine can return alongside an answer — not just the number, but how many steps it took, how far off it might be, and whether it's confident the answer is actually correct. |
+| **Root / root finding** | Finding the value(s) where a formula equals zero (e.g. where a graph crosses the x-axis). |
+| **Eigenvalue** | A special number tied to a matrix (a grid of numbers) that shows up constantly in physics, engineering and graphics — e.g. describing natural vibration frequencies or stable directions of a system. |
+| **Gradient / Jacobian / Hessian** | Different flavors of "derivative" for formulas with more than one variable — a gradient points in the direction a function increases fastest; a Jacobian and Hessian are the multi-variable versions of the first and second derivative. |
+| **ODE (Ordinary Differential Equation)** | An equation describing how something changes over time (e.g. how a falling object's speed changes due to gravity and drag). Central to physics, biology, and engineering simulations. |
+| **RK4 / Dormand–Prince / BDF** | Named algorithms for solving ODEs numerically, step by step through time. They differ in speed, accuracy, and whether they automatically adjust their own step size. |
+| **"Stiff" equation** | An ODE that forces ordinary solving methods to take absurdly tiny time-steps to stay accurate — it needs a specialized (BDF) method to solve in reasonable time. |
+| **`py.typed` / mypy** | A marker telling other tools "this package declares what type of data (number, text, etc.) each function expects and returns"; `mypy` is the tool that checks those declarations are actually consistent, catching a class of bugs before the code ever runs. |
+| **CI (Continuous Integration)** | An automated process that runs the full test suite every time the code changes, so a mistake gets caught immediately rather than after it ships. |
+| **Wheel / sdist** | The two standard packaged formats a Python library is distributed in (what `pip install` actually downloads). |
 
 ## License
 
