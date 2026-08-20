@@ -5,6 +5,19 @@ All notable changes to Pycodemath are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Known limitations
+- **`time_budget` / `TimeBudgetError` is best-effort, not a hard guarantee.**
+  The interrupt mechanism (`ctypes.PyThreadState_SetAsyncExc`, the only
+  cross-platform option without a per-call subprocess) can occasionally fail
+  to deliver on heavily loaded or virtualized systems, letting a hung call
+  run past its budget instead of refusing on time. Measured directly:
+  Python 3.13 under WSL2. Normal calls (the fast path, which is nearly all
+  of them) are unaffected, and no wrong answer is ever produced — only a
+  late refusal in the rare pathological-hang case. A subprocess-based hard
+  backstop is planned but not yet built.
+
 ## [0.3.0] - 2026-08-19
 
 Every failure and every success now carries evidence an agent can branch on,

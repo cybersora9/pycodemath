@@ -358,6 +358,20 @@ or `UnsupportedFormError` (no method exists for this shape at all).
   `DomainError`, `DivergenceError`, `StagnationError`, `NonConvergenceError`,
   `NoClosedFormError`, `UnsupportedFormError`, `TimeBudgetError`) — a caller
   can catch the mathematical outcome, not string-match a message.
+- **`time_budget` is best-effort, not a hard guarantee.** It interrupts a
+  hang by injecting an exception into the running thread via CPython's own
+  `ctypes.PyThreadState_SetAsyncExc` — the only mechanism available across
+  platforms without a per-call subprocess (no `SIGALRM` on Windows, and it
+  only fires on a process's main thread even on POSIX). Under heavy or
+  virtualized scheduling, delivery of that injection can occasionally be
+  missed by the interpreter, in which case the call keeps running past its
+  budget instead of raising `TimeBudgetError` on time — measured directly on
+  one such environment (Python 3.13, WSL2). This does not affect the fast
+  path — the overwhelming majority of calls, which finish in milliseconds
+  and never approach a budget — and it does not produce a wrong answer; the
+  only failure mode is "didn't refuse as promptly as asked." A hard
+  guarantee needs a subprocess-based backstop, which is on the roadmap but
+  not built yet.
 
 ## Glossary
 
