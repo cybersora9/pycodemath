@@ -469,6 +469,17 @@ QuadratureResult(value=0.6666666666666469, error_estimate=2.4271240969151142e-11
 just "the tolerance test fired": a vanishing gradient at a saddle or a
 maximum reports `status='not_a_minimum'` rather than a false convergence.
 
+**`error_estimate` is an estimate, never a bound.** Where the smoothness
+assumption fails, the estimate is not merely loose — it is optimistic. Here
+every grid node and every node of its halving lands on a maximum of the
+cosine, both grids agree exactly, the estimate is `0.0`, and the true integral
+is `0.0` against a returned `1.0`:
+
+```pycon
+>>> integrate_num(parse("cos(16*pi*x)"), "x", 0.0, 1.0, 4, full_result=True)
+QuadratureResult(value=1.0, error_estimate=0.0, evaluations=9, refinements=0, converged=True, status='converged')
+```
+
 The MCP server carries the same structure over the wire as `structuredContent`
 (`text` / `solve` / `quadrature` / `error` fields), not just prose — a client
 validates it against the declared schema instead of parsing text.
