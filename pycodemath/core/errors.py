@@ -31,6 +31,8 @@ The taxonomy is by mathematical OUTCOME, not by mechanism:
                         (an integral, an infinite sum, an ODE, a limit)
 ``UnsupportedFormError``the symbolic engine has no METHOD for this SHAPE — it
                         never got as far as searching
+``IsolationError``      the worker process of ``isolated`` (module B) died or
+                        could not hand its answer back — no math verdict at all
 ======================  ====================================================
 
 ``PycodemathError`` itself is never raised directly. Until module 10 it was: ten
@@ -72,6 +74,7 @@ __all__ = [
     "TimeBudgetError",
     "NoClosedFormError",
     "UnsupportedFormError",
+    "IsolationError",
     "ROUTES",
     "NUMERIC_ROUTES",
 ]
@@ -335,3 +338,28 @@ class UnsupportedFormError(PycodemathError):
     and ``summation`` carry ``None``: there is no numerical command for them in the
     grammar, and inventing one in a hint would be the dangerous kind of wrong.
     """
+
+
+class IsolationError(PycodemathError):
+    """The worker process behind ``isolated`` failed as a PROCESS (module B).
+
+    ``core.backstop.isolated`` runs a call in a second process so that a call
+    stuck in C can be killed. That buys a failure mode the in-process package never
+    had: the worker can die without answering — killed from outside, out of
+    memory, crashed inside a compiled extension — or finish with a result that
+    cannot be pickled back. None of those is a statement about the mathematics.
+
+    WHY THIS IS NOT ``TimeBudgetError``. There, the clock ran out and the remedy is
+    a larger budget or a numerical route. Here the clock did not run out; the
+    process did, and retrying the same call may kill the fresh worker the same way.
+    Filing a crash under "slow" would send an agent to raise a budget that was
+    never the problem.
+
+    Carries ``exitcode`` — the worker's exit code when it died, ``None`` when it
+    is still alive (the answer could not be sent back) or the code is unknown.
+    ``route`` is always ``None``: there is no numerical counterpart to a crash.
+    """
+
+    def __init__(self, message: str, *, exitcode: "int | None" = None) -> None:
+        super().__init__(message)
+        self.exitcode = exitcode

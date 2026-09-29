@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+import sympy
 
 from pycodemath import E, M, V, parse
 from pycodemath.cli import repl
@@ -15,9 +16,11 @@ from pycodemath.core.errors import (
     DivergenceError,
     ParseError,
     PycodemathError,
+    UnsupportedFormError,
 )
 from pycodemath.core.ir import Matrix
 from pycodemath.engine import linalg, ode, symbolic
+from pycodemath.verify import VerdictStatus, check_equal
 
 
 def test_parser_roundtrip():
@@ -88,6 +91,82 @@ def test_to_source_roundtrip_equivalent():
     e = parse("sin(x)*x + 2*x**3")
     # str()/to_source() odtwarza się parserem do wyrażenia równoważnego
     assert parse(e.to_source()).equivalent(e)
+
+
+# --- module C: what "round-trips with the parser" means ----------------------
+# Equivalence, not ``==`` (Expr.to_source docstring). The 06.09 case: parse
+# distributes the 2 it reads back, so the shape changes and the value does not.
+def test_to_source_round_trip_is_equivalence_not_structure():
+    e = parse("((1/(2+sqrt(2)))/(sqrt(2)**(2/1)))")
+    assert e.to_source() == "1/(2*(sqrt(2) + 2))"
+    back = parse(e.to_source())
+    assert str(back) == "1/(2*sqrt(2) + 4)"
+    assert back != e
+    assert check_equal(e, back).status is VerdictStatus.VERIFIED
+    assert back.equivalent(e)
+
+
+@pytest.mark.parametrize(
+    "text, source",
+    [("x/0", "(1/0)*x"), ("0/0", "(0/0)"), ("cos(2)**(x/0)", "cos(2)**((1/0)*x)"),
+     ("log(0)", "(1/0)"), ("-Abs(1/0)", "-oo")],
+)
+def test_to_source_writes_zoo_and_nan_as_text_the_parser_reads(text, source):
+    # str() prints SymPy's names, and parse read ``zoo`` as o**2*z and ``nan`` as
+    # a*n**2 — a different expression with new variables (114 of 3000 before C).
+    e = parse(text)
+    assert e.to_source() == source
+    assert parse(e.to_source()) == e
+
+
+@pytest.mark.parametrize(
+    "text", ["sin(x)*x + 2*x**3", "x_1*alpha + t1", "sqrt(2)/(2*x) - E**x", "0.1*x + I"]
+)
+def test_to_source_is_str_where_str_already_reads_back(text):
+    e = parse(text)
+    assert e.to_source() == str(e)
+    assert parse(e.to_source()) == e
+
+
+@pytest.mark.parametrize(
+    "build, what",
+    [
+        (lambda: parse("gamma(x)").diff("x").subs({"x": 1}), "constant 'EulerGamma'"),
+        (lambda: E(sympy.Symbol("ab")), "symbol 'ab'"),
+        (lambda: E(sympy.Symbol("E")), "symbol 'E'"),
+        (lambda: E(sympy.Function("f")(sympy.Symbol("x"))), "undefined function f"),
+    ],
+)
+def test_to_source_refuses_a_name_the_parser_reads_as_something_else(build, what):
+    # EulerGamma read back as E*G*a**2*e*l*m**2*r*u, Symbol("ab") as a*b, f(x) as f*x
+    with pytest.raises(UnsupportedFormError, match=what):
+        build().to_source()
+
+
+def test_to_source_refuses_an_integer_past_the_text_limit():
+    # str(int) past 4300 digits is a ValueError; it leaked raw before module C
+    with pytest.raises(UnsupportedFormError, match="too long"):
+        parse("2^20000").to_source()
+    assert parse(parse("2^14000").to_source()) == parse("2^14000")
+
+
+def test_to_source_leaves_an_unknown_function_to_the_parsers_refusal():
+    # Abs(exp(x)) evaluates to exp(re(x)); ``re`` is off the whitelist, and the
+    # reparse refuses it loudly instead of reading something else
+    e = parse("Abs(exp(x))")
+    assert e.to_source() == "exp(re(x))"
+    with pytest.raises(ParseError, match="unknown function 're'"):
+        parse(e.to_source())
+
+
+def test_to_source_float_boundary_is_fifteen_digits():
+    # A decimal the parser read comes back identical; one COMPUTED from decimals
+    # comes back as its 15-digit rendering — not the same 53 bits
+    typed = parse("2.4333333333333336*x")
+    assert parse(typed.to_source()) == typed
+    computed = parse("-7/3 - 0.1")
+    assert computed.to_source() == "-2.43333333333333"
+    assert parse(computed.to_source()) != computed
 
 
 # --- moduł P2: limit / series / summation --------------------------------

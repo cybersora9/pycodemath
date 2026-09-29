@@ -21,6 +21,11 @@ Top-level public API. Everything a caller needs is importable from here:
     point is bounded — ``integrate 1/(x^5+x+1) dx`` used to hang forever — and
     ``with time_budget(seconds):`` is how a caller says in advance how long it is
     willing to wait.
+``isolated`` / ``IsolationError``
+    the HARD version of that bound (module B): ``isolated(fn, *args, budget=...)``
+    runs the call in a warm worker process and kills it at the deadline, which is
+    the only thing that stops a call stuck in one long C-level operation.
+    Opt-in; ``time_budget`` stays the default and keeps its 3.5 us fast path.
 ``SolveResult`` / ``QuadratureResult`` / ``SolveStatus`` / ``SOLVE_STATUSES``
     what a run LEARNED, returned by the calls above under ``full_result=True``.
     ``converged`` is the only field to branch on — and since module 8 it answers
@@ -42,6 +47,7 @@ from .codegen.pipeline import (
     generate_ode_dense,
     generate_system,
 )
+from .core.backstop import isolated
 from .core.budget import DEFAULT_TIME_BUDGET, time_budget
 from .core.errors import (
     NUMERIC_ROUTES,
@@ -49,6 +55,7 @@ from .core.errors import (
     BudgetExhaustedError,
     DivergenceError,
     DomainError,
+    IsolationError,
     NoClosedFormError,
     NonConvergenceError,
     NotAMinimumError,
@@ -97,7 +104,7 @@ from .engine.ode import (
 from .engine.symbolic import limit, series, summation
 from .frontend.parser import parse
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "E",
@@ -118,10 +125,12 @@ __all__ = [
     "TimeBudgetError",
     "NoClosedFormError",
     "UnsupportedFormError",
+    "IsolationError",
     "ROUTES",
     "NUMERIC_ROUTES",
     "time_budget",
     "DEFAULT_TIME_BUDGET",
+    "isolated",
     "SolveResult",
     "QuadratureResult",
     "SolveStatus",

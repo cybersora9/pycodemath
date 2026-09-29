@@ -196,7 +196,11 @@ def test_the_message_quotes_the_budget_and_never_the_time_spent() -> None:
     )
     # ...a dowód kosztu istnieje, tylko nie w tekście
     assert exc.value.spent >= 1.5 * 0.9
-    assert f"{exc.value.spent}" not in str(exc.value)
+    # Windows monotonic ticks every 15.625 ms and 1.5 s is exactly 96 ticks, so
+    # `spent` can come out as 1.5 — the budget, which the message DOES quote.
+    # The byte-exact pin above already proves no clock number is in the text.
+    if exc.value.spent != 1.5:
+        assert f"{exc.value.spent}" not in str(exc.value)
 
 
 def test_the_message_names_the_offending_expression_but_stays_bounded() -> None:
@@ -506,3 +510,53 @@ def test_the_mcp_wire_carries_the_time_budget_route_too() -> None:
         payload = mcp_server.math_eval("integrate 1/(x^5+x+1) dx")
     assert payload["error"]["type"] == "TimeBudgetError"
     assert payload["error"]["route"] == "nintegrate"
+
+
+# --- (10) znalezisko A: wyciek _Deadline i zatrucie wątku ------------------
+def _c_level_past(budget: float) -> None:
+    # JEDNO wywołanie C, które trzyma GIL: 7**(10**6) to ~0,2 s na Windows /
+    # 3.12.10. Strażnik nie dostaje GIL-a, dopóki ono nie wróci — pierwsze
+    # oddanie GIL-a to wejście do __exit__, i tam dawniej lądował _Deadline.
+    with time_budget(budget):
+        _ = 7 ** (10**6)
+
+
+def test_a_c_level_call_past_the_budget_gets_the_public_error_every_time() -> None:
+    # Na SERII, nie na jednym przypadku: przed naprawą 10/10 przebiegów oddało
+    # wołającemu goły _Deadline, a slot zostawał z rosnącą głębokością (1, 2, 3…)
+    # i zatruwał każdy następny blok na tym wątku.
+    for _ in range(5):
+        with pytest.raises(TimeBudgetError):
+            _c_level_past(0.02)
+        assert threading.get_ident() not in budget_mod._ARMED
+    # i wątek dalej pracuje — zwykłe wywołanie po serii przepaleń
+    assert str(parse("sin(x)*x").diff("x")) == "x*cos(x) + sin(x)"
+
+
+def test_a_tighter_nested_budget_that_fires_does_not_poison_the_outer() -> None:
+    # Znalezisko V1 (25.09): ciaśniejszy wewnętrzny budżet, który odpalił,
+    # nadpisywał termin zewnętrznego i zostawiał „fired" — zmierzone:
+    # time_budget(10) odmówił po 0,17 s. Po naprawie zewnętrzny termin wraca.
+    tid = threading.get_ident()
+    for _ in range(3):
+        with time_budget(30.0):
+            outer = budget_mod._ARMED[tid][0]
+            with pytest.raises(TimeBudgetError):
+                with time_budget(_SHORT):
+                    symbolic.integrate(E("1/(x^5+x+1)"), "x")
+            assert budget_mod._ARMED[tid][0] == outer  # termin przywrócony
+            assert budget_mod._ARMED[tid][2] is False  # nie „odpalony"
+            spin_until = time.monotonic() + 0.3  # czysty Python: tu wstrzyknięcie by trafiło
+            while time.monotonic() < spin_until:
+                pass
+        assert tid not in budget_mod._ARMED
+
+
+def test_a_real_error_leaving_a_block_whose_deadline_passed_is_kept() -> None:
+    # Prawdziwy wyjątek, który już wychodzi z bloku, wygrywa z odmową bloku —
+    # także gdy termin zdążył minąć (dawniej przerwanie w sprzątaniu podmieniało go).
+    with pytest.raises(ZeroDivisionError):
+        with time_budget(0.02):
+            _ = 7 ** (10**6)
+            1 / 0
+    assert threading.get_ident() not in budget_mod._ARMED

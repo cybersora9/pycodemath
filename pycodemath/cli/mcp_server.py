@@ -1,8 +1,9 @@
 """MCP server — Pycodemath as a math tool for any agent.
 
-Exposes a single ``math_eval`` tool delegating to the REPL dispatcher
-(``repl.handle_full``): the agent sends a concise command, gets an exact result
-from SymPy/NumPy — instead of computing "in its head" or writing code. This is the
+Exposes ``math_eval``, delegating to the REPL dispatcher (``repl.handle_full``):
+the agent sends a concise command, gets an exact result from SymPy/NumPy —
+instead of computing "in its head" or writing code. Its twin ``math_verify``
+(``repl.handle_checked``, see the last section) CHECKS instead of computing. This is the
 path that realizes the project goal of "cutting tokens" outside Claude Code (skill) — any
 MCP client can plug in Pycodemath.
 
@@ -124,14 +125,56 @@ symbolic, linear algebra, code generation) a failure still travels as an error �
 but with its module-2 class name in ``error.type``, which is already the
 agent-readable half. Those engines have no structured result today; giving them
 one is engine work, and this module does not touch the engine.
+
+--- THE SECOND TOOL: ``math_verify`` (VERIFY V4) ------------------------------
+
+``math_eval`` COMPUTES; ``math_verify`` CHECKS — an identity, a derivation, or an
+engine answer — and its answer is a VERDICT: ``verified`` (proved), ``refuted``
+(a counterexample, confirmed at two precisions) or ``undecided`` (neither — a
+first-class result, never rounded up). It is a second tool rather than more
+fields on ``math_eval`` because the two answer different questions, and one
+schema carrying both would put ``solve``/``quadrature`` next to verdict fields
+that can never be set together — every client would branch around nulls that
+say nothing.
+
+Every rule above is kept, not restated differently: one-line docstrings on the
+types, every key always present with ``null`` for "not applicable", a refusal
+RETURNED as the same ``Refusal`` object (never raised: ``isError`` carries no
+structure), and no ``ok`` flag. The same discipline on the new fields:
+
+==============  ================================================================
+``text``        the verdict in words — byte-identical to what the REPL prints
+                for the same ``verify`` / ``certify`` line
+``answer``      ``certify`` only: the engine's answer that was certified, exactly
+                as ``math_eval`` would print it. ``null`` otherwise
+``verdict``     ``verify <a> == <b>`` and ``certify``: ``status``, ``method``,
+                ``counterexample`` (variable -> value, set exactly when
+                ``refuted``), ``detail``. ``null`` for a derivation
+``steps``       ``verify steps``: the derivation's ``status``, ``first_error``
+                (step number), ``counterexample``, and one ``checks`` entry per
+                step with its own verdict, ``effect`` and ``warning``
+``error``       the refusal, as in ``math_eval``
+==============  ================================================================
+
+``verdict`` and ``steps`` are separate for the reason ``solve`` and
+``quadrature`` are: the field NAME says which kind of evidence arrived. A
+derivation's ``status``/``first_error``/``counterexample`` are the same
+properties ``StepsResult`` exposes, carried over, not a second encoding of the
+per-step verdicts. A counterexample holds only strings (``{"x": "-1"}``), so no
+verdict payload ever carries a number JSON cannot express.
 """
 
 from __future__ import annotations
 
 import math
-from typing import TypedDict
+try:  # pydantic (pulled in by mcp) refuses typing.TypedDict below Python 3.12:
+    # on 3.11 the module did not import at all, and CI was red on both 3.11 jobs.
+    from typing_extensions import TypedDict
+except ImportError:  # no mcp installed, so no pydantic to satisfy
+    from typing import TypedDict  # type: ignore[assignment]
 
 from ..core.result import QuadratureResult, SolveResult
+from ..verify import StepsResult, Verdict
 from . import repl
 
 try:
@@ -183,6 +226,45 @@ class MathResult(TypedDict):
     error: "Refusal | None"
 
 
+class VerdictEvidence(TypedDict):
+    """A verdict: status (verified/refuted/undecided), method, counterexample, detail."""
+
+    status: str
+    method: str
+    counterexample: "dict[str, str] | None"
+    detail: str
+
+
+class StepEvidence(TypedDict):
+    """One step judged against the one before: number, text, verdict, effect, warning."""
+
+    number: int
+    text: str
+    verdict: VerdictEvidence
+    effect: "str | None"
+    warning: "str | None"
+
+
+class StepsEvidence(TypedDict):
+    """A derivation: kind, status, first_error (step number), counterexample, checks."""
+
+    kind: str
+    status: str
+    first_error: "int | None"
+    counterexample: "dict[str, str] | None"
+    checks: "list[StepEvidence]"
+
+
+class VerifyResult(TypedDict):
+    """The verdict in words (text) and as data; error is set when refused."""
+
+    text: str
+    answer: "str | None"
+    verdict: "VerdictEvidence | None"
+    steps: "StepsEvidence | None"
+    error: "Refusal | None"
+
+
 def _finite(x: float) -> "float | None":
     """``None`` for anything JSON cannot carry — i.e. for "not measurable".
 
@@ -216,11 +298,16 @@ def _refusal(exc: Exception) -> MathResult:
         "text": f"error: {exc}",
         "solve": None,
         "quadrature": None,
-        "error": {
-            "type": type(exc).__name__,
-            "message": str(exc),
-            "route": getattr(exc, "route", None),
-        },
+        "error": _refused(exc),
+    }
+
+
+def _refused(exc: Exception) -> Refusal:
+    """The ``error`` object — one builder for both tools, so they cannot drift."""
+    return {
+        "type": type(exc).__name__,
+        "message": str(exc),
+        "route": getattr(exc, "route", None),
     }
 
 
@@ -277,6 +364,7 @@ def math_eval(command: str) -> MathResult:
       ode_adaptive <expr> for y(t) from <t0> to <t1> at <y0> [rtol <r>] — ODE, adaptive step (DOPRI5)
       odedense <expr> for y(t) from <t0> to <t1> at <y0> at t=<point> [rtol <r>] — ODE, read y(t) at any point (dense output)
       odeevents <expr> for y(t) from <t0> to <t1> at <y0> zero <g> [dir <+1|-1>] [rtol <r>] [stop] — ODE + moments g(t,y)=0 (event detection; stop = terminal event, stop integration)
+      To CHECK an identity, a derivation or one of these answers, use the math_verify tool.
 
     TRAILING OPTIONS — ``key value`` pairs at the END of a command, any order,
     each at most once. They are the knobs behind the evidence fields, so a result
@@ -394,10 +482,133 @@ def math_eval(command: str) -> MathResult:
     return _answer(text)
 
 
+def _verdict_evidence(verdict: Verdict) -> VerdictEvidence:
+    return {
+        "status": verdict.status.value,
+        "method": verdict.method,
+        "counterexample": verdict.counterexample,
+        "detail": verdict.detail,
+    }
+
+
+def _steps_evidence(result: StepsResult) -> StepsEvidence:
+    return {
+        "kind": result.kind,
+        "status": result.status.value,
+        "first_error": result.first_error,
+        "counterexample": result.counterexample,
+        "checks": [
+            {
+                "number": c.number,
+                "text": c.text,
+                "verdict": _verdict_evidence(c.verdict),
+                "effect": c.effect,
+                "warning": c.warning,
+            }
+            for c in result.checks
+        ],
+    }
+
+
+def _checked(checked: "repl.Checked") -> VerifyResult:
+    """Build the CHECKED form of ``math_verify``: ``error`` is ``null``."""
+    return {
+        "text": checked.text or "(empty result)",
+        "answer": checked.answer,
+        "verdict": (
+            None if checked.verdict is None else _verdict_evidence(checked.verdict)
+        ),
+        "steps": None if checked.steps is None else _steps_evidence(checked.steps),
+        "error": None,
+    }
+
+
+def _verify_refusal(exc: Exception) -> VerifyResult:
+    """Build the REFUSED form of ``math_verify`` — ``_refusal``'s twin."""
+    return {
+        "text": f"error: {exc}",
+        "answer": None,
+        "verdict": None,
+        "steps": None,
+        "error": _refused(exc),
+    }
+
+
+def math_verify(command: str) -> VerifyResult:
+    """Check math instead of computing it — a verdict: verified, refuted or undecided.
+
+    Commands (power notation: ^ or **; the leading word "verify" is optional):
+      <a> == <b> [budget <s>]          — is a == b an identity? (e.g. sqrt(x^2) == x)
+      steps <derivation> [budget <s>]  — check a derivation step by step: an
+                                         expression chain "a = b = c" (one line,
+                                         or one step per line starting with =),
+                                         or equations one per line / joined by
+                                         -> (e.g. steps 2x + 3 = 7 -> 2x = 4 -> x = 2)
+      certify <command>                — run a math_eval command (integrate, diff,
+                                         solve, limit, dsolve, nintegrate) and
+                                         check its answer by an independent route
+                                         (e.g. certify integrate x*cos(x) dx)
+
+    THE THREE WORDS — read them literally:
+      verified   PROVED (a symbolic argument closed), not "probably true".
+      refuted    FALSE, with a counterexample: a point (variable -> value, as
+                 text the parser reads back) confirmed at two precisions.
+      undecided  neither. Agreement at every sampled point is undecided, never
+                 verified. A first-class answer, not a failure: the same command
+                 gives the same word (the sample points are fixed) — except an
+                 undecided with method "time-budget", which a larger budget may
+                 settle.
+
+    THE RESPONSE — read the fields, do not parse the prose:
+      text      the verdict in words (always)
+      answer    certify: the engine's answer that was certified. null otherwise
+      verdict   <a> == <b> and certify: status, method, counterexample (set
+                exactly when refuted), detail. null for steps
+      steps     steps: kind, status, first_error (the number of the first
+                refuted step, from 1; step 1 is the starting point), its
+                counterexample, and checks — one per step with its own verdict,
+                effect ("gains-roots" / "loses-roots" on an equation step that
+                changes the solution set) and warning. null otherwise
+      error     the request was REFUSED: type (exception class), message, route.
+                null otherwise
+
+    Branch on ``error``, then on ``verdict.status`` / ``steps.status``.
+
+    WHAT EQUAL MEANS: values on the principal branch, complex allowed —
+    ``log(x^2) == 2*log(x)`` is refuted at x = -1; equality where BOTH sides are
+    defined — ``(x^2-1)/(x-1) == x+1`` is verified; decimals mean the decimal
+    written — ``0.1 + 0.2 == 0.3`` holds. Equation steps compare solution sets
+    over the reals: squaring both sides is refuted with effect "gains-roots".
+
+    A CERTIFICATE certifies what the table says and nothing more: dsolve — every
+    returned function solves the equation, NOT that they are all the solutions;
+    solve — completeness is proved only for rational functions, elsewhere a
+    missing real root can be found but not ruled out; nintegrate — the value is
+    within the run's own error_estimate.
+
+    TIME: every check is bounded (120 s by default; ``budget <s>`` replaces it).
+    Running out is an undecided verdict with method "time-budget", not an error.
+    For certify, the command's own ``budget`` bounds the computation and,
+    separately, the certificate. A refusal of the computation itself
+    (NoClosedFormError, TimeBudgetError...) arrives in ``error`` with its route,
+    exactly as math_eval returns it.
+    """
+    line = command.strip()
+    head = line.split(None, 1)[0].lower() if line else ""
+    if head not in ("verify", "certify"):
+        line = f"verify {line}"
+    try:
+        checked = repl.handle_checked(line)
+    except Exception as exc:  # the agent gets DATA, not a traceback (measurement 2)
+        return _verify_refusal(exc)
+    return _checked(checked)
+
+
 server: "FastMCP | None" = None
 if FastMCP is not None:
     server = FastMCP("pycodemath")
     server.tool()(math_eval)
+    server.tool()(math_verify)
 
 
 def run() -> None:

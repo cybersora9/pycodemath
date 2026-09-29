@@ -7,16 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.4.0] - (date set on release)
+
+Pycodemath now checks math, not just computes it: a verifier that answers
+VERIFIED, REFUTED (with a counterexample you can re-check yourself) or
+UNDECIDED — and never promotes "agrees numerically" to "proved".
+
+### Added
+- **`pycodemath.verify.check_equal(a, b)`** returns a `Verdict`
+  (`VERIFIED` / `REFUTED` / `UNDECIDED`, the method used, a counterexample
+  and a one-line reason). Symbolic proof first; then deterministic
+  high-precision sampling that avoids singularities. A counterexample is
+  re-checked at higher precision before it is reported, so rounding noise is
+  never called a refutation. Domain traps are caught: `sqrt(x^2)` vs `x`
+  is REFUTED at a negative point, not "simplified" into equality.
+- **`certify(...)`** — engine results checked by an independent route:
+  integrals by differentiating back, roots by substitution plus a
+  completeness check, derivatives by finite differences, limits by
+  two-sided numeric sequences, ODE solutions by substitution, numeric
+  integrals by a second, independent quadrature (`certify_integrate`,
+  `certify_diff`, `certify_solve`, `certify_limit`, `certify_dsolve`,
+  `certify_nintegrate`). Existing result types are unchanged.
+- **`check_steps(...)`** — checks a derivation step by step: per-step
+  verdicts, the index of the first wrong step and a counterexample. Equation
+  chains are compared as solution sets, with a warning when a step adds roots
+  (squaring both sides) or loses them (dividing by an expression that can be
+  zero).
+- **REPL and MCP surface**: `verify <a> == <b>`, `verify steps ...` and
+  `certify <command>` in the REPL; a `math_verify` MCP tool next to
+  `math_eval`, returning `structuredContent` with the same rules (failure is
+  an `error` field, never an exception).
+- **`isolated(fn, *args, budget=...)`** — a hard time limit. The in-process
+  `time_budget` cannot stop one long C call that holds the GIL
+  (`7**(10**7)` under a 2 s budget ran 7.9–8.7 s). `isolated` runs the call
+  in a warm worker process and kills it at budget + 0.5 s (same case: 2.5 s),
+  raising the new `IsolationError`. Opt-in (~0.4 ms per call); the fast path
+  of `time_budget` is unchanged.
+- **Benchmarks, with their denominators** (`python -m
+  pycodemath.bench.verify_bench`, `python -m pycodemath.bench.real_bench`):
+  - Synthetic: 210 generated derivations, half with an injected typical
+    model error — 105/105 errors caught, 0 false positives. These are
+    synthetic, and the verifier was fixed against misses found on this set.
+  - Real model errors (PRM800K, MIT-licensed sample): the verifier can
+    extract a checkable claim from 9.5% of steps; it pinpoints the labelled
+    first wrong step in 24 of 378 flawed solutions (6.3%) and raised 0 false
+    alarms on 122 correct ones. Low recall, zero false alarms: when it says
+    a step is wrong, it shows why.
+- `hypothesis` joins the `dev` extra (property-based tests of the verifier).
+
+### Changed
+- **A call to an unknown function is now a `ParseError`** ("unknown
+  function"), not a product of symbols. Previously `zeta(2)` parsed as
+  `2*zeta`, which let `verify zeta(2) == pi^2/6` "refute" a true identity.
+- A bare function name (`sin`, `log`, `(sqrt)`) and stray brackets (`)`,
+  `x)`) raise `ParseError` instead of a raw `TypeError` / `IndexError`.
+- `Expr.to_source()` round-trip contract is now stated and tested as
+  mathematical equivalence: `parse(e.to_source())` is always equivalent to
+  `e` (or the parser refuses), never a different expression; structural
+  `==` is not promised, because SymPy re-distributes constants on parse.
+
+### Fixed
+- `Expr.evalf()` and compiled evaluation no longer leak a bare `TypeError`;
+  nested `zoo` becomes a `DomainError`.
+- `time_budget`: an interrupt could land after the guarded block had
+  exited and escape as an internal `_Deadline`; a nested budget poisoned the
+  outer one. Both fixed (Windows reproduced it most).
+- A huge literal such as `2^1e10` no longer hangs before the budget is armed.
+- `certify_solve` accepts real roots of a cubic in the casus irreducibilis
+  (an imaginary part at 1-bit precision is treated as zero only when the
+  real part has full precision); quartics take candidates from `nroots`
+  instead of spending the whole budget on Ferrari's formula; decimal
+  exponents (`5^7.5` vs `sqrt(5^15)`) no longer yield a false REFUTED.
+- The MCP server imports on Python 3.11 again.
+
 ### Known limitations
-- **`time_budget` / `TimeBudgetError` is best-effort, not a hard guarantee.**
-  The interrupt mechanism (`ctypes.PyThreadState_SetAsyncExc`, the only
-  cross-platform option without a per-call subprocess) can occasionally fail
-  to deliver on heavily loaded or virtualized systems, letting a hung call
-  run past its budget instead of refusing on time. Measured directly:
-  Python 3.13 under WSL2. Normal calls (the fast path, which is nearly all
-  of them) are unaffected, and no wrong answer is ever produced — only a
-  late refusal in the rare pathological-hang case. A subprocess-based hard
-  backstop is planned but not yet built.
+- `check_equal("cosh(t1 - log(0))", ...)` can raise a bare `TypeError`,
+  and `trigsimp` a bare `RecursionError`; `sqrt(2)^10^20` can still hang in
+  the parser.
+- `solve` can miss periodic solutions; `QuadratureResult.error_estimate`
+  can under-estimate.
+- `isolated` is not yet wired into the MCP server or the REPL.
+- `time_budget` on its own stays best-effort (see 0.3.0 below); `isolated`
+  is the hard limit.
 
 ## [0.3.0] - 2026-08-19
 

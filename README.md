@@ -13,7 +13,7 @@
   <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab.svg">
-  <img alt="668 tests passing" src="https://img.shields.io/badge/tests-668%20passing-2ea043.svg">
+  <img alt="1149 tests passing" src="https://img.shields.io/badge/tests-1149%20passing-2ea043.svg">
   <img alt="mypy: clean" src="https://img.shields.io/badge/mypy-clean-2ea043.svg">
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -36,6 +36,10 @@ Built as a thin, disciplined layer over SymPy + NumPy:
    simplification + common-subexpression elimination (CSE) before emitting
    code (measured ~1.7x faster than naive expansion on repeated
    subexpressions).
+3. **Check, not just compute** — `verify` answers VERIFIED, REFUTED (with a
+   counterexample you can re-check) or UNDECIDED for an identity, a
+   step-by-step derivation, or the engine's own answer. See
+   [Verify](#verify-check-instead-of-compute).
 
 ```
 text → [parser] → IR (expression tree) → [engine]     evaluate / simplify / solve
@@ -104,9 +108,11 @@ pip install -e .[mcp]
 claude mcp add pycodemath -- python -m pycodemath.cli.mcp_server
 ```
 
-Exposes one tool, `math_eval`, that accepts the same commands as the REPL —
+Exposes `math_eval`, that accepts the same commands as the REPL —
 an agent sends `diff sin(x)*x dx` and receives `x*cos(x) + sin(x)` exactly,
-with zero mental arithmetic.
+with zero mental arithmetic. Its twin, `math_verify`, CHECKS instead of
+computing — an identity, a derivation or an engine answer — see
+[Verify](#verify-check-instead-of-compute).
 
 ### Use it as a Claude Code skill
 
@@ -166,6 +172,9 @@ On Windows consoles, set `PYTHONUTF8=1`.
 | `solve_nd <f1>; <f2> for <x,y> at <x0,y0>` — nonlinear system | `"solve_nd x^2+y^2-4; x-y for x,y at 1,1"` |
 | `min_nd <expr> for <x,y> at <x0,y0> [method newton|bfgs]` — N-D minimum | `"min_nd (1-x)^2+100*(y-x^2)^2 for x,y at -1.2,1 method bfgs"` |
 | limits / series / sums / ODEs | `"limit sin(x)/x for x to 0"`, `"sum 1/k^2 for k from 1 to oo"` |
+| `verify <a> == <b>` — is it an identity? | `"verify sqrt(x^2) == x"` → `REFUTED … at x = -1` |
+| `verify steps <s1> = <s2> = …` — check a derivation | first wrong step + counterexample |
+| `certify <command>` — compute, then check the answer | `"certify integrate x*cos(x) dx"` |
 
 Type `help` in the REPL (`python -m pycodemath`) for the full command table.
 
@@ -183,6 +192,148 @@ Type `help` in the REPL (`python -m pycodemath`) for the full command table.
 Restart Claude Code (or open a new session) and it will invoke the skill
 automatically when a task needs exact math. To confirm it registered, run `/help`
 and look for `pycodemath` in the skills list.
+
+## Verify: check instead of compute
+
+A calculator answers "what is it?". A derivation from a language model needs a
+different question answered: **is it right?** Pycodemath answers it with three
+words, and never a fourth:
+
+* **VERIFIED** — PROVED: a symbolic argument closed.
+* **REFUTED** — false, with a **counterexample**: a concrete point, confirmed at
+  two precisions so it is not rounding noise.
+* **UNDECIDED** — neither. Agreement at every sampled point is UNDECIDED, never
+  rounded up to VERIFIED. It is a first-class answer, not a failure: a verifier
+  that guesses is worse than no verifier, because it is trusted.
+
+An identity — `verify <a> == <b>`:
+
+```console
+$ python -m pycodemath "verify sqrt(x^2) == x"
+REFUTED (numeric-sampling) — at x = -1: left = 1.0, right = -1.0
+
+$ python -m pycodemath "verify (x^2-1)/(x-1) == x+1"
+VERIFIED (symbolic) — left - right simplifies to 0; agree numerically at 31 of 32 sample points (1 not evaluable)
+
+$ python -m pycodemath "verify cos(x)^6 + sin(x)^6 == 1 - 3*sin(x)^2*cos(x)^2"
+UNDECIDED (numeric-sampling) — agree numerically at 32 of 32 sample points, without a symbolic proof
+```
+
+The last one is a true identity; SymPy's `simplify` just does not close it, so
+the honest answer is UNDECIDED. What "equal" means is fixed and worth knowing:
+values on the principal branch (`log(x^2) == 2*log(x)` is refuted at `x = -1`),
+equality where BOTH sides are defined (hence the second example), and decimals
+meaning the decimal written (`0.1 + 0.2 == 0.3` holds).
+
+A derivation — `verify steps`. Neighbouring steps are checked pairwise, so a slip
+is reported once, at the step that made it, with a counterexample:
+
+```console
+$ python -m pycodemath "verify steps (x+1)^2 - (x-1)^2 = x^2 + 2x + 1 - x^2 + 2x + 1 = 4x + 2"
+step 2: REFUTED (numeric-sampling) — at x = 0: left = 0.0, right = 2.0
+step 3: VERIFIED (symbolic) — the two sides are identical after automatic simplification
+derivation: REFUTED — first wrong step: 2 (counterexample x = 0)
+```
+
+Equation steps (one per line, or joined by `->`) must keep the same solution set
+over the reals — squaring both sides is caught even though every old root
+survives it:
+
+```console
+$ python -m pycodemath "verify steps sqrt(x) = x - 2 -> x = (x-2)^2 -> x^2 - 5x + 4 = 0 -> x = 1 or x = 4"
+step 2: REFUTED (solution-sets) — x = 1 solves step 2 but not step 1
+  warning: step 2 gains the root x = 1 — squaring both sides adds roots: check each one against step 1
+step 3: VERIFIED (symbolic) — left - right of step 2 is -1 times that of step 3, with the same poles, so the solution sets coincide
+step 4: VERIFIED (symbolic) — left - right of step 3 equals that of step 4, with the same poles, so the solution sets coincide
+derivation: REFUTED — first wrong step: 2 (counterexample x = 1)
+```
+
+In the interactive REPL, typing just `verify steps` reads one step per line
+until an empty line.
+
+An engine answer — `certify <command>` runs `integrate`, `diff`, `solve`,
+`limit`, `dsolve` or `nintegrate`, then checks the answer by a route that did
+not produce it (an antiderivative by finite differences before any symbolic
+calculus — re-deriving with the engine that made the answer would agree with
+its own mistakes):
+
+```console
+$ python -m pycodemath "certify integrate x*cos(x) dx"
+x*sin(x) + cos(x)
+certificate: VERIFIED (symbolic) — d/dx of the result: the symbolic derivative matches (the two sides are identical after automatic simplification); finite differences agree at 16 of 16 points
+
+$ python -m pycodemath "certify dsolve y for y(t)"
+y(t) = C1*exp(t)
+certificate: VERIFIED (symbolic) — each of the 1 solution(s) satisfies y' = y (symbolic proof; finite differences agree) — that they are ALL the solutions is not certified
+```
+
+A certificate claims what it says and nothing more: `dsolve` — every returned
+function solves the equation, not that they are all the solutions; `solve` —
+completeness is proved only for rational functions (elsewhere a missing real
+root can be found, never ruled out); `nintegrate` — the value is within the
+run's own `error_estimate`.
+
+Every check is bounded in time (120 s by default; a trailing `budget <s>`
+replaces it). A CHECK that runs out is an UNDECIDED verdict with method
+`time-budget`, not an error. On `certify`, the command's own `budget` bounds the
+computation (which, running out, is the usual `TimeBudgetError` refusal) and,
+separately, the certificate.
+
+For an agent, the MCP tool `math_verify` takes the same lines (the leading word
+`verify` is optional) and returns the verdict as `structuredContent`, with the
+same rules as `math_eval`: five fields, always present, `null` where they do not
+apply — `text` (what the REPL prints), `answer` (`certify`: the answer that was
+certified), `verdict` (`status`, `method`, `counterexample`, `detail`), `steps`
+(`status`, `first_error`, `counterexample`, and one entry per step with its own
+verdict, `effect` and `warning`), and `error` (a refusal, exactly as
+`math_eval` returns it — route included). Like `math_eval`, it is a plain
+function returning a plain `dict`:
+
+```pycon
+>>> from pycodemath.cli.mcp_server import math_verify
+>>> math_verify("sqrt(x^2) == x")["verdict"]
+{'status': 'refuted', 'method': 'numeric-sampling', 'counterexample': {'x': '-1'}, 'detail': 'at x = -1: left = 1.0, right = -1.0'}
+>>> derivation = math_verify("steps sqrt(x) = x - 2 -> x = (x-2)^2")["steps"]
+>>> (derivation["first_error"], derivation["checks"][0]["effect"])
+(2, 'gains-roots')
+>>> math_verify("certify integrate exp(sin(x)) dx")["error"]["route"]
+'nintegrate'
+```
+
+The same checks from Python, without the command grammar:
+
+```pycon
+>>> from pycodemath.verify import check_equal, check_steps, certify
+>>> check_equal("log(x^2)", "2*log(x)").counterexample
+{'x': '-1'}
+>>> check_steps("2x + 3 = 7 -> 2x = 4 -> x = 2").status
+<VerdictStatus.VERIFIED: 'verified'>
+>>> certify("integrate", "2*x", "x", "x^2 + 5").status
+<VerdictStatus.VERIFIED: 'verified'>
+```
+
+### How often it catches a real mistake — with the denominators
+
+Two benchmarks ship with the package and run from an installed copy:
+
+```bash
+python -m pycodemath.bench.verify_bench   # synthetic derivations
+python -m pycodemath.bench.real_bench     # real model solutions (PRM800K sample)
+```
+
+* **Synthetic:** 210 generated derivations, half with an injected typical
+  mistake (a lost sign, a wrong chain rule, squaring that adds a root, …):
+  105 of 105 mistakes caught, 0 false positives. The data are generated, and
+  the verifier was fixed against misses found on this very set — read it as a
+  regression test, not as a claim about language models.
+* **Real model errors** (a fixed, MIT-licensed sample of OpenAI's PRM800K,
+  human-labelled first wrong step): a checkable claim can be extracted from
+  9.5% of steps — most steps are prose. The verifier pinpoints the labelled
+  first wrong step in **24 of 378** flawed solutions (6.3%) and raises
+  **0 false alarms on 122** correct ones.
+
+Low recall, zero false alarms: when it says a step is wrong, it shows you the
+point where it is wrong. It is a veto, not a grader.
 
 ## Limits, series and symbolic sums
 
@@ -349,29 +500,44 @@ or `UnsupportedFormError` (no method exists for this shape at all).
 - Divergence or a domain problem raises a readable `PycodemathError` —
   never NaN/garbage in a result.
 - The parser resolves only a whitelist of mathematical functions — unknown
-  names become symbols, not Python code; string literals and attribute
+  names become symbols, not Python code (an unknown name *called* like a
+  function, `zeta(2)`, is a `ParseError`, not `2*zeta`); string literals and attribute
   access are rejected outright, and evaluation cost is bounded so a single
   expression (e.g. `9**9**9`) can't exhaust memory.
 - Tests measure real numbers first, then assert them with a margin —
-  **668 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+  **1149 tests**, all green, on Ubuntu and Windows (CI + mypy included).
 - Every failure is a specific `PycodemathError` subclass (`ParseError`,
   `DomainError`, `DivergenceError`, `StagnationError`, `NonConvergenceError`,
-  `NoClosedFormError`, `UnsupportedFormError`, `TimeBudgetError`) — a caller
+  `NoClosedFormError`, `UnsupportedFormError`, `TimeBudgetError`,
+  `IsolationError`) — a caller
   can catch the mathematical outcome, not string-match a message.
-- **`time_budget` is best-effort, not a hard guarantee.** It interrupts a
-  hang by injecting an exception into the running thread via CPython's own
-  `ctypes.PyThreadState_SetAsyncExc` — the only mechanism available across
-  platforms without a per-call subprocess (no `SIGALRM` on Windows, and it
-  only fires on a process's main thread even on POSIX). Under heavy or
-  virtualized scheduling, delivery of that injection can occasionally be
-  missed by the interpreter, in which case the call keeps running past its
-  budget instead of raising `TimeBudgetError` on time — measured directly on
-  one such environment (Python 3.13, WSL2). This does not affect the fast
-  path — the overwhelming majority of calls, which finish in milliseconds
-  and never approach a budget — and it does not produce a wrong answer; the
-  only failure mode is "didn't refuse as promptly as asked." A hard
-  guarantee needs a subprocess-based backstop, which is on the roadmap but
-  not built yet.
+- **`time_budget` is best-effort; `isolated` is the hard version.** The
+  in-process guard interrupts a hang by injecting an exception between two
+  bytecodes, so one long C-level call (a huge integer power, a compiled
+  extension) does not notice it until that call returns; delivery can also be
+  missed under heavy or virtualized scheduling (measured: Python 3.13, WSL2).
+  It never produces a wrong answer — the failure mode is a late refusal.
+
+### The hard version: `isolated`
+
+For a call that must end on time no matter what it hits, run it in the worker
+process:
+
+```pycon
+>>> from pycodemath import isolated, symbolic, E
+>>> isolated(symbolic.integrate, E("x*sin(x)"), "x", budget=5.0)
+Expr(-x*cos(x) + sin(x))
+>>> isolated(pow, 7, 10**7, budget=1.0)
+TimeBudgetError: pow: gave up on 7 after the 1s time budget — the call was stuck where the in-process guard cannot reach (one long C-level call), so its worker process was stopped and there is no partial result. This is NOT 'no closed form': an answer may well exist. Raise the budget or compute numerically.
+```
+
+The call runs under the same guard inside one warm worker; if no answer comes
+back by budget + 0.5 s, the worker is killed and `TimeBudgetError` is raised.
+Measured on Windows / Python 3.12: `7 ** (10**7)` under a 2 s budget took
+7.9–8.7 s in-process and was refused after 2.52–2.53 s through `isolated`
+(5 of 5 runs). It is opt-in because it costs about +0.4 ms per call (pickling and a
+pipe) and 1.2 s to start the worker once — and again only after a kill. A worker
+that dies without answering is `IsolationError`, not a budget.
 
 ## Glossary
 

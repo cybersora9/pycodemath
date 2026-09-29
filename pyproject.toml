@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "mypy>=1.8"]
+dev = ["pytest>=7", "mypy>=1.8", "hypothesis>=6.100"]
 mcp = ["mcp>=1.0,<2.0"]
 
 [project.scripts]
@@ -49,7 +49,7 @@ include = ["pycodemath*"]
 # invisible from outside the repo, and an external mypy silently falls back to
 # ``Any`` for everything imported from pycodemath.
 [tool.setuptools.package-data]
-pycodemath = ["py.typed"]
+pycodemath = ["py.typed", "bench/data/*.jsonl", "bench/data/PRM800K_LICENSE"]
 
 [tool.mypy]
 # Reasonable baseline (not strict): the whole package must pass, without stubs

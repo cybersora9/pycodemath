@@ -24,6 +24,7 @@ from pycodemath.core.errors import (
     BudgetExhaustedError,
     DivergenceError,
     DomainError,
+    IsolationError,
     NoClosedFormError,
     NonConvergenceError,
     NotAMinimumError,
@@ -53,6 +54,7 @@ _SUBCLASSES = (
     TimeBudgetError,  # moduł 9
     NoClosedFormError,  # moduł 10
     UnsupportedFormError,  # moduł 10
+    IsolationError,  # moduł B (backstop podprocesem)
 )
 
 

@@ -73,6 +73,20 @@ Commands:
                                           the stop flag = TERMINAL event
                                           (stop integration at the event)
 
+  verify <a> == <b> [budget <s>]        — is a == b an identity? VERIFIED (proved),
+                                          REFUTED (with a counterexample) or
+                                          UNDECIDED (e.g. verify sqrt(x^2) == x)
+  verify steps <derivation> [budget <s>] — check a derivation step by step; the
+                                          first wrong step and a counterexample
+                                          (one line: a = b = c, or equations
+                                          joined by ->; typing just 'verify steps'
+                                          reads one step per line until an empty line)
+  certify <command>                     — run integrate/diff/solve/limit/dsolve/
+                                          nintegrate, then check the answer by an
+                                          independent route (e.g. certify integrate
+                                          x*cos(x) dx); the command's own budget
+                                          also bounds the certificate
+
   help                     — help
   quit / exit              — exit
 
@@ -103,7 +117,7 @@ import math
 import re
 import sys
 from dataclasses import dataclass
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Sequence, TypeVar
 
 from .. import __version__
 from ..codegen.pipeline import generate, generate_system
@@ -113,6 +127,21 @@ from ..core.ir import Matrix
 from ..core.result import QuadratureResult, SolveResult
 from ..engine import linalg, numerics, ode, symbolic
 from ..frontend.parser import parse
+from ..verify import (
+    StepsResult,
+    Verdict,
+    VerdictStatus,
+    certify_diff,
+    certify_dsolve,
+    certify_integrate,
+    certify_limit,
+    certify_nintegrate,
+    certify_solve,
+    check_equal,
+    check_steps,
+)
+
+_T = TypeVar("_T")
 
 # One version string in the project (``pycodemath.__version__``), interpolated
 # here — a banner that has to be bumped by hand is a banner that eventually lies.
@@ -243,7 +272,7 @@ def _options(m: re.Match, allowed: dict[str, Callable[[str], object]]) -> dict[s
     return parsed
 
 
-def _budgeted(m: re.Match, run: Callable[[], str]) -> str:
+def _budgeted(m: re.Match, run: Callable[[], _T]) -> _T:
     """Run a symbolic handler under the caller's ``budget <s>``, if any.
 
     ``time_budget`` REPLACES the 120 s default for everything inside the block
@@ -515,6 +544,181 @@ def _cmd_ode_events(m: re.Match) -> str:
     return listed
 
 
+# --- verify and certify (VERIFY V4) ----------------------------------------
+# The verifier's three words reach the grammar. Nothing here decides anything:
+# ``check_equal``, ``check_steps`` and the ``certify_*`` functions keep their
+# semantics exactly (principal branch, equality where both sides are defined,
+# decimals as written, UNDECIDED never rounded up) — this layer only reads the
+# line, calls them, and renders the verdict. The verdict OBJECTS travel with the
+# text (``Checked``) so the MCP surface can put them on the wire as data.
+#
+# ``budget`` is the one option, and it is matched by NAME, not by ``_OPTS``'s
+# generic ``key value`` shape: an expression may end in juxtaposed names
+# (``verify x*y*z == x y z`` — the parser reads ``x y z`` as a product), and the
+# generic shape would read ``y z`` there as an option ``y`` with the value ``z``.
+_VERIFY_OPTS = r"(?P<opts>(?:\s+budget\s+\S+)?)"
+
+
+@dataclass(frozen=True, slots=True)
+class Checked:
+    """One ``verify`` / ``certify`` line answered: the text, plus the verdicts.
+
+    ``verdict`` is set for ``verify <a> == <b>`` and ``certify`` (the certificate),
+    ``steps`` for ``verify steps``, ``answer`` for ``certify`` (the engine's answer
+    that was certified, as ``handle`` prints it). All three are ``None`` on a usage
+    message — the line did not fit the grammar, so nothing was checked.
+    """
+
+    text: str
+    verdict: "Verdict | None" = None
+    steps: "StepsResult | None" = None
+    answer: "str | None" = None
+
+
+def _verdict_line(v: Verdict) -> str:
+    # ``detail`` already names the point of a refutation ("at x = -1: ...").
+    return f"{v.status.name} ({v.method}) — {v.detail}"
+
+
+def _point(counterexample: "dict[str, str]") -> str:
+    return ", ".join(f"{k} = {v}" for k, v in counterexample.items())
+
+
+def _steps_text(result: StepsResult) -> str:
+    lines = []
+    for c in result.checks:
+        lines.append(f"step {c.number}: {_verdict_line(c.verdict)}")
+        if c.warning:
+            lines.append(f"  warning: {c.warning}")
+    status = result.status.name
+    if result.first_error is not None:
+        where = _point(result.counterexample or {})
+        summary = f"first wrong step: {result.first_error}" + (
+            f" (counterexample {where})" if where else ""
+        )
+    elif result.status is VerdictStatus.VERIFIED:
+        summary = f"all {len(result.checks)} steps proved"
+    else:
+        open_ = sum(1 for c in result.checks if not c.verdict.verified)
+        summary = f"no step refuted, {open_} of {len(result.checks)} not proved"
+    lines.append(f"derivation: {status} — {summary}")
+    return "\n".join(lines)
+
+
+def _check_verify(m: re.Match) -> Checked:
+    budget = _options(m, _BUDGET_OPTS).get("budget")
+    if m["steps"] is not None:
+        result = check_steps(m["steps"], budget=budget)
+        return Checked(_steps_text(result), steps=result)
+    verdict = check_equal(m["a"], m["b"], budget=budget)
+    return Checked(_verdict_line(verdict), verdict=verdict)
+
+
+# Each certifier runs the SAME engine call its plain ``_cmd_*`` twin makes and
+# returns (the answer as ``handle`` prints it, the certificate). The command's own
+# ``budget`` (on the four commands that take one) bounds the engine call as always
+# and, SEPARATELY, the certificate — elsewhere the certificate gets the default:
+# nesting the certificate inside the command's ``time_budget`` would let its expiry
+# refuse the whole line and lose an answer already computed.
+def _cert_budget(m: re.Match) -> "float | None":
+    return _options(m, _BUDGET_OPTS).get("budget")
+
+
+def _cert_integrate(m: re.Match) -> "tuple[str, Verdict]":
+    expr, budget = parse(m["expr"]), _cert_budget(m)
+    result = _budgeted(m, lambda: symbolic.integrate(expr, m["var"]))
+    return str(result), certify_integrate(expr, m["var"], result, budget=budget)
+
+
+def _cert_diff(m: re.Match) -> "tuple[str, Verdict]":
+    expr = parse(m["expr"])
+    result = symbolic.diff(expr, m["var"])
+    return str(result), certify_diff(expr, m["var"], result)
+
+
+def _cert_solve(m: re.Match) -> "tuple[str, Verdict]":
+    expr, real, budget = parse(m["expr"]), not bool(m["complex"]), _cert_budget(m)
+    roots = _budgeted(m, lambda: symbolic.solve(expr, m["var"], real=real))
+    text = ", ".join(str(r) for r in roots) if roots else "(no solutions)"
+    return text, certify_solve(expr, m["var"], roots, real=real, budget=budget)
+
+
+def _cert_limit(m: re.Match) -> "tuple[str, Verdict]":
+    expr, to, side = parse(m["expr"]), parse(m["to"]), m["dir"] or "+"
+    budget = _cert_budget(m)
+    result = _budgeted(m, lambda: symbolic.limit(expr, m["var"], to, dir=side))
+    return str(result), certify_limit(
+        expr, m["var"], to, result, dir=side, budget=budget
+    )
+
+
+def _cert_dsolve(m: re.Match) -> "tuple[str, Verdict]":
+    expr, budget = parse(m["expr"]), _cert_budget(m)
+    sols = _budgeted(m, lambda: ode.dsolve(expr, m["func"], m["var"]))
+    text = ", ".join(f"{m['func']}({m['var']}) = {s}" for s in sols)
+    return text, certify_dsolve(expr, m["func"], m["var"], sols, budget=budget)
+
+
+def _cert_nintegrate(m: re.Match) -> "tuple[str, Verdict]":
+    # The certificate checks the claim the run MADE: its own ``error_estimate``
+    # (the engine documents that estimate as able to lie — this is what catches
+    # it). Where the evidence cannot be had (``handle_full``'s fallback case) the
+    # bare value is held to ``certify_nintegrate``'s default relative tolerance.
+    expr, a, b = parse(m["expr"]), _num(m["a"]), _num(m["b"])
+    claim: "QuadratureResult | float"
+    try:
+        answer = _ev_nintegrate(m)
+        assert isinstance(answer.evidence, QuadratureResult)
+        text, claim = answer.text, answer.evidence
+    except DomainError:
+        text = _cmd_nintegrate(m)
+        claim = float(text)
+    return text, certify_nintegrate(expr, m["var"], a, b, claim)
+
+
+_CERTIFY: dict[str, Callable[[re.Match], "tuple[str, Verdict]"]] = {
+    "integrate": _cert_integrate,
+    "diff": _cert_diff,
+    "solve": _cert_solve,
+    "limit": _cert_limit,
+    "dsolve": _cert_dsolve,
+    "nintegrate": _cert_nintegrate,
+}
+
+
+def _check_certify(m: re.Match) -> Checked:
+    line = m["command"]
+    token = line.split(None, 1)[0].lower()
+    certifier = _CERTIFY.get(token)
+    if certifier is None:
+        raise DomainError(
+            f"certify: no certificate for {token!r} — available: "
+            f"{', '.join(_CERTIFY)}"
+        )
+    pattern, _handler, usage = _COMMANDS[token]
+    match = pattern.match(line)
+    if match is None:
+        return Checked(
+            usage.replace("Usage: ", "Usage: certify ", 1).replace(
+                "(e.g. ", "(e.g. certify ", 1
+            )
+        )
+    answer, verdict = certifier(match)
+    return Checked(
+        f"{answer}\ncertificate: {_verdict_line(verdict)}",
+        verdict=verdict,
+        answer=answer,
+    )
+
+
+def _cmd_verify(m: re.Match) -> str:
+    return _check_verify(m).text
+
+
+def _cmd_certify(m: re.Match) -> str:
+    return _check_certify(m).text
+
+
 # --- command table --------------------------------------------------------
 # Key = the first token of the line (lowercased). Value = (full pattern,
 # handler, usage message). One pattern per command instead of manual
@@ -754,6 +958,28 @@ _COMMANDS: dict[str, tuple[re.Pattern[str], Callable[[re.Match], str], str]] = {
         "Usage: odeevents <expression> for <y>(<t>) from <t0> to <t1> at <y0> zero <g> [dir <+1|-1>] [rtol <r>] [stop]"
         "   (e.g. odeevents cos(t) for y(t) from 0.5 to 10 at 0.479 zero y)",
     ),
+    # DOTALL: ``verify steps`` carries a derivation of one step per line.
+    # Exactly one ``==`` on the equality form — a chain is a derivation, and
+    # reading ``a == b == c`` as one claim would silently drop a step.
+    "verify": (
+        re.compile(
+            r"^verify\s+(?:steps\s+(?P<steps>.+?)"
+            r"|(?P<a>(?:(?!==).)+?)\s*==\s*(?P<b>(?:(?!==).)+?))"
+            rf"{_VERIFY_OPTS}\s*$",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        _cmd_verify,
+        "Usage: verify <a> == <b> [budget <s>]   (e.g. verify sqrt(x^2) == x)\n"
+        "       verify steps <derivation> [budget <s>]"
+        "   (e.g. verify steps 2x + 3 = 7 -> 2x = 4 -> x = 2)\n"
+        "       certify <command>   (e.g. certify integrate x*cos(x) dx)",
+    ),
+    "certify": (
+        re.compile(r"^certify\s+(?P<command>.+?)\s*$", re.IGNORECASE),
+        _cmd_certify,
+        "Usage: certify <command>   — one of: integrate, diff, solve, limit,"
+        " dsolve, nintegrate   (e.g. certify integrate x*cos(x) dx)",
+    ),
 }
 
 
@@ -949,6 +1175,57 @@ def handle_full(line: str) -> Answer:
         return Answer(_COMMANDS[token][1](match))
 
 
+#: Command token -> the handler that also brings back the VERDICT objects.
+_CHECKS: dict[str, Callable[[re.Match], Checked]] = {
+    "verify": _check_verify,
+    "certify": _check_certify,
+}
+
+
+def handle_checked(line: str) -> Checked:
+    """Handle one ``verify`` / ``certify`` line and bring back the verdicts too.
+
+    The twin of ``handle`` for the MCP ``math_verify`` tool, as ``handle_full`` is
+    for ``math_eval``: same line, same syntax table, byte-identical ``text``. A
+    line that does not start with ``verify`` or ``certify`` is refused with a
+    ``ParseError`` — this entry point checks, it does not compute.
+    """
+    routed = _route(line)
+    if isinstance(routed, str):
+        return Checked(routed)
+    token, match = routed
+    check = _CHECKS.get(token)
+    if check is None:
+        raise ParseError(
+            f"not a verify/certify line: {line.strip()!r} — "
+            f"expected 'verify <a> == <b>', 'verify steps <derivation>' "
+            f"or 'certify <command>'"
+        )
+    return check(match)
+
+
+def _read_steps(line: str, read: Callable[[str], str]) -> str:
+    """``line`` itself — or, for a bare ``verify steps``, the derivation after it.
+
+    Interactive only: the steps are read one per line with ``read`` until an
+    empty line (or end of input), and joined back into the one multi-line
+    command the dispatcher takes — so the interactive form and a one-shot
+    ``verify steps a = b = c`` reach ``check_steps`` the same way.
+    """
+    if line.strip().lower() != "verify steps":
+        return line
+    lines = [line.strip()]
+    while True:
+        try:
+            step = read("...> ")
+        except EOFError:
+            break
+        if not step.strip():
+            break
+        lines.append(step)
+    return "\n".join(lines)
+
+
 def run() -> None:
     """Run the REPL — interactively or one-shot from command-line arguments.
 
@@ -986,6 +1263,11 @@ def run() -> None:
             break
         if line.strip().lower() in ("quit", "exit"):
             break
+        try:
+            line = _read_steps(line, input)
+        except KeyboardInterrupt:  # abandons the derivation, not the session
+            print()
+            continue
         try:
             out = handle(line)
         except Exception as exc:  # in the REPL an error must not kill the session

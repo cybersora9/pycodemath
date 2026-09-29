@@ -8,6 +8,8 @@ sympy (niezależnie od pycodemath) — bez tautologii.
 
 from __future__ import annotations
 
+import re
+
 import sympy as sp
 import pytest
 
@@ -99,10 +101,91 @@ def test_unknown_single_letter_function_is_multiplication():
 
 
 def test_unknown_multiletter_name_splits_into_symbols():
-    # split_symbols (cena notacji 2x): foo(x) -> f*o**2*x; nadal czysta
+    # split_symbols (cena notacji 2x): foo -> f*o**2; nadal czysta
     # matematyka na symbolach, zero kodu Pythona
     f, o = sp.Symbol("f"), sp.Symbol("o")
-    assert parse("foo(x)").sy == f * o**2 * x
+    assert parse("foo").sy == f * o**2
+    assert parse("xy*(x+1)").sy == sp.Symbol("y") * x * (x + 1)
+
+
+# V9 (znalezisko V4): WYWOŁANIE nazwy spoza białej listy to odmowa, nie iloczyn.
+# Czytane jako iloczyn dawało zeta(2) = 2*zeta, a check_equal("zeta(2)", "pi^2/6")
+# REFUTED przy zeta = 0 — fałszywy dowód fałszu.
+@pytest.mark.parametrize(
+    "text, name",
+    [
+        ("zeta(2)", "zeta"),
+        ("foo(x)", "foo"),
+        ("besselj(0, x)", "besselj"),
+        ("Ei(x)", "Ei"),
+        ("xsin(x)", "xsin"),  # sklejone z nazwą funkcji: dawniej x*s*i*n*x
+        ("zeta (2)", "zeta"),  # spacja nic nie zmienia — to te same tokeny
+        ("log_2(8)", "log_2"),  # indeks dolny przy ZNANEJ funkcji: wywołanie
+        ("2 + zeta(2)", "zeta"),
+        # cena reguły: dwie litery przed nawiasem to też wywołanie — iloczyn
+        # trzeba zapisać jawnie (xy*(x+1) albo x y(x+1))
+        ("xy(x+1)", "xy"),
+    ],
+)
+def test_calling_an_unknown_function_is_a_parse_error(text, name):
+    with pytest.raises(ParseError, match=f"unknown function '{name}'"):
+        parse(text)
+
+
+def test_unknown_function_call_emits_no_sympy_warning():
+    # besselj(0,x) dawał ParseError + SymPyDeprecationWarning (mnożenie krotki);
+    # teraz odmowa pada na tokenach, zanim SymPy cokolwiek zbuduje
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(ParseError, match="unknown function 'besselj'"):
+            parse("besselj(0,x)")
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("x(x+1)", x * (x + 1)),  # jedna litera: iloczyn, jak dotąd
+        ("2x(x-1)", 2 * x * (x - 1)),
+        ("x1(x+1)", sp.Symbol("x1") * (x + 1)),  # indeks cyfrą: symbol
+        ("x_1(x+1)", sp.Symbol("x_1") * (x + 1)),  # indeks podkreśleniem: symbol
+        ("pi(x+1)", sp.pi * (x + 1)),  # stała: iloczyn
+        ("E(x)", sp.E * x),
+        ("gamma(3)", sp.Integer(2)),  # znana funkcja: wywołanie
+        ("sin (x)", sp.sin(x)),
+    ],
+)
+def test_what_still_reads_as_a_product_or_a_known_call(text, expected):
+    assert parse(text).sy == expected
+
+
+# V9 (znalezisko V5): goła nazwa funkcji docierała do strażnika kosztu jako KLASA,
+# iteracja po jej `args` (property) = goły TypeError. Tak samo konstruktory.
+@pytest.mark.parametrize(
+    "text",
+    ["sin", "log", "Abs", "(sqrt)", "2*cos", "sin + 1", "abs", "gamma",
+     "Symbol", "Integer", "Function"],
+)
+def test_a_bare_function_name_is_a_parse_error(text):
+    with pytest.raises(ParseError, match="function name without arguments"):
+        parse(text)
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("sin x", sp.sin(x)),
+        ("sin^2 x", sp.sin(x) ** 2),
+        ("sin^2(x)", sp.sin(x) ** 2),
+        ("2 sin x", 2 * sp.sin(x)),
+        ("sqrt x", sp.sqrt(x)),
+        ("(sin x)^2", sp.sin(x) ** 2),
+        ("exp(x)exp(x)", sp.exp(2 * x)),
+    ],
+)
+def test_function_application_without_parentheses_still_works(text, expected):
+    assert parse(text).sy == expected
 
 
 def test_underscore_name_stays_single_symbol():
@@ -125,7 +208,38 @@ def test_trailing_digit_name_stays_single_symbol():
     # multi-letter, no digits still splits into a product of letters —
     # unaffected by the fix (same case test_unknown_multiletter_name_splits_into_symbols covers)
     f, o = sp.Symbol("f"), sp.Symbol("o")
-    assert parse("foo(x)").sy == f * o**2 * x
+    assert parse("foo*x").sy == f * o**2 * x
+
+
+# V3 znalezisko 2 (naprawione 29.09) + V9: nawias zamykający bez otwartego albo
+# zamykający INNY rodzaj — ParseError w samym parserze. `[)` przechodziło przez
+# liczenie głębokości i SymPy zdejmował pusty stos: goły IndexError (V9: 90 z
+# 21124 tekstów korpusu).
+@pytest.mark.parametrize(
+    "text, message",
+    [
+        (")", "')' closes nothing"),
+        ("x)", "')' closes nothing"),
+        ("))", "')' closes nothing"),
+        ("(x))", "')' closes nothing"),
+        ("]", "']' closes nothing"),
+        ("[)", "')' closes a '['"),
+        ("5[x)", "')' closes a '['"),
+        ("(x]", "']' closes a '('"),
+    ],
+)
+def test_a_stray_or_mismatched_close_is_a_parse_error(text, message):
+    with pytest.raises(ParseError, match=re.escape(message)):
+        parse(text)
+
+
+def test_matched_brackets_still_parse():
+    assert parse("((x+1)*(x-1))").sy == (x + 1) * (x - 1)
+    from pycodemath.frontend.parser import parse_matrix
+
+    assert parse_matrix("[[1, (2)], [3, 4]]") == sp.Matrix([[1, 2], [3, 4]])
+    with pytest.raises(ParseError, match="closes a"):
+        parse_matrix("[[1, 2)]")
 
 
 def test_syntax_error_still_readable():
@@ -151,6 +265,13 @@ def test_syntax_error_still_readable():
         "factorial(factorial(20))",  # zagnieżdżona silnia
         "sin(9**9**9)",  # groźny fragment ukryty w argumencie funkcji
         "10**500000",
+        # V9: ujemny wykładnik i wymierna podstawa też budują dokładną liczbę —
+        # wisiały w parse (dokładny zapis 2^-1e10 od V8)
+        "2^-10000000000",
+        "2^(-10000000000)",
+        "(1/2)^10000000000",
+        "(3/2)^10000000",
+        "1/2^10000000000",
     ],
 )
 def test_parser_rejects_evaluation_bombs(src):
@@ -171,6 +292,11 @@ def test_parser_rejects_evaluation_bombs(src):
         ("binomial(10, 3)", sp.Integer(120)),
         ("9**9", sp.Integer(387420489)),
         ("2^1000", sp.Integer(2) ** 1000),
+        ("2^-10", sp.Rational(1, 1024)),
+        ("(2/3)^5", sp.Rational(32, 243)),
+        ("(-1)^10000000000", sp.Integer(1)),  # |podstawa| 1: nic nie rośnie
+        ("(1/1)^10000000000", sp.Integer(1)),
+        ("x^-10000000000", sp.Symbol("x") ** -10000000000),  # symbol: nic nie liczy
     ],
 )
 def test_guard_lets_ordinary_powers_and_factorials_through(src, expected):

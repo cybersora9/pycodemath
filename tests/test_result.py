@@ -147,6 +147,10 @@ def test_status_vocabulary_mirrors_the_module2_outcomes():
     # dało się wyczytać: `route`. Obie nowe klasy są więc BEZ STATUSU z dokładnie
     # tego samego powodu co TimeBudgetError — i dlatego dopisują się do tej listy, a
     # nie do SOLVE_STATUSES.
+    #
+    # Moduł B dopisuje IsolationError z tego samego powodu i jeszcze mocniej: to
+    # porażka PROCESU roboczego, nie przebiegu — nie było iteratu, bo nie było
+    # nawet odpowiedzi.
     assert set(_STATUS_OF_CLASS.values()) == set(SOLVE_STATUSES) - {"converged"}
     unpaired = {
         c
@@ -163,6 +167,7 @@ def test_status_vocabulary_mirrors_the_module2_outcomes():
         errors.TimeBudgetError,
         errors.NoClosedFormError,
         errors.UnsupportedFormError,
+        errors.IsolationError,
     }
 
 

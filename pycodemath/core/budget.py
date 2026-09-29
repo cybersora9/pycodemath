@@ -76,6 +76,12 @@ measured without a process boundary in the way.
 For scale: module 8 measured, argued and accepted +37 to +280 us per call for the
 minimum certificate. This is an order of magnitude cheaper, in absolute terms.
 
+Re-measured 29.09.2026 for the finding-A fix, same method, HEAD and fix side by
+side in three alternating rounds (Windows / 3.12.10): armed **4.1 -> 4.5 us**,
+nested **1.7 -> 1.8 us**. The +0.4 us is the saved-deadline stack and the second
+flag; against the cheapest command (0.5 ms) it is 0.08%. (Both columns sit above
+the 3.5 us first measured — the machine, not the code: HEAD itself reads 4.1.)
+
 Two details are load-bearing, not incidental:
 
 * ``_Deadline`` derives from ``BaseException``, not ``Exception``. SymPy is full of
@@ -97,6 +103,27 @@ compiled extension such as python-flint) does not check for it until that call
 returns. Every hang measured here is pure-Python SymPy and is interrupted; a hang
 that is not would run past its budget. The guard bounds what CPython lets it
 bound, and this docstring is where that limit is written down rather than implied.
+
+Measured for such a call (``7 ** (10**7)`` under a 2 s budget): it runs 7.5-8.9 s,
+because nothing can stop it sooner. What the guard DOES promise is what happens
+when it returns — the public ``TimeBudgetError``, an empty armed table, a thread
+that works on the next call. Until 29.09.2026 it did not: the interrupt landed on
+the first bytecode of ``__exit__`` and escaped raw, 16/16 runs (finding A; see
+``_watch``). The 40 000-run "0 escapes" below was true of what it measured —
+short bodies timed to collide — and blind to this path.
+
+Delivery itself can also be MISSED: commit 7f5656f of the public repo records an
+injection the interpreter never delivered under a virtualised scheduler (Python
+3.13 / WSL2). The watchdog re-injects every 50 ms, which bounds the damage but is
+not a proof.
+
+The hard guarantee is ``core.backstop.isolated`` (module B, 29.09.2026): the call
+runs in a warm worker process under this same guard, and the parent kills the
+worker at budget + 0.5 s. Measured for the call above: refused after
+**2.515-2.531 s** instead of 7.9-8.7 s. It is OPT-IN, because the pipe costs about
++0.4 ms per call against this guard's 3.5 us, and this module's fast path is
+unchanged by it. Nothing in-process could have done it: while the C call holds
+the GIL, no other thread runs a bytecode — see ``core.backstop`` for why.
 """
 
 from __future__ import annotations
@@ -104,9 +131,10 @@ from __future__ import annotations
 import ctypes
 import functools
 import math
+import sys
 import threading
 import time
-from types import TracebackType
+from types import FrameType, TracebackType
 from typing import Callable, Literal, ParamSpec, TypeVar
 
 from .errors import NUMERIC_ROUTES, TimeBudgetError
@@ -162,14 +190,17 @@ class _Deadline(BaseException):
 
 # --- the shared watchdog ---------------------------------------------------
 # One daemon thread for the process. ``_ARMED`` maps a thread id to its slot:
-# [deadline, depth, fired, chosen]. ``chosen`` is the ALLOWANCE THE CALLER ASKED
-# FOR, kept beside the absolute deadline because those are the two different
-# numbers a message and a timer respectively need: the deadline is a
+# [deadline, depth, fired, chosen, injected, saved]. ``chosen`` is the ALLOWANCE
+# THE CALLER ASKED FOR, kept beside the absolute deadline because those are the two
+# different numbers a message and a timer respectively need: the deadline is a
 # ``time.monotonic()`` reading and would make every message machine-dependent, and
-# ``chosen`` is a number a test can pin. Everything is touched under ``_LOCK``,
-# which is also the condition the watchdog sleeps on — so arming is a dict write
-# plus a notify, and an idle process has a thread parked on ``wait()`` with no
-# periodic timer at all.
+# ``chosen`` is a number a test can pin. ``fired`` means the deadline PASSED;
+# ``injected`` means an interrupt was actually SENT — they differ when the watchdog
+# held back (see ``_watch``). ``saved`` is the stack of outer (deadline, chosen,
+# fired) that a tighter nested budget displaced, restored when it leaves (see
+# ``_Budget._release``). Everything is touched under ``_LOCK``, which is also the
+# condition the watchdog sleeps on — so arming is a dict write plus a notify, and
+# an idle process has a thread parked on ``wait()`` with no periodic timer at all.
 _LOCK = threading.Lock()
 _WAKE = threading.Condition(_LOCK)
 _ARMED: dict[int, list] = {}
@@ -202,6 +233,22 @@ def _watch() -> None:
     in the table (so that a nested guard inherits "unlimited" instead of quietly
     falling back to the default) but it never becomes a wake-up time: an infinite
     timeout cannot be handed to ``Condition.wait``, and there is nothing to wait for.
+
+    NEVER INJECT INTO THIS MODULE'S OWN BOOKKEEPING (finding A, 06.09 / 29.09).
+    A body stuck in ONE long C-level call that holds the GIL (``7 ** (10**7)``)
+    starves this thread: ``wait`` times out but cannot get the GIL back. The first
+    moment the guarded thread offers the GIL is the first eval-breaker check after
+    the call returns — for a ``with`` block that is the RESUME of ``__exit__``,
+    BEFORE its ``try``. The injection then landed exactly there, 5/5 and 10/10 on
+    Windows / 3.12.10: a raw ``_Deadline`` to the caller, ``_release`` never run,
+    the slot left armed and the next block on that thread inheriting it (depth
+    1, 2, 3 …). CPython delivers a pending async exception at the SAME check where
+    the thread handed over the GIL, so the frame this thread sees is the frame it
+    lands in. When that frame is one of ours (``_NO_INJECT``), mark the slot fired
+    and send nothing: ``__exit__`` reads ``fired`` and raises the public refusal
+    itself. The next pass, 50 ms on, injects as usual if the thread went back to
+    work instead. ``sys._current_frames`` costs a dict of every thread's frame —
+    paid only on a passed deadline, never on the fast path.
     """
     with _LOCK:
         while True:
@@ -210,10 +257,16 @@ def _watch() -> None:
                 continue
             now = time.monotonic()
             next_at = math.inf
+            frames: "dict[int, FrameType] | None" = None
             for tid, slot in _ARMED.items():
                 if slot[0] <= now:
                     slot[2] = True
-                    _set_async_exc(tid, _Deadline)
+                    if frames is None:
+                        frames = sys._current_frames()
+                    top = frames.get(tid)
+                    if top is None or top.f_code not in _NO_INJECT:
+                        slot[4] = True
+                        _set_async_exc(tid, _Deadline)
                     slot[0] = now + _REINJECT_EVERY
                 next_at = min(next_at, slot[0])
             if math.isinf(next_at):
@@ -250,7 +303,7 @@ class _Budget:
 
     __slots__ = (
         "seconds", "operation", "subject", "body_completed",
-        "_tid", "_armed", "_started",
+        "_tid", "_armed", "_started", "_pushed",
     )
 
     def __init__(self, seconds: float, operation: str, subject: object) -> None:
@@ -261,6 +314,7 @@ class _Budget:
         self._tid = 0
         self._armed = False
         self._started = 0.0
+        self._pushed = False
 
     def __enter__(self) -> "_Budget":
         self._tid = threading.get_ident()
@@ -283,31 +337,58 @@ class _Budget:
             _ensure_watchdog()
             slot = _ARMED.get(self._tid)
             if slot is None:
-                _ARMED[self._tid] = [deadline, 1, False, self.seconds]
+                _ARMED[self._tid] = [deadline, 1, False, self.seconds, False, []]
             else:
                 # RE-ENTRANT, and the TIGHTER deadline wins in both directions. A
                 # nested call must never be able to extend the allowance its caller
                 # chose, and an inner call that wants less time must get less. When
                 # the inner one IS tighter it also becomes the allowance a refusal
                 # quotes, because it is the one that will have run out.
+                #
+                # The outer numbers are SAVED, not overwritten. Overwriting them was
+                # finding V1 (25.09): once the inner deadline fired, the slot kept
+                # its re-injection time and ``fired`` after the inner block left, so
+                # the OUTER block was refused too — measured, ``time_budget(10)``
+                # refused at 0.17 s. ``_release`` puts them back.
                 if deadline < slot[0]:
+                    slot[5].append((slot[0], slot[3], slot[2]))
                     slot[0] = deadline
                     slot[3] = self.seconds
+                    self._pushed = True
                 slot[1] += 1
             self._armed = True
             _WAKE.notify()
         return self
 
-    def _release(self) -> bool:
-        """Give up this thread's claim on the watchdog. Returns whether it fired."""
+    def _release(self) -> "tuple[bool, bool]":
+        """Give up this thread's claim on the watchdog.
+
+        Returns ``(fired, injected)``: whether the deadline passed, and whether an
+        interrupt was actually sent (the one that may still be pending). A nested
+        budget that displaced the outer deadline restores it — including ``fired``,
+        so an inner refusal is not carried out into a block that still has time.
+        Idempotent per instance: ``__exit__`` may call it again when an interrupt
+        lands mid-cleanup, and the depth must drop once, not twice.
+        """
         with _LOCK:
             slot = _ARMED.get(self._tid)
-            fired = bool(slot and slot[2])
-            if slot is not None:
-                slot[1] -= 1
-                if slot[1] <= 0:
-                    del _ARMED[self._tid]
-        return fired
+            if slot is None or not self._armed:
+                return False, False
+            fired, injected = bool(slot[2]), bool(slot[4])
+            # From here to ``self._armed = False`` there is no call, so no
+            # eval-breaker check and nowhere for an interrupt to land: the depth
+            # drops exactly once even if ``__exit__`` has to retry.
+            slot[1] -= 1
+            if slot[1] <= 0:
+                del _ARMED[self._tid]
+            else:
+                if self._pushed:
+                    slot[0], slot[3], slot[2] = slot[5][-1]
+                    del slot[5][-1]
+                slot[4] = False
+            self._pushed = False
+            self._armed = False
+            return fired, injected
 
     def __exit__(
         self,
@@ -340,23 +421,30 @@ class _Budget:
         interrupted = exc_type is _Deadline
         while True:
             try:
-                fired = self._release()
+                fired, injected = self._release()
                 break
             except _Deadline:  # landed mid-cleanup — redo it, remember why
                 interrupted = True
-        if fired:
+        if injected:
             # An injection may have been delivered between the body's last bytecode
             # and here. Clearing is a no-op if none was sent; if one has already
             # been raised it is on its way out and the loop above has seen it.
             _set_async_exc(self._tid, None)
-        if exc_type is not None and not interrupted:
+        if exc_type is not None and exc_type is not _Deadline:
             # Something real is already on its way out — very often the
             # ``TimeBudgetError`` an INNER frame just built, which names the
             # operation and the expression where this frame only knows "this block".
             # A ``__exit__`` that replaced it would throw away the better message,
             # and a ``__exit__`` that replaced an unrelated error would be a bug.
             return False
-        if interrupted and not self.body_completed:
+        # ``fired`` with nothing ``injected`` is the watchdog having HELD BACK (see
+        # ``_watch``): the deadline passed while the body was stuck in C, and the
+        # refusal is raised here instead of injected into this method. Fired AND
+        # injected means the interrupt was sent; if it reached the body, an inner
+        # frame has already turned it into the refusal (and a caller may have
+        # handled that one), so there is nothing left to refuse here.
+        held_back = fired and not injected
+        if (interrupted or held_back) and not self.body_completed:
             raise self.expired()
         return False
 
@@ -533,8 +621,20 @@ class _Inherited(_Budget):
         self._armed = True  # armed enough to translate; owns no slot to release
         return self
 
-    def _release(self) -> bool:
-        return False  # the outer budget owns the slot and will release it
+    def _release(self) -> "tuple[bool, bool]":
+        return False, False  # the outer budget owns the slot and will release it
+
+
+#: The frames the watchdog never injects into: this module's own entry and exit
+#: bookkeeping, where an interrupt would land before any ``try`` could catch it
+#: (``__exit__``'s first bytecode) or halfway through a slot update. See ``_watch``.
+_NO_INJECT = frozenset(
+    f.__code__
+    for f in (
+        _Budget.__enter__, _Budget.__exit__, _Budget._release, _Budget.expired,
+        _Inherited.__enter__, _Inherited._release, _budget_for, guard,
+    )
+)
 
 
 P = ParamSpec("P")
