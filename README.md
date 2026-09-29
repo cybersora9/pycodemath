@@ -13,7 +13,7 @@
   <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-3776ab.svg">
-  <img alt="1149 tests passing" src="https://img.shields.io/badge/tests-1149%20passing-2ea043.svg">
+  <img alt="1152 tests passing" src="https://img.shields.io/badge/tests-1152%20passing-2ea043.svg">
   <img alt="mypy: clean" src="https://img.shields.io/badge/mypy-clean-2ea043.svg">
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -516,7 +516,7 @@ or `UnsupportedFormError` (no method exists for this shape at all).
   access are rejected outright, and evaluation cost is bounded so a single
   expression (e.g. `9**9**9`) can't exhaust memory.
 - Tests measure real numbers first, then assert them with a margin —
-  **1149 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+  **1152 tests**, all green, on Ubuntu and Windows, Python 3.11–3.14 (CI + mypy included).
 - Every failure is a specific `PycodemathError` subclass (`ParseError`,
   `DomainError`, `DivergenceError`, `StagnationError`, `NonConvergenceError`,
   `NoClosedFormError`, `UnsupportedFormError`, `TimeBudgetError`,
@@ -528,6 +528,11 @@ or `UnsupportedFormError` (no method exists for this shape at all).
   extension) does not notice it until that call returns; delivery can also be
   missed under heavy or virtualized scheduling (measured: Python 3.13, WSL2).
   It never produces a wrong answer — the failure mode is a late refusal.
+  On **Python 3.13** only (CPython bug gh-139622: an asynchronous exception
+  skips the handlers of the frame it is raised in), the guard holds back while
+  the interrupted frame sits inside a `try` / `with` / `finally`: engine calls
+  are interrupted as before, but a loop written directly inside your own
+  `with time_budget(...)` block is refused when it ends rather than cut short.
 
 ### The hard version: `isolated`
 

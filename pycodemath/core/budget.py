@@ -134,7 +134,7 @@ import math
 import sys
 import threading
 import time
-from types import FrameType, TracebackType
+from types import CodeType, FrameType, TracebackType
 from typing import Callable, Literal, ParamSpec, TypeVar
 
 from .errors import NUMERIC_ROUTES, TimeBudgetError
@@ -213,6 +213,43 @@ _WATCHDOG: "threading.Thread | None" = None
 _REINJECT_EVERY = 0.05
 
 
+#: CPython 3.13 ONLY (gh-139622, open; 3.11, 3.12 and 3.14 are unaffected): an
+#: asynchronous exception skips every handler of the frame it is raised in — its
+#: ``except``, its ``finally``, and a ``with`` block's ``__exit__`` — and is caught
+#: only by the frames above. Measured 29.09.2026 on 3.13.15 (Windows) and 3.13.12
+#: (Linux) with pure Python, no Pycodemath: a loop inside ``with`` / ``try`` in one
+#: frame, injected 6 times, ran its ``__exit__`` / ``finally`` 0 times (3.12: 6/6).
+#: For this module that meant a caller's ``with time_budget(...)`` around code in
+#: its own frame let a RAW ``_Deadline`` out, never released its slot, and the
+#: watchdog then re-injected into whatever that thread ran next, every 50 ms —
+#: 14 of 18 test runs on Linux 3.13, 5 of 6 on Windows 3.13, 0 of 16 on 3.12.
+_HANDLERS_SKIPPED_IN_RAISING_FRAME = sys.version_info[:2] == (3, 13)
+
+
+@functools.lru_cache(maxsize=4096)
+def _handler_ranges(code: "CodeType") -> "tuple[tuple[int, int], ...]":
+    """The byte ranges of ``code`` that some ``except`` / ``finally`` / ``with`` covers."""
+    import dis
+
+    return tuple(
+        (entry.start, entry.end)
+        for entry in dis._parse_exception_table(code)  # type: ignore[attr-defined]
+    )
+
+
+def _a_handler_would_be_skipped(frame: FrameType) -> bool:
+    """On 3.13: would an interrupt raised in ``frame`` right now bypass a handler?
+
+    A frame whose current instruction no handler covers loses nothing — the
+    interrupt goes straight to its caller, whose handlers do run. Only a covered
+    one is unsafe, and there the watchdog holds back exactly as it does for its
+    own bookkeeping (``_NO_INJECT``): ``fired`` is set, and either a later pass
+    finds the thread somewhere safe, or ``__exit__`` raises the refusal itself.
+    """
+    offset = frame.f_lasti
+    return any(start <= offset < end for start, end in _handler_ranges(frame.f_code))
+
+
 def _set_async_exc(tid: int, exc: "type[BaseException] | None") -> None:
     """Raise ``exc`` in thread ``tid`` — or clear a pending one when ``None``."""
     ctypes.pythonapi.PyThreadState_SetAsyncExc(
@@ -264,7 +301,13 @@ def _watch() -> None:
                     if frames is None:
                         frames = sys._current_frames()
                     top = frames.get(tid)
-                    if top is None or top.f_code not in _NO_INJECT:
+                    if top is None or (
+                        top.f_code not in _NO_INJECT
+                        and not (
+                            _HANDLERS_SKIPPED_IN_RAISING_FRAME
+                            and _a_handler_would_be_skipped(top)
+                        )
+                    ):
                         slot[4] = True
                         _set_async_exc(tid, _Deadline)
                     slot[0] = now + _REINJECT_EVERY

@@ -81,6 +81,15 @@ UNDECIDED — and never promotes "agrees numerically" to "proved".
   instead of spending the whole budget on Ferrari's formula; decimal
   exponents (`5^7.5` vs `sqrt(5^15)`) no longer yield a false REFUTED.
 - The MCP server imports on Python 3.11 again.
+- **Python 3.13: the time-budget interrupt no longer escapes a `with
+  time_budget(...)` block.** CPython 3.13 (only — gh-139622, open) lets an
+  asynchronous exception skip every handler of the frame it is raised in, so
+  a block around code in the caller's own frame let the raw internal
+  interrupt out and kept re-injecting into whatever ran next (measured: 14 of
+  18 test runs on Linux 3.13, 5 of 6 on Windows 3.13, 0 on 3.12). On 3.13 the
+  watchdog now holds back while the interrupted frame sits inside a handler
+  and waits for a frame where nothing would be skipped; engine calls are
+  interrupted as before. CI now runs 3.11–3.14.
 
 ### Known limitations
 - `check_equal("cosh(t1 - log(0))", ...)` can raise a bare `TypeError`,

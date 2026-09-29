@@ -560,3 +560,77 @@ def test_a_real_error_leaving_a_block_whose_deadline_passed_is_kept() -> None:
             _ = 7 ** (10**6)
             1 / 0
     assert threading.get_ident() not in budget_mod._ARMED
+
+
+# --- A2: CPython 3.13 (gh-139622) -------------------------------------------
+# Na 3.13 wyjątek wstrzyknięty z innego wątku POMIJA handlery ramki, w której
+# wybucha (`except`, `finally`, `__exit__` bloku `with`) — łapią go dopiero ramki
+# wyżej. Zmierzone 29.09.2026 na czystym Pythonie: 0/6 wywołań `__exit__` (3.12:
+# 6/6). Dla `time_budget` wokół kodu we WŁASNEJ ramce wołającego znaczyło to goły
+# `_Deadline`, niezwolniony slot i kaskadę iniekcji w cokolwiek wątek robił potem
+# (14/18 przebiegów na Linuksie 3.13, 5/6 na Windows 3.13, 0/16 na 3.12).
+
+
+def _spin_in_a_frame_without_handlers(seconds: float) -> str:
+    # Osobna ramka bez żadnego handlera: tu iniekcja niczego nie pomija.
+    stop = time.monotonic() + seconds
+    while time.monotonic() < stop:
+        pass
+    return "spun"
+
+
+def test_a_block_in_the_callers_own_frame_never_lets_the_raw_interrupt_out() -> None:
+    outcomes: list[str] = []
+    for _ in range(5):
+        try:
+            with time_budget(0.1):
+                stop = time.monotonic() + 0.6
+                while time.monotonic() < stop:  # pętla w ramce Z handlerem (with)
+                    pass
+            outcomes.append("no refusal")
+        except TimeBudgetError:
+            outcomes.append("refused")
+        except BaseException as exc:  # noqa: BLE001
+            outcomes.append(type(exc).__name__)
+    assert outcomes == ["refused"] * 5
+    assert threading.get_ident() not in budget_mod._ARMED
+    # nic „w locie": kod PO strażniku, w ramce bez handlerów, musi dobiec do końca
+    assert _spin_in_a_frame_without_handlers(0.3) == "spun"
+
+
+def test_work_called_from_the_block_is_still_interrupted_on_time() -> None:
+    # Wstrzymanie iniekcji dotyczy tylko ramek, w których handler by przepadł.
+    # Praca w wywołanej funkcji (tak wygląda każde wywołanie silnika) nadal jest
+    # przerywana w terminie — na każdej wersji, także 3.13.
+    started = time.monotonic()
+    with pytest.raises(TimeBudgetError):
+        with time_budget(0.2):
+            _spin_in_a_frame_without_handlers(30.0)
+    assert time.monotonic() - started < 5.0
+    assert threading.get_ident() not in budget_mod._ARMED
+    assert _spin_in_a_frame_without_handlers(0.3) == "spun"
+
+
+def test_the_handler_check_sees_try_with_and_finally() -> None:
+    import sys
+
+    frames: dict[str, object] = {}
+
+    def covered() -> None:
+        try:
+            frames["try"] = sys._getframe()
+        finally:
+            pass
+        with time_budget(math.inf):
+            frames["with"] = sys._getframe()
+
+    def bare() -> None:
+        frames["bare"] = sys._getframe()
+
+    covered()
+    bare()
+    # ramki są już martwe, ale f_lasti zostaje na ostatniej instrukcji — tu
+    # sprawdzamy tylko, że tabela handlerów jest czytana (3.11+ ma ten format)
+    assert budget_mod._handler_ranges(frames["try"].f_code)  # type: ignore[attr-defined]
+    assert budget_mod._handler_ranges(frames["bare"].f_code) == ()  # type: ignore[attr-defined]
+    assert budget_mod._HANDLERS_SKIPPED_IN_RAISING_FRAME == (sys.version_info[:2] == (3, 13))
