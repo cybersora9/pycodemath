@@ -206,6 +206,10 @@ words, and never a fourth:
   rounded up to VERIFIED. It is a first-class answer, not a failure: a verifier
   that guesses is worse than no verifier, because it is trusted.
 
+<p align="center">
+  <img alt="pycodemath verify — VERIFIED with a proof, REFUTED with a counterexample, UNDECIDED when neither, and a derivation refuted at the step that made the slip" src="assets/verify.svg" width="760">
+</p>
+
 An identity — `verify <a> == <b>`:
 
 ```console
@@ -331,6 +335,10 @@ python -m pycodemath.bench.real_bench     # real model solutions (PRM800K sample
   9.5% of steps — most steps are prose. The verifier pinpoints the labelled
   first wrong step in **24 of 378** flawed solutions (6.3%) and raises
   **0 false alarms on 122** correct ones.
+
+<p align="center">
+  <img alt="Benchmarks: synthetic 105 of 105 mistakes caught, 0 of 105 false alarms; real model solutions: 603 of 6318 steps checkable, first wrong step pinpointed in 24 of 378, 24 of 27 flagged steps are the error, 0 of 122 false alarms" src="assets/bench.svg" width="760">
+</p>
 
 Low recall, zero false alarms: when it says a step is wrong, it shows you the
 point where it is wrong. It is a veto, not a grader.

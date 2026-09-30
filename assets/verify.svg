@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 440" width="980" height="440" font-family="ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace">
+  <style>
+    .ln  { font-size: 15px; }
+    .p   { fill: #e11d33; }
+    .cmd { fill: #e6edf3; }
+    .txt { fill: #c9d1d9; }
+    .dim { fill: #8b949e; }
+    .ok  { fill: #7ee787; font-weight: 700; }
+    .no  { fill: #ff7b72; font-weight: 700; }
+    .un  { fill: #e3b341; font-weight: 700; }
+    .l1  { animation: r1  18s infinite; }
+    .l2  { animation: r2  18s infinite; }
+    .l3  { animation: r3  18s infinite; }
+    .l4  { animation: r4  18s infinite; }
+    .l5  { animation: r5  18s infinite; }
+    .l6  { animation: r6  18s infinite; }
+    .l7  { animation: r7  18s infinite; }
+    .l8  { animation: r8  18s infinite; }
+    .l9  { animation: r9  18s infinite; }
+    .l10 { animation: r10 18s infinite; }
+    .cur { animation: blink 1.05s steps(1) infinite; fill: #e6edf3; }
+    @keyframes r1  { 0%,2%{opacity:0}  4%,100%{opacity:1} }
+    @keyframes r2  { 0%,8%{opacity:0}  10%,100%{opacity:1} }
+    @keyframes r3  { 0%,16%{opacity:0} 18%,100%{opacity:1} }
+    @keyframes r4  { 0%,22%{opacity:0} 24%,100%{opacity:1} }
+    @keyframes r5  { 0%,30%{opacity:0} 32%,100%{opacity:1} }
+    @keyframes r6  { 0%,37%{opacity:0} 39%,100%{opacity:1} }
+    @keyframes r7  { 0%,46%{opacity:0} 48%,100%{opacity:1} }
+    @keyframes r8  { 0%,53%{opacity:0} 55%,100%{opacity:1} }
+    @keyframes r9  { 0%,56%{opacity:0} 58%,100%{opacity:1} }
+    @keyframes r10 { 0%,60%{opacity:0} 62%,100%{opacity:1} }
+    @keyframes blink { 50%{opacity:0} }
+  </style>
+
+  <rect x="1" y="1" width="978" height="438" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <rect x="1" y="1" width="978" height="37" rx="12" fill="#161b22"/>
+  <rect x="1" y="26" width="978" height="12" fill="#161b22"/>
+  <line x1="1" y1="38" x2="979" y2="38" stroke="#30363d"/>
+  <circle cx="22" cy="19" r="6" fill="#ff5f56"/>
+  <circle cx="42" cy="19" r="6" fill="#ffbd2e"/>
+  <circle cx="62" cy="19" r="6" fill="#27c93f"/>
+  <text x="490" y="24" text-anchor="middle" font-size="13" class="dim">pycodemath 0.4 — verify: three answers, never a fourth</text>
+
+  <!-- VERIFIED: a symbolic proof closed -->
+  <text class="ln l1" x="24" y="72"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "verify sin(x)^2 + cos(x)^2 == 1"</tspan></text>
+  <text class="ln l2" x="24" y="98"><tspan class="ok">  VERIFIED</tspan><tspan class="txt"> (symbolic) — left - right simplifies to 0; agree numerically at 32 of 32 sample points</tspan></text>
+
+  <!-- REFUTED: with a counterexample -->
+  <text class="ln l3" x="24" y="140"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "verify sqrt(x^2) == x"</tspan></text>
+  <text class="ln l4" x="24" y="166"><tspan class="no">  REFUTED</tspan><tspan class="txt"> (numeric-sampling) — at x = -1: left = 1.0, right = -1.0</tspan></text>
+
+  <!-- UNDECIDED: agreement is not proof -->
+  <text class="ln l5" x="24" y="208"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "verify cos(x)^6 + sin(x)^6 == 1 - 3*sin(x)^2*cos(x)^2"</tspan></text>
+  <text class="ln l6" x="24" y="234"><tspan class="un">  UNDECIDED</tspan><tspan class="txt"> (numeric-sampling) — agree numerically at 32 of 32 sample points, without a symbolic proof</tspan></text>
+
+  <!-- a derivation: the slip is reported once, at the step that made it -->
+  <text class="ln l7" x="24" y="276"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "verify steps (x+1)^2 - (x-1)^2 = x^2 + 2x + 1 - x^2 + 2x + 1 = 4x + 2"</tspan></text>
+  <text class="ln l8" x="24" y="302"><tspan class="txt">  step 2: </tspan><tspan class="no">REFUTED</tspan><tspan class="txt"> (numeric-sampling) — at x = 0: left = 0.0, right = 2.0</tspan></text>
+  <text class="ln l9" x="24" y="328"><tspan class="txt">  step 3: </tspan><tspan class="ok">VERIFIED</tspan><tspan class="txt"> (symbolic) — the two sides are identical after automatic simplification</tspan></text>
+  <text class="ln l10" x="24" y="354"><tspan class="txt">  derivation: </tspan><tspan class="no">REFUTED</tspan><tspan class="txt"> — first wrong step: 2 (counterexample x = 0)</tspan></text>
+
+  <!-- prompt cursor -->
+  <text class="ln" x="24" y="398"><tspan class="p">$ </tspan><tspan class="cur">&#9608;</tspan></text>
+</svg>

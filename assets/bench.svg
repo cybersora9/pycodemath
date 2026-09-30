@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="-apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <title>How often pycodemath verify catches a real mistake, with the denominators</title>
+  <style>
+    .h1   { font-size: 22px; font-weight: 700; fill: #e6edf3; }
+    .sub  { font-size: 14px; fill: #8b949e; }
+    .grp  { font-size: 15px; font-weight: 700; fill: #e6edf3; }
+    .note { font-size: 13px; fill: #8b949e; font-weight: 400; }
+    .lab  { font-size: 14px; fill: #c9d1d9; }
+    .val  { font-size: 14px; fill: #e6edf3; font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace; }
+    .pct  { fill: #8b949e; }
+    .foot { font-size: 12px; fill: #8b949e; font-family: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace; }
+    .trk  { fill: #21262d; }
+    .hit  { fill: #7ee787; }
+    .cov  { fill: #6e7681; }
+  </style>
+
+  <rect x="1" y="1" width="978" height="468" rx="12" fill="#0d1117" stroke="#30363d"/>
+  <rect x="24" y="28" width="4" height="26" rx="2" fill="#e11d33"/>
+  <text class="h1" x="40" y="49">How often verify catches a real mistake</text>
+  <text class="sub" x="40" y="76">Low recall, zero false alarms: when it says a step is wrong, it shows the point where it is wrong.</text>
+
+  <!-- bars: track x=290..770 (480 px), value labels at x=786 -->
+
+  <!-- synthetic -->
+  <text class="grp" x="40" y="124">Synthetic derivations <tspan class="note">— 210 generated, half with an injected mistake · a regression set, not a claim about models</tspan></text>
+
+  <text class="lab" x="40" y="160">mistakes caught</text>
+  <rect class="trk" x="290" y="148" width="480" height="16" rx="3"/>
+  <rect class="hit" x="290" y="148" width="480" height="16" rx="3"/>
+  <text class="val" x="786" y="161">105 of 105</text>
+
+  <text class="lab" x="40" y="194">false alarms on correct ones</text>
+  <rect class="trk" x="290" y="182" width="480" height="16" rx="3"/>
+  <text class="val" x="786" y="195">0 of 105</text>
+
+  <!-- real model solutions -->
+  <text class="grp" x="40" y="252">Real model solutions <tspan class="note">— fixed PRM800K sample, 500 solutions, human-labelled first wrong step</tspan></text>
+
+  <text class="lab" x="40" y="288">steps with a checkable claim</text>
+  <rect class="trk" x="290" y="276" width="480" height="16" rx="3"/>
+  <rect class="cov" x="290" y="276" width="45.8" height="16" rx="3"/>
+  <text class="val" x="786" y="289">603 of 6318 <tspan class="pct">· 9.5%</tspan></text>
+
+  <text class="lab" x="40" y="322">first wrong step pinpointed</text>
+  <rect class="trk" x="290" y="310" width="480" height="16" rx="3"/>
+  <rect class="hit" x="290" y="310" width="30.5" height="16" rx="3"/>
+  <text class="val" x="786" y="323">24 of 378 <tspan class="pct">· 6.3%</tspan></text>
+
+  <text class="lab" x="40" y="356">flagged steps that are the error</text>
+  <rect class="trk" x="290" y="344" width="480" height="16" rx="3"/>
+  <rect class="hit" x="290" y="344" width="426.7" height="16" rx="3"/>
+  <text class="val" x="786" y="357">24 of 27 <tspan class="pct">· 88.9%</tspan></text>
+
+  <text class="lab" x="40" y="390">false alarms on correct ones</text>
+  <rect class="trk" x="290" y="378" width="480" height="16" rx="3"/>
+  <text class="val" x="786" y="391">0 of 122</text>
+
+  <line x1="24" y1="420" x2="956" y2="420" stroke="#30363d"/>
+  <text class="foot" x="40" y="446">measured on the published 0.4.0 wheel · python -m pycodemath.bench.verify_bench · python -m pycodemath.bench.real_bench</text>
+</svg>
