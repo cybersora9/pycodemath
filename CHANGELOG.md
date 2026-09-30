@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet.
 
-## [0.4.0] - (date set on release)
+## [0.4.0] - 2026-09-30
 
 Pycodemath now checks math, not just computes it: a verifier that answers
 VERIFIED, REFUTED (with a counterexample you can re-check yourself) or
