@@ -1,7 +1,8 @@
-# Pycodemath
-
 <p align="center">
-  <img alt="Pycodemath check_code: funkcja rabatu daje 0 dla 5 sztuk, a regulamin 10 (OBALONE), poprawiona funkcja jest DOWIEDZIONA, a program pisze test" src="assets/pycodemath-check-code-pl.gif" width="760">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/pycodemath-lockup.svg">
+    <img alt="pycodemath" src="assets/pycodemath-lockup-light.svg" width="420">
+  </picture>
 </p>
 
 **Twój kod wygląda dobrze. A matematyka?** Pycodemath sprawdza funkcje wobec ich

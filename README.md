@@ -18,10 +18,6 @@
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
-<p align="center">
-  <img alt="Pycodemath check_code: the discount function returns 0 for 5 items where the terms say 10 (REFUTED), the fixed function is VERIFIED, and a regression test is written" src="assets/pycodemath-check-code-en.gif" width="760">
-</p>
-
 Pycodemath checks functions against
 their formulas and returns either a proof or a concrete input that breaks them.
 No guessing, no random samples. Also an exact math engine and MCP server for AI
