@@ -12,45 +12,45 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 
 ### Added
 - **Check the math in your code** — nine modules of the FULL series, one product
-  (I1): every feature below is reachable from the Python API, the CLI/REPL, MCP,
-  and documented in both READMEs; every answer on the CLI and MCP ends with an
-  X1 certificate that `recheck` re-runs from the file alone.
-  - **Code against its formula (C1).** `check_code(func_or_source, formula,
+ : every feature below is reachable from the Python API, the CLI/REPL, MCP,
+  and documented in both READMEs; every answer on the CLI and MCP ends with a
+  certificate that `recheck` re-runs from the file alone.
+  - **Code against its formula.** `check_code(func_or_source, formula,
     domain=...)` proves a Python/NumPy function equal to a formula (symbolic,
     branch by branch, or an exact quasi-polynomial certificate for integer code
     with `//`/`%`) or refutes it with a call that was really executed in an
     isolated worker; `to_symbolic` reads a function into SymPy; `emit_test`
     writes the pytest that pins a counterexample. CLI: `verify code
     file.py:f == <formula> [where n: integer, n>=0] [--emit-test]`.
-  - **Floating-point accuracy (C2).** `diagnose(expr, ranges)` measures bits lost
+  - **Floating-point accuracy.** `diagnose(expr, ranges)` measures bits lost
     against the exact value, the worst input and the culprit operation;
     `improve(...)` returns rewrites that are proved equal (or a Taylor branch
     proved within the unit roundoff) and measured more accurate, with
     Python/NumPy/C code. FPCore input. CLI: `stability`, `improve`.
-  - **Value ranges (C3).** `pycodemath.code.analyze(expr, ranges, dtype)` finds
+  - **Value ranges.** `pycodemath.code.analyze(expr, ranges, dtype)` finds
     overflow, underflow, subnormals, NaN, division by zero and lost integer
     precision in int8…uint64, float16, bfloat16, float32, float64 — each with an
     input executed in NumPy, or a proof of safety — and proposes rewrites proved
     equivalent; `max_safe_input` gives the exact largest safe input. CLI:
     `ranges ... as <dtype>`, `maxsafe`. Optional extra `ranges` (`ml_dtypes`,
     `z3-solver`).
-  - **Money (C4).** Exact amounts at the ISO 4217 scale: `allocate` (shares
+  - **Money.** Exact amounts at the ISO 4217 scale: `allocate` (shares
     proved to sum to the total, each within one unit of its quota),
     `round_money` (8 modes, cash steps), `vat_per_line_vs_total` (with the
     proved worst case), `float_money_hazard` (which input loses a cent in
     floats), `compound_interest`, `amortization_schedule`, `npv`, `irr` (every
     rate, not one). CLI: `money round|split|vat|float|interest|loan|npv|irr`.
-  - **Calculator (K3).** `pycodemath.calc`: number theory with primality proofs
+  - **Calculator.** `pycodemath.calc`: number theory with primality proofs
     (deterministic Miller–Rabin to 3.3e24, Lucas–Lehmer/Pocklington beyond),
     combinatorics, 13 special functions at any precision;
     `pycodemath.stats`: exact descriptive statistics, 7 distributions, an A/B
     toolkit. CLI: `factor`, `isprime`, `gcd`, `binomial`, `special`, `mean`,
     `var`, `cdf`, `samplesize`, `ci`, `ztest`, `holm`, … (43 commands).
-  - **Units (J1).** `convert` (exact, certified), `check_dimensions` (refuted
+  - **Units.** `convert` (exact, certified), `check_dimensions` (refuted
     with a witness), `dimension_of`, `units_from_names`. CLI: `convert 5 km/h to
     m/s` (the bare `5 km/h to m/s` works too), `units F = m*v where F:N m:kg
     v:m/s`, `dims`.
-  - **Geometry (G1).** Rotations across quaternions, matrices, 24 Euler
+  - **Geometry.** Rotations across quaternions, matrices, 24 Euler
     conventions and axis-angle with independent checks;
     `compare_rotation_expressions` proves two rotation formulas equal or gives
     integer quaternions where they differ and the likely convention bug; robust
@@ -58,8 +58,8 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
     arc length with proved enclosures; `emit` to Python/NumPy/C/GLSL. CLI:
     `quat2mat`, `euler2mat`, `mat2euler`, `rotcheck`, `orient2d`, `orient3d`,
     `incircle`, `segment`, `easing`, `arclength`, `emit`, `epsilon`.
-- **Wave 2 of the FULL series, one product with the first nine (I2).**
-  - **Numbers you can trust (K2).** `approx(expr, digits)` returns the correctly
+- **Wave 2 of the FULL series, one product with the first nine.**
+  - **Numbers you can trust.** `approx(expr, digits)` returns the correctly
     rounded decimal, decided by interval arithmetic (own rigorous enclosures for
     `zeta(n)`, `erf`, `LambertW`, `CRootOf`; an exactly-zero part proved by its
     minimal polynomial); where no enclosure exists the digits are an agreement of
@@ -68,7 +68,7 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
     only with >= 50 digits and a coincidence margin >= 20). CLI: `evalf <expr>
     <d>`, `N(<expr>, <d>)`, `<expr> digits <d>`, `identify <x>`, and every exact
     number answers with its decimal (`sqrt(2)/2  ≈ 0.707106781186548`).
-  - **Solution sets and definite integrals (K5).** `solve_inequality` (proved by
+  - **Solution sets and definite integrals.** `solve_inequality` (proved by
     sign decomposition), `solve_system` (substitution + a completeness count, or
     the combination that reads `0 = 1`), `periodic_solutions` (period proved, one
     period proved complete), `definite_integral` (convergence or divergence by
@@ -76,13 +76,13 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
     independent quadrature; principal value only on request). CLI: `solve x^2-4 >
     0 for x [in [a, b]]`, `solve e1, e2 for x, y`, `solve <eq> all`, `reduce`,
     `integrate <f> dx from <a> to <b> [pv]`; `nintegrate` takes infinite bounds.
-  - **Loops and recurrences (C5).** `count_iterations` (the exact count, where it
+  - **Loops and recurrences.** `count_iterations` (the exact count, where it
     holds, Θ proved by a limit, then counted by running the function),
     `check_iterations` (off-by-one refuted with the executed n),
     `check_complexity`, `solve_recurrence`, `master_theorem`, `akra_bazzi`,
     `recurrence_from_code`. CLI: `iterations file.py:f [== <count>]`,
     `complexity file.py:f is O(...)`, `recurrence T(n) = ...`, `master a b f`.
-  - **Lint the math in your repo (L1).** `python -m pycodemath.lint` /
+  - **Lint the math in your repo.** `python -m pycodemath.lint` /
     `pycodemath-lint` / `pycodemath lint`: 17 rules (precision loss, overflow,
     float money, double rounding, `Decimal(0.1)`, `==` on floats, `^` as a power,
     banker's rounding, a `range` off by one against `:math:`), every finding with
@@ -93,13 +93,13 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
   - **MCP: `math_iterations` and `math_lint`** — source code in, the shared
     six-field answer out; by default nothing is executed (`execute=true` runs the
     function in the isolated worker, and is recorded in the certificate).
-    K2, K5 and recurrences are lines of `math_eval`.
+    Approximations, inequalities and recurrences are lines of `math_eval`.
   - **New certificate kinds:** `approx`, `identify`, `inequality`, `system`,
     `periodic`, `definite_integral`, `iterations`, `complexity`, `recurrence`,
     `lint` — each re-checked by running the module again and comparing; a
     non-rigorous approximation is UNDECIDED, never VERIFIED; a `lint` finding's
     witness is replayed independently.
-- **Re-exports.** `pycodemath.code` exports every public name of C1–C4 and G1;
+- **Re-exports.** `pycodemath.code` exports every public name of the code-checking and geometry modules;
   `pycodemath` exports the most used ones (`check_code`, `diagnose`, `improve`,
   `allocate`, `convert`, `check_dimensions`, `issue`, `recheck`, …) and the
   modules `code`, `stability`, `ranges`, `money`, `geometry`, `units`, `calc`,
@@ -116,7 +116,7 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
   Bezout identity, shares re-added in fractions, the worst float input
   re-evaluated by the emitted NumPy code against SymPy at 40 digits, an integer
   overflow re-executed against Python ints).
-- **Re-checkable certificates (X1).** `pycodemath.verify.issue(kind, ...)` runs a
+- **Re-checkable certificates.** `pycodemath.verify.issue(kind, ...)` runs a
   check and writes it down as one JSON object (`schema: 1`): the claim as typed
   and as parsed, the verdict with its exact counterexample, the budget, the
   versions of pycodemath/SymPy/mpmath/Python and a sha256 digest of all of it.
@@ -134,15 +134,15 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 ### Changed
 - MCP `math_eval` responses carry two more fields, `result` and `certificate`
   (`null` for every command that existed before).
-- `factor 2^64+1`, `isprime 2^61-1` and `5 km/h to m/s` are answered (K3, J1)
+- `factor 2^64+1`, `isprime 2^61-1` and `5 km/h to m/s` are answered
   instead of refused as unknown commands; so are `N(pi, 50)`, `evalf sqrt(2) 50`,
   `latex x^2/2`, `solve x^2-4 > 0 for x`, `reduce x^2 < 4 for x`, `solve x^2+y^2-1,
-  x-y for x,y` and `integrate exp(-x^2) dx from -oo to oo` (K2, K5; I2).
+  x-y for x,y` and `integrate exp(-x^2) dx from -oo to oo`.
 - A bare exact number prints its proved decimal beside it (`pi  ≈
   3.14159265358979`); integers, floats and expressions with symbols are unchanged.
 - `math_recheck` asks for `execute=true` before re-running an `iterations`,
   `complexity` or `lint` certificate whose code was executed (as for `code_equiv`).
-- **Strict parsing is the default ("never guesses", K1).** A multi-letter name
+- **Strict parsing is the default ("never guesses").** A multi-letter name
   off the function/constant whitelist is now ONE variable everywhere — Python
   API, verifier, MCP, CLI: `diff speed*time dtime` gives `speed` (it was `0`,
   exit code 0), and `verify mass*c^2 == m*a*s*s*c^2` is no longer VERIFIED.
@@ -180,7 +180,7 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 - A certificate's SymPy tree is refused on reading when it is too costly to
   evaluate (`Pow(10, Pow(10, 999))` built instantly and hung once checked),
   over 100 000 characters, 20 000 nodes or 100 levels deep.
-- C2 and C3 set mpmath's global interval precision; their entry points on the
+- `diagnose` and the ranges analysis set mpmath's global interval precision; their entry points on the
   CLI and MCP are serialized so two runs never compute at each other's
   precision.
 

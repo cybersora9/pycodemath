@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <img alt="pycodemath demo — one command in, one exact result out" src="assets/demo.svg" width="760">
+  <img alt="Pycodemath check_code: the discount function returns 0 for 5 items where the terms say 10 (REFUTED), the fixed function is VERIFIED, and a regression test is written" src="assets/pycodemath-check-code-en.gif" width="760">
 </p>
 
 Pycodemath checks functions against
@@ -115,7 +115,7 @@ certificate: REFUTED (re-evaluation) — at x = 510800533960562.3: float64 compu
 
 `improve ... emit python|numpy|c` prints the code that computes exactly what was
 measured. No rewrite is ever returned without a proof. Compared with Herbie on the
-11 Hamming benchmarks C2 did not look at while it was tuned: 7.25 bits of error
+11 Hamming benchmarks the optimizer was not tuned on: 7.25 bits of error
 left vs 8.08 for Herbie's outputs (better on 3, worse on 5, tied on 3) — against
 Herbie's published 2017 report (the 1.1 era), not today's Herbie 2.x, which could
 not be installed in the measuring environment.
@@ -268,7 +268,7 @@ that is UNDECIDED, never VERIFIED:
 'pi**2/6'
 ```
 
-Measured (K2 report): `sympy.nsimplify` "recognises" 60 of 60 random 16-digit
+Measured: `sympy.nsimplify` "recognises" 60 of 60 random 16-digit
 numbers; `identify` claims 0 of the same 60. In Python: `approx`, `evalf_to`,
 `dual`, `identify`.
 
@@ -307,7 +307,7 @@ certificate: VERIFIED (interval-arithmetic) — period 2*pi proved (the two side
 
 `reduce x^2 < 4 for x` reads the same; `for x in [0, 2*pi]` bounds a
 trigonometric inequality; the Cauchy principal value only on request (`pv`). On
-the K5 evaluation set (96 cases): 0 verified wrong answers, against 3 for raw
+an evaluation set of 96 cases: 0 verified wrong answers, against 3 for raw
 SymPy 1.14 and 5 for Maxima 5.46. In Python: `solve_inequality`, `solve_system`,
 `periodic_solutions`, `definite_integral`.
 
@@ -347,10 +347,10 @@ certificate: VERIFIED (Akra–Bazzi) — Θ(n*log(log(n))) by Akra–Bazzi (mast
 ```
 
 Also `complexity f.py:f is O(n log n)` (O, Theta, Omega, o, omega — decided by a
-limit) and `master <a> <b> <f>`. On the C5 set: SymPy's `rsolve` gives a closed
+limit) and `master <a> <b> <f>`. On the evaluation set: SymPy's `rsolve` gives a closed
 form for 5 of 20 recurrences and refuses every divide-and-conquer one; the
-empirical `big_O` package names the right class for 10 of 17 loops (C5 report,
-same cases). The CLI runs YOUR file; over MCP (`math_iterations`) nothing runs
+empirical `big_O` package names the right class for 10 of 17 loops (same
+cases). The CLI runs YOUR file; over MCP (`math_iterations`) nothing runs
 unless the agent passes `execute=true`.
 
 ### Lint the math in your repo
@@ -377,7 +377,7 @@ Exit codes as ruff (0 clean, 1 findings, 2 error — for `lint` only). Rules:
 sarif` (example workflow in `examples/github-action/pcm-lint.yml`). pre-commit:
 hook id `pycodemath-lint`. pytest: `pytest --pcm` checks every `:math:` /
 `@spec` as a test (installed as a plugin that does nothing without the flag).
-On L1's held-out set: 13 of 13 expected findings, 0 false positives. In Python:
+On the linter's held-out set: 13 of 13 expected findings, 0 false positives. In Python:
 `lint_source`, `lint_paths`, `spec`, `LintConfig`.
 
 ### For agents: six more MCP tools

@@ -39,7 +39,7 @@
   <circle cx="22" cy="19" r="6" fill="#ff5f56"/>
   <circle cx="42" cy="19" r="6" fill="#ffbd2e"/>
   <circle cx="62" cy="19" r="6" fill="#27c93f"/>
-  <text x="490" y="24" text-anchor="middle" font-size="13" class="dim">pycodemath 0.4 — verify: three answers, never a fourth</text>
+  <text x="490" y="24" text-anchor="middle" font-size="13" class="dim">pycodemath — verify: three answers, never a fourth</text>
 
   <!-- VERIFIED: a symbolic proof closed -->
   <text class="ln l1" x="24" y="72"><tspan class="p">$ </tspan><tspan class="cmd">pycodemath "verify sin(x)^2 + cos(x)^2 == 1"</tspan></text>

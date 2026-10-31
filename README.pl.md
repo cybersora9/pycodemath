@@ -1,5 +1,9 @@
 # Pycodemath
 
+<p align="center">
+  <img alt="Pycodemath check_code: funkcja rabatu daje 0 dla 5 sztuk, a regulamin 10 (OBALONE), poprawiona funkcja jest DOWIEDZIONA, a program pisze test" src="assets/pycodemath-check-code-pl.gif" width="760">
+</p>
+
 **Twój kod wygląda dobrze. A matematyka?** Pycodemath sprawdza funkcje wobec ich
 wzorów i zwraca albo dowód, albo konkretne wejście, które je psuje. Bez
 zgadywania, bez losowych próbek. Do tego dokładny silnik matematyczny i serwer
@@ -99,7 +103,7 @@ certificate: REFUTED (re-evaluation) — at x = 510800533960562.3: float64 compu
 
 `improve ... emit python|numpy|c` wypisuje kod liczący dokładnie to, co zostało
 zmierzone. Żadne przepisanie nie wraca bez dowodu. W porównaniu z Herbie na 11
-benchmarkach Hamminga, których C2 nie oglądał przy strojeniu: 7,25 bitu błędu
+benchmarkach Hamminga, których optymalizator nie oglądał przy strojeniu: 7,25 bitu błędu
 po przepisaniu wobec 8,08 dla wyników Herbie (lepiej w 3, gorzej w 5, remis w 3)
 — względem opublikowanego raportu Herbie z 2017 r. (era 1.1), nie dzisiejszego
 Herbie 2.x, którego nie dało się zainstalować w środowisku pomiaru.
@@ -256,7 +260,7 @@ nigdy VERIFIED:
 'pi**2/6'
 ```
 
-Zmierzone (raport K2): `sympy.nsimplify` „rozpoznaje” 60 z 60 losowych liczb
+Zmierzone: `sympy.nsimplify` „rozpoznaje” 60 z 60 losowych liczb
 16-cyfrowych; `identify` — 0 z tych samych 60. W Pythonie: `approx`, `evalf_to`,
 `dual`, `identify`.
 
@@ -295,7 +299,7 @@ certificate: VERIFIED (interval-arithmetic) — period 2*pi proved (the two side
 
 `reduce x^2 < 4 for x` czyta się tak samo; `for x in [0, 2*pi]` ogranicza
 nierówność trygonometryczną; wartość główna Cauchy'ego tylko na życzenie (`pv`).
-Na zestawie K5 (96 przypadków): 0 zweryfikowanych złych odpowiedzi, wobec 3 dla
+Na zestawie oceny (96 przypadków): 0 zweryfikowanych złych odpowiedzi, wobec 3 dla
 surowego SymPy 1.14 i 5 dla Maximy 5.46. W Pythonie: `solve_inequality`,
 `solve_system`, `periodic_solutions`, `definite_integral`.
 
@@ -336,9 +340,9 @@ certificate: VERIFIED (Akra–Bazzi) — Θ(n*log(log(n))) by Akra–Bazzi (mast
 ```
 
 Także `complexity f.py:f is O(n log n)` (O, Theta, Omega, o, omega —
-rozstrzygane granicą) i `master <a> <b> <f>`. Na zestawie C5: `rsolve` z SymPy
+rozstrzygane granicą) i `master <a> <b> <f>`. Na zestawie oceny: `rsolve` z SymPy
 daje postać zamkniętą dla 5 z 20 rekurencji i odmawia każdej typu „dziel i
-rządź”; empiryczny pakiet `big_O` trafia klasę dla 10 z 17 pętli (raport C5, te
+rządź”; empiryczny pakiet `big_O` trafia klasę dla 10 z 17 pętli (te
 same przypadki). CLI uruchamia TWÓJ plik; przez MCP (`math_iterations`) nic się
 nie wykonuje, dopóki agent nie poda `execute=true`.
 
@@ -366,7 +370,7 @@ Reguły: `--list-rules`, `--explain PCM401`. SARIF dla GitHub code scanning:
 `--format sarif` (przykładowy workflow w `examples/github-action/pcm-lint.yml`).
 pre-commit: hook `pycodemath-lint`. pytest: `pytest --pcm` sprawdza każde
 `:math:` / `@spec` jako test (instalowany jako wtyczka, która bez flagi nic nie
-robi). Na zbiorze wstrzymanym L1: 13 z 13 oczekiwanych zgłoszeń, 0 fałszywych.
+robi). Na zbiorze wstrzymanym lintera: 13 z 13 oczekiwanych zgłoszeń, 0 fałszywych.
 W Pythonie: `lint_source`, `lint_paths`, `spec`, `LintConfig`.
 
 ### Dla agentów: sześć kolejnych narzędzi MCP
