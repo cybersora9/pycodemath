@@ -9,10 +9,13 @@ from __future__ import annotations
 
 import keyword
 import math
-import token as _token
-from tokenize import TokenError
-
 import re
+import sys
+import token as _token
+from contextlib import contextmanager
+from contextvars import ContextVar
+from tokenize import TokenError
+from typing import Iterator
 
 import sympy as sp
 from sympy import SympifyError
@@ -58,24 +61,57 @@ def _deny_unsafe_tokens(tokens, local_dict, global_dict):
     return tokens
 
 
-# letters+trailing digits (v0, x1, q2, R1, t12) stay ONE symbol. Default
-# split_symbols would break "q1" into Symbol('q') * <the digit '1'> — and the
+# --- strict mode (K1: "never guesses") ---------------------------------------
+# A multi-letter name off the whitelist used to be split into a product of
+# letters (``speed`` -> s*p*e**2*d), the price of ``2xy`` notation. It was the
+# ONE mechanism behind every silent wrong answer of the 30.10 probes:
+# ``diff speed*time dtime`` came back ``0`` with exit code 0, and
+# ``verify mass*c^2 == m*a*s*s*c^2`` came back VERIFIED. Strict mode (the
+# default everywhere: Python API, verifier, MCP, CLI) reads such a name as ONE
+# variable, the way code and every CAS read it. ``implicit on`` in the REPL
+# (``--implicit`` in one-shot, ``parse_mode(strict=False)`` in Python) brings
+# the old splitting back for hand-typed ``2xy``. Either way the REPL refuses a
+# command whose variable is visible in one reading and absent in the other
+# (``diff xy dx``), so neither reading can turn into a silent zero.
+_STRICT: ContextVar[bool] = ContextVar("pycodemath_parse_strict", default=True)
+
+
+def is_strict() -> bool:
+    """Is the parser in strict mode (multi-letter names stay one variable)?"""
+    return _STRICT.get()
+
+
+def set_strict(strict: bool) -> None:
+    """Set the parsing mode for the current context (the REPL session setting)."""
+    _STRICT.set(bool(strict))
+
+
+@contextmanager
+def parse_mode(*, strict: bool) -> Iterator[None]:
+    """Parse in strict (``True``) or implicit-splitting (``False``) mode inside the block."""
+    token = _STRICT.set(bool(strict))
+    try:
+        yield
+    finally:
+        _STRICT.reset(token)
+
+
+# letters+trailing digits (v0, x1, q2, R1, t12) stay ONE symbol in both modes.
+# Default split_symbols would break "q1" into Symbol('q') * <the digit '1'> — and the
 # digit half is built via a bare ``Number(...)`` call the whitelist's
 # global_dict does not define (only Symbol/Function/Integer/Float/Rational
 # are), so this crashed with a leaked ``NameError: name 'Number' is not
 # defined`` for EVERY variable name in this extremely common physics/
 # engineering convention. (Plain sympy without the whitelist does not crash
 # here, but is worse: it silently drops the digit — "q1" reads as "q", "q2"
-# as "2*q", so "q1*q2" becomes "2*q**2".) split_symbols_custom keeps the
-# documented "unknown multi-letter name splits into a product of single
-# letters" behaviour (xy -> x*y — the price of "2x" notation) for pure-letter
-# names; only a trailing digit run is now excluded from splitting. A
-# multi-letter name CALLED (foo(x)) is refused before this: _refuse_unknown_calls.
+# as "2*q", so "q1*q2" becomes "2*q**2".) With implicit multiplication on,
+# pure-letter names still split (xy -> x*y); a multi-letter name CALLED
+# (foo(x)) is refused before this: _refuse_unknown_calls.
 _LETTER_DIGIT_SUFFIX = re.compile(r"[A-Za-z]+\d+")
 
 
 def _splittable(symbol: str) -> bool:
-    if not _token_splittable(symbol):
+    if _STRICT.get() or not _token_splittable(symbol):
         return False
     return not _LETTER_DIGIT_SUFFIX.fullmatch(symbol)
 
@@ -113,16 +149,78 @@ def _refuse_unknown_calls(tokens, local_dict, global_dict):
     ``besselj(0, x)`` is now refused here too, without SymPy's
     ``SymPyDeprecationWarning`` from multiplying a tuple.
     """
-    for (tok_type, tok_val), (next_type, next_val) in zip(tokens, tokens[1:]):
-        if (
-            tok_type == _token.NAME
-            and next_type == _token.OP
-            and next_val == "("
-            and _is_unknown_call_name(tok_val, local_dict, global_dict)
+    for i, ((tok_type, tok_val), (next_type, next_val)) in enumerate(
+        zip(tokens, tokens[1:])
+    ):
+        if tok_type != _token.NAME or next_type != _token.OP or next_val != "(":
+            continue
+        if _is_unknown_call_name(tok_val, local_dict, global_dict) or (
+            # ``N(pi, 50)``, ``f(x, y)``: a single letter before a parenthesised
+            # LIST cannot be a product — it multiplied a tuple, leaked a
+            # SymPyDeprecationWarning to stderr and failed with "can't multiply
+            # sequence" (K1, probe 41).
+            len(tok_val) == 1
+            and tok_val not in local_dict
+            and tok_val not in global_dict
+            and _has_top_level_comma(tokens, i + 1)
         ):
             raise ParseError(
                 f"unknown function {tok_val!r} — write {tok_val}*(...) "
                 "if a product is meant"
+            )
+    return tokens
+
+
+def _has_top_level_comma(tokens, open_at: int) -> bool:
+    """Does the bracket group opened at ``tokens[open_at]`` hold a comma at depth 1?"""
+    depth = 0
+    for tok_type, tok_val in tokens[open_at:]:
+        if tok_type != _token.OP:
+            continue
+        if tok_val in "([":
+            depth += 1
+        elif tok_val in ")]":
+            depth -= 1
+            if depth == 0:
+                return False
+        elif tok_val == "," and depth == 1:
+            return True
+    return False
+
+
+def _is_word(name: str, local_dict, global_dict) -> bool:
+    """A multi-letter, purely alphabetic name the parser does not know."""
+    return (
+        len(name) > 1
+        and name.isalpha()
+        and name not in local_dict
+        and name not in global_dict
+        and not keyword.iskeyword(name)
+    )
+
+
+def _refuse_juxtaposed_words(tokens, local_dict, global_dict):
+    """Two terms side by side with an unknown WORD among them is a ``ParseError``.
+
+    On the raw tokens two adjacent NAMEs (or a NAME then a NUMBER) were written
+    with a space between them — the tokenizer would have merged them otherwise.
+    With an unknown word on either side that is not notation, it is prose or a
+    command the grammar does not have: ``factor 2^64+1`` read as
+    ``factor*2^64 + 1``, ``5 km/h to m/s`` as ``5*km*to*m/(h*s)``, ``latex x^2/2``
+    as ``latex*x**3/2`` — answers with exit code 0 (K1, the 30.10 probes). A
+    known function keeps its implicit application (``sin x``), single letters
+    keep juxtaposition (``x y``). Checked in both parsing modes.
+    """
+    for (a_type, a_val), (b_type, b_val) in zip(tokens, tokens[1:]):
+        if a_type != _token.NAME or b_type not in (_token.NAME, _token.NUMBER):
+            continue
+        if _is_word(a_val, local_dict, global_dict) or (
+            b_type == _token.NAME and _is_word(b_val, local_dict, global_dict)
+        ):
+            raise ParseError(
+                f"'{a_val} {b_val}': two terms side by side with a word that is "
+                f"not a known function — write {a_val}*{b_val} if a product is "
+                f"meant (or type 'help' for the commands)"
             )
     return tokens
 
@@ -152,7 +250,7 @@ def _refuse_bare_function_names(tokens, local_dict, global_dict):
 # multiplication (2x -> 2*x), as in math notation. Unknown calls are refused on
 # the raw tokens (before the names are split), bare function names at the end.
 _TRANSFORMS = (
-    (_deny_unsafe_tokens, _refuse_unknown_calls)
+    (_deny_unsafe_tokens, _refuse_unknown_calls, _refuse_juxtaposed_words)
     + standard_transformations
     + (convert_xor,)
     + _implicit_multiplication_application
@@ -204,6 +302,9 @@ _LOCAL_DICT.update(
 
 #: Every name that resolves to a FUNCTION (not a constant): whitelist + aliases.
 _FUNCTION_NAMES = frozenset(_ALLOWED_FUNCTIONS) | {"ln", "abs", "min", "max"}
+#: Every name the parser resolves (functions, aliases, constants) — public for
+#: the REPL's unknown-command check.
+KNOWN_NAMES = frozenset(_LOCAL_DICT)
 
 # global_dict passed EXPLICITLY: without it parse_expr does `from sympy import *`
 # and adds Python builtins (including __import__). Here only the constructors
@@ -239,6 +340,17 @@ _MAX_FACTORIAL_ARG = 10_000
 #: Functions whose CONCRETE integer argument alone blows up the result.
 _COST_FUNCS = frozenset({"factorial", "gamma", "binomial"})
 _LN2 = math.log(2)
+
+# Python 3.11+ refuses to print an int over 4300 digits (a guard against
+# quadratic str<->int conversion), so ``2^20000`` — well inside the result cap
+# above — came back as a raw ``ValueError: Exceeds the limit (4300 digits)``
+# (K1). Raised (never lowered, never disabled) to the largest number the cost
+# guard lets through: about 0.302 decimal digits per bit, plus margin.
+_MAX_RESULT_DIGITS = int(_MAX_RESULT_BITS * math.log10(2)) + 100
+if hasattr(sys, "get_int_max_str_digits"):
+    _limit = sys.get_int_max_str_digits()
+    if 0 < _limit < _MAX_RESULT_DIGITS:
+        sys.set_int_max_str_digits(_MAX_RESULT_DIGITS)
 
 
 class _CostExceeded(Exception):
@@ -330,13 +442,63 @@ def _log2_size(node: sp.Basic) -> float | None:
     if isinstance(node, sp.Pow):
         exp = _int_value_bounded(node.exp)
         size = _log2_size(node.base)
-        return None if exp is None or size is None else size * abs(exp)
+        if size is None:
+            return None
+        if exp is not None:
+            return size * abs(exp)
+        q = _small_rational(node.exp)  # 2^(1/3): a root, smaller than its base
+        return None if q is None else size * abs(float(q))
+    if isinstance(node, sp.Function) and node.args:
+        # Under the guard's dummy functions a root is a call, not a Pow:
+        # sqrt(2)^10^20 is 2^(5*10^19) once SymPy evaluates it — the hang of
+        # the 30.10 probes (K1). The radicand's size divided by the index.
+        name = type(node).__name__
+        index: "int | None" = {"sqrt": 2, "cbrt": 3}.get(name)
+        if name == "root" and len(node.args) == 2:
+            q = _small_rational(node.args[1])
+            index = int(q) if q is not None and q.is_Integer and q > 0 else None
+        if index is None or (name != "root" and len(node.args) != 1):
+            return None
+        size = _log2_size(node.args[0])
+        return None if size is None else size / index
     if isinstance(node, (sp.Mul, sp.Add)):
         sizes = [_log2_size(arg) for arg in node.args]
         if any(sz is None for sz in sizes):
             return None
         return sum(sizes) + (1 if isinstance(node, sp.Add) else 0)  # type: ignore[arg-type]
     return None
+
+
+#: Bit cap on the numerator/denominator of an exponent read exactly by the guard.
+_SMALL_RATIONAL_BITS = 256
+
+
+def _small_rational(node: sp.Basic) -> "sp.Rational | None":
+    """Exact value of a SMALL rational built from numbers (``1/3`` arrives from the
+    unevaluated parse as ``Mul(1, Pow(3, -1))``), or ``None``. Never computes a
+    large number: an operand over ``_SMALL_RATIONAL_BITS`` bits gives ``None``."""
+    if node.is_Rational:
+        q = sp.Rational(node)
+    elif isinstance(node, sp.Pow):
+        base = _small_rational(node.base)
+        exp = _int_value_bounded(node.exp)
+        if base is None or exp is None or abs(exp) > 64 or (base == 0 and exp < 0):
+            return None
+        q = base**exp
+    elif isinstance(node, (sp.Mul, sp.Add)):
+        parts = [_small_rational(arg) for arg in node.args]
+        if any(p is None for p in parts):
+            return None
+        q = sp.Integer(1) if isinstance(node, sp.Mul) else sp.Integer(0)
+        for p in parts:
+            q = q * p if isinstance(node, sp.Mul) else q + p  # type: ignore[operator]
+            if max(abs(q.p), q.q).bit_length() > _SMALL_RATIONAL_BITS:  # type: ignore[attr-defined]
+                return None
+    else:
+        return None
+    if max(abs(q.p), q.q).bit_length() > _SMALL_RATIONAL_BITS:  # type: ignore[attr-defined]
+        return None
+    return q
 
 
 def _check_cost(node: "sp.Basic | list | tuple") -> None:

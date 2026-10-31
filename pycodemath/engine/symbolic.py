@@ -105,6 +105,14 @@ def solve(expr: Expr, var: str, real: bool = False) -> list[Expr]:
     for a different symbol.
     """
     sym = sp.Symbol(var)
+    if isinstance(expr.sy, sp.core.relational.Relational):
+        # ``solve x^2-4 > 0`` reached sp.solve, whose answer for an inequality is
+        # a boolean (``Or``), and the loop below died on it with a raw
+        # "'Or' object is not iterable" (K1, probe 30).
+        raise UnsupportedFormError(
+            f"solve: inequalities and relations are not supported — solve the "
+            f"boundary equation instead (solve <lhs>-(<rhs>) for {var})"
+        )
     try:
         raw = sp.solve(expr.sy, sym)
     except (

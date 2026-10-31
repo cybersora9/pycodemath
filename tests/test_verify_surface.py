@@ -37,7 +37,8 @@ from pycodemath.verify import (
 )
 from pycodemath.verify import equal as _equal
 
-VERIFY_FIELDS = {"text", "answer", "verdict", "steps", "error"}
+# X1 dodało "certificate" — ten sam werdykt zapisany do ponownego sprawdzenia.
+VERIFY_FIELDS = {"text", "answer", "verdict", "steps", "certificate", "error"}
 VERDICT_FIELDS = {"status", "method", "counterexample", "detail"}
 
 
@@ -314,7 +315,7 @@ _PAYLOADS = [
 @pytest.mark.parametrize(
     "command,carrier", [(p[1], p[2]) for p in _PAYLOADS], ids=[p[0] for p in _PAYLOADS]
 )
-def test_every_math_verify_response_has_the_same_five_fields(command, carrier):
+def test_every_math_verify_response_has_the_same_six_fields(command, carrier):
     payload = mcp_server.math_verify(command)
     assert set(payload) == VERIFY_FIELDS
     assert payload["error"] is None
@@ -322,6 +323,7 @@ def test_every_math_verify_response_has_the_same_five_fields(command, carrier):
     for field in ("verdict", "steps"):
         assert (payload[field] is not None) == (field == carrier)
     assert (payload["answer"] is not None) == command.startswith("certify")
+    assert (payload["certificate"] is not None) == (carrier is not None)
     # nic, czego JSON nie wyrazi (inf/nan) — liczników brak, kontrprzykład to tekst
     json.dumps(payload, allow_nan=False)
     assert "ok" not in payload and "success" not in payload

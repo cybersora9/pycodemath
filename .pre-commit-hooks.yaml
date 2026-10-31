@@ -1,0 +1,15 @@
+# pre-commit hook of pycodemath lint (module L1). In a project's .pre-commit-config.yaml:
+#
+#   - repo: https://github.com/cybersora9/pycodemath
+#     rev: <tag or commit>
+#     hooks:
+#       - id: pycodemath-lint
+#
+- id: pycodemath-lint
+  name: pycodemath lint (math in code, with witnesses)
+  description: Finds float/overflow/rounding/spec errors in Python math, each with an executed witness.
+  entry: python -m pycodemath.lint
+  language: python
+  types: [python]
+  require_serial: true
+  minimum_pre_commit_version: "2.9.0"

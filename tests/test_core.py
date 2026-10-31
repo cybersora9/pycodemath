@@ -132,22 +132,42 @@ def test_to_source_is_str_where_str_already_reads_back(text):
     "build, what",
     [
         (lambda: parse("gamma(x)").diff("x").subs({"x": 1}), "constant 'EulerGamma'"),
-        (lambda: E(sympy.Symbol("ab")), "symbol 'ab'"),
+        (lambda: _implicit(lambda: E(sympy.Symbol("ab")).to_source()), "symbol 'ab'"),
         (lambda: E(sympy.Symbol("E")), "symbol 'E'"),
         (lambda: E(sympy.Function("f")(sympy.Symbol("x"))), "undefined function f"),
     ],
 )
 def test_to_source_refuses_a_name_the_parser_reads_as_something_else(build, what):
-    # EulerGamma read back as E*G*a**2*e*l*m**2*r*u, Symbol("ab") as a*b, f(x) as f*x
+    # EulerGamma read back as E*G*a**2*e*l*m**2*r*u, Symbol("ab") as a*b (implicit
+    # multiplication on), f(x) as f*x
     with pytest.raises(UnsupportedFormError, match=what):
-        build().to_source()
+        built = build()
+        if not isinstance(built, str):
+            built.to_source()
+
+
+def _implicit(run):
+    from pycodemath.frontend.parser import parse_mode
+
+    with parse_mode(strict=False):
+        return run()
+
+
+def test_to_source_writes_a_multiletter_symbol_in_strict_mode():
+    # K1: strict parsing (the default) reads ``ab`` back as one symbol
+    e = E(sympy.Symbol("ab"))
+    assert e.to_source() == "ab"
+    assert parse(e.to_source()) == e
 
 
 def test_to_source_refuses_an_integer_past_the_text_limit():
-    # str(int) past 4300 digits is a ValueError; it leaked raw before module C
+    # str(int) past the digit limit is a ValueError; it leaked raw before module C.
+    # K1 raised the limit to the largest result the parser's cost guard admits
+    # (``2^20000`` printed a raw ValueError from the CLI), so the integer past it
+    # is built directly here.
     with pytest.raises(UnsupportedFormError, match="too long"):
-        parse("2^20000").to_source()
-    assert parse(parse("2^14000").to_source()) == parse("2^14000")
+        E(sympy.Integer(10) ** 70000).to_source()
+    assert parse(parse("2^20000").to_source()) == parse("2^20000")
 
 
 def test_to_source_leaves_an_unknown_function_to_the_parsers_refusal():

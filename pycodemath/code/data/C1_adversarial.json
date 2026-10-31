@@ -1,0 +1,472 @@
+[
+ {
+  "id": "while_loop",
+  "source": "def f(n: int):\n    s = 0\n    i = 0\n    while i < n:\n        i += 1\n        s += i\n    return s\n",
+  "formula": "n*(n+1)/2",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "recursion_ok",
+  "source": "def f(n: int):\n    return 1 if n <= 1 else n * f(n - 1)\n",
+  "formula": "n!",
+  "domain": {
+   "n": "integer, n>=1"
+  },
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "cancellation_identity",
+  "source": "import math\ndef f(x: float):\n    return (1 - math.cos(x)) / x**2\n",
+  "formula": "2*sin(x/2)^2/x^2",
+  "domain": null,
+  "allowed": [
+   "undecided",
+   "verified"
+  ]
+ },
+ {
+  "id": "float_accumulate",
+  "source": "def f(n: int):\n    s = 0.0\n    for _ in range(n):\n        s += 0.1\n    return s\n",
+  "formula": "n/10",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "none_path",
+  "source": "def f(x: float):\n    if x > 0:\n        return x\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "undecided",
+   "verified"
+  ]
+ },
+ {
+  "id": "pole",
+  "source": "def f(x: float):\n    return 1 / x\n",
+  "formula": "1/x",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "pole_removable",
+  "source": "def f(x: float):\n    return (x**2 - 1) / (x - 1)\n",
+  "formula": "x + 1",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "overflow_big_power",
+  "source": "def f(x: float):\n    return x ** 400\n",
+  "formula": "x^400",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "huge_loop_reducible",
+  "source": "def f(n: int):\n    s = 0\n    for i in range(10**9):\n        s += 1\n    return s + n\n",
+  "formula": "10^9 + n",
+  "domain": null,
+  "allowed": [
+   "undecided",
+   "verified"
+  ]
+ },
+ {
+  "id": "huge_loop_not_reducible",
+  "source": "def f(n: int):\n    s = 1\n    for i in range(10**9):\n        s = s * 3 // 2\n    return s\n",
+  "formula": "n",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "xor_identity",
+  "source": "def f(n: int):\n    return n ^ 0\n",
+  "formula": "n",
+  "domain": {
+   "n": "integer"
+  },
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "sqrt_negative",
+  "source": "import math\ndef f(x: float):\n    return math.sqrt(x)\n",
+  "formula": "sqrt(x)",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "formula_nan",
+  "source": "def f(x: float):\n    return x\n",
+  "formula": "0/0",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "side_effect_print",
+  "source": "def f(x: float):\n    print(x)\n    return x\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "import_os",
+  "source": "import os\ndef f(x: float):\n    return x + 1\n",
+  "formula": "x + 2",
+  "domain": null,
+  "allowed": [
+   "refuted",
+   "undecided"
+  ]
+ },
+ {
+  "id": "default_param",
+  "source": "def f(x: float, scale: float = 2.0):\n    return x * scale\n",
+  "formula": "2*x",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "int_trunc_identity",
+  "source": "def f(x: float):\n    return int(x)\n",
+  "formula": "sign(x)*floor(abs(x))",
+  "domain": null,
+  "allowed": [
+   "undecided",
+   "verified"
+  ]
+ },
+ {
+  "id": "decimal_literal",
+  "source": "def f(x: float):\n    return x + 0.1 + 0.2\n",
+  "formula": "x + 0.3",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "bool_result",
+  "source": "def f(n: int):\n    return n % 2 == 0\n",
+  "formula": "1 - n + 2*floor(n/2)",
+  "domain": {
+   "n": "integer"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "tuple_return",
+  "source": "def f(x: float):\n    return x, x\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "negative_step",
+  "source": "def f(n: int):\n    s = 0\n    for i in range(n, 0, -1):\n        s += i\n    return s\n",
+  "formula": "n*(n+1)/2",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "negative_step_bug",
+  "source": "def f(n: int):\n    s = 0\n    for i in range(n, 1, -1):\n        s += i\n    return s\n",
+  "formula": "n*(n+1)/2",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "refuted"
+  ]
+ },
+ {
+  "id": "nested_def",
+  "source": "def f(x: float):\n    def g(y):\n        return y\n    return g(x)\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "global_mutation",
+  "source": "T = 0\ndef f(x: float):\n    global T\n    T += 1\n    return x\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "infinite_recursion",
+  "source": "def f(n: int):\n    return f(n)\n",
+  "formula": "n",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "infinite_while",
+  "source": "def f(n: int):\n    while True:\n        pass\n    return n\n",
+  "formula": "n",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "sleep_import_time",
+  "source": "import time\ndef f(n: int):\n    time.sleep(100)\n    return n\n",
+  "formula": "n",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "formula_float_pi",
+  "source": "import math\ndef f(r: float):\n    return math.pi * r * r\n",
+  "formula": "3.14159265358979*r^2",
+  "domain": null,
+  "allowed": [
+   "refuted",
+   "undecided"
+  ]
+ },
+ {
+  "id": "float_pi_literal",
+  "source": "def f(r: float):\n    return 3.141592653589793 * r * r\n",
+  "formula": "pi*r^2",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "precision_loss",
+  "source": "def f(x: float):\n    return (x + 1)**2 - x**2 - 2*x\n",
+  "formula": "1",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "pow_half",
+  "source": "def f(x: float):\n    return x ** 0.5\n",
+  "formula": "sqrt(x)",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "sqrt_square_domain",
+  "source": "import math\ndef f(x: float):\n    return math.sqrt(x * x)\n",
+  "formula": "x",
+  "domain": {
+   "x": "real, x>=0"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "sqrt_square_nodomain",
+  "source": "import math\ndef f(x: float):\n    return math.sqrt(x * x)\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "refuted"
+  ]
+ },
+ {
+  "id": "log_domain",
+  "source": "import math\ndef f(x: float):\n    return math.log(x**2)\n",
+  "formula": "2*log(x)",
+  "domain": {
+   "x": "real, x>0"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "param_named_exp_e",
+  "source": "def f(e: float, exp: float):\n    return e ** exp\n",
+  "formula": "e^exp",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "recursive_fib_ok",
+  "source": "def f(n: int):\n    return n if n < 2 else f(n-1) + f(n-2)\n",
+  "formula": "fibonacci(n)",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "cmath_complex",
+  "source": "import cmath\ndef f(x: float):\n    return cmath.sqrt(x)\n",
+  "formula": "sqrt(x)",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "list_usage",
+  "source": "def f(n: int):\n    xs = [i for i in range(n)]\n    return len(xs)\n",
+  "formula": "n",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "raise_on_negative",
+  "source": "def f(n: int):\n    if n < 0:\n        raise ValueError('n')\n    return n * (n + 1) // 2\n",
+  "formula": "n*(n+1)/2",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "assert_guard",
+  "source": "def f(x: float):\n    assert x >= 0\n    return abs(x)\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "loop_var_after_loop",
+  "source": "def f(n: int):\n    for i in range(n):\n        pass\n    return i\n",
+  "formula": "n - 1",
+  "domain": {
+   "n": "integer, n>=1"
+  },
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "tiny_constant_diff",
+  "source": "def f(x: float):\n    return x * 1.0000000001\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "refuted"
+  ]
+ },
+ {
+  "id": "ulp_constant_diff",
+  "source": "def f(x: float):\n    return x * 1.0000000000000002\n",
+  "formula": "x",
+  "domain": null,
+  "allowed": [
+   "undecided"
+  ]
+ },
+ {
+  "id": "empty_range_karr",
+  "source": "def f(n: int):\n    s = 0\n    for i in range(5, n):\n        s += 1\n    return s\n",
+  "formula": "Max(0, n-5)",
+  "domain": {
+   "n": "integer"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "nested_loops_triangle",
+  "source": "def f(n: int):\n    c = 0\n    for i in range(n):\n        for j in range(i, n):\n            c += 1\n    return c\n",
+  "formula": "n*(n+1)/2",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "divmod_use",
+  "source": "def f(n: int):\n    q, r = divmod(n, 3)\n    return 3*q + r\n",
+  "formula": "n",
+  "domain": {
+   "n": "integer"
+  },
+  "allowed": [
+   "verified"
+  ]
+ },
+ {
+  "id": "big_int_exact",
+  "source": "def f(n: int):\n    return 2**n + 1\n",
+  "formula": "2^n",
+  "domain": {
+   "n": "integer, n>=0"
+  },
+  "allowed": [
+   "refuted"
+  ]
+ },
+ {
+  "id": "np_alias_from",
+  "source": "from numpy import exp as E\ndef f(x: float):\n    return E(x) * E(-x)\n",
+  "formula": "1",
+  "domain": null,
+  "allowed": [
+   "verified"
+  ]
+ }
+]

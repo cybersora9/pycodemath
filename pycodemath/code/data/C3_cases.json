@@ -1,0 +1,1345 @@
+{
+ "description": "C3 evaluation set: value ranges and overflow/underflow/NaN/precision-loss events. 'expect' maps an event class to the required class status: 'confirmed' (some node has the event, witnessed by execution), 'proved_safe' (no node can have it). Held-out cases (split=held) are evaluated only after the analyzer is frozen.",
+ "licence": "Cases are written for this repository (MIT). 'source' links only document the real-world incident or fact a case is modelled on; no text or data is copied from them.",
+ "cases": [
+  {
+   "id": "bsearch_mid_int32",
+   "expr": "(lo + hi) // 2",
+   "dtype": "int32",
+   "ranges": {
+    "lo": [
+     "0",
+     "2**31-1"
+    ],
+    "hi": [
+     "0",
+     "2**31-1"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Binary-search midpoint in the JDK and Programming Pearls (Bloch 2006).",
+   "source": "https://research.google/blog/extra-extra-read-all-about-it-nearly-all-binary-searches-and-mergesorts-are-broken/",
+   "split": "dev"
+  },
+  {
+   "id": "bsearch_mid_fixed_int32",
+   "expr": "lo + (hi - lo) // 2",
+   "dtype": "int32",
+   "ranges": {
+    "lo": [
+     "0",
+     "2**31-1"
+    ],
+    "hi": [
+     "0",
+     "2**31-1"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Bloch's fix; never overflows even without lo <= hi.",
+   "source": "https://research.google/blog/extra-extra-read-all-about-it-nearly-all-binary-searches-and-mergesorts-are-broken/",
+   "split": "dev"
+  },
+  {
+   "id": "aolserver_timeout_int32",
+   "expr": "now + 1000000000",
+   "dtype": "int32",
+   "ranges": {
+    "now": [
+     "1140000000",
+     "1200000000"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "AOLserver 2006: a one-billion-second timeout added to time_t crossed 2038.",
+   "source": "https://en.wikipedia.org/wiki/Year_2038_problem",
+   "split": "held"
+  },
+  {
+   "id": "y2038_lookahead_int32",
+   "expr": "now + 20 * 365 * 86400",
+   "dtype": "int32",
+   "ranges": {
+    "now": [
+     "1700000000",
+     "1800000000"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "20-year expiry date computed in 32-bit seconds (mortgage/certificate lookahead).",
+   "source": "https://en.wikipedia.org/wiki/Year_2038_problem",
+   "split": "dev"
+  },
+  {
+   "id": "y2038_int64_safe",
+   "expr": "now + 1000000000",
+   "dtype": "int64",
+   "ranges": {
+    "now": [
+     "1140000000",
+     "1800000000"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Same timeout in 64-bit time_t.",
+   "source": "https://en.wikipedia.org/wiki/Year_2038_problem",
+   "split": "dev"
+  },
+  {
+   "id": "fp16_square",
+   "expr": "x * x",
+   "dtype": "float16",
+   "ranges": {
+    "x": [
+     "-300",
+     "300"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Squaring activations in fp16: 256*256 = 65536 > 65504.",
+   "source": "https://pytorch.org/docs/stable/amp.html",
+   "split": "held"
+  },
+  {
+   "id": "fp16_square_safe",
+   "expr": "x * x",
+   "dtype": "float16",
+   "ranges": {
+    "x": [
+     "-200",
+     "200"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe",
+    "nan_possible": "proved_safe"
+   },
+   "story": "Activations bounded by 200: x*x <= 40000 fits fp16.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "fp16_sum_of_squares",
+   "expr": "x * x + y * y",
+   "dtype": "float16",
+   "ranges": {
+    "x": [
+     "-200",
+     "200"
+    ],
+    "y": [
+     "-200",
+     "200"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Squared norm in fp16 (why AMP runs norms in fp32).",
+   "source": "https://pytorch.org/docs/stable/amp.html",
+   "split": "dev"
+  },
+  {
+   "id": "softmax2_fp16",
+   "expr": "exp(x) / (exp(x) + exp(y))",
+   "dtype": "float16",
+   "ranges": {
+    "x": [
+     "-20",
+     "20"
+    ],
+    "y": [
+     "-20",
+     "20"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed",
+    "nan_possible": "confirmed"
+   },
+   "story": "Naive softmax in fp16: exp(12) > 65504, then inf/inf = NaN.",
+   "source": "https://pytorch.org/docs/stable/amp.html",
+   "split": "held"
+  },
+  {
+   "id": "softmax2_shifted_fp16",
+   "expr": "exp(x - max(x, y)) / (exp(x - max(x, y)) + exp(y - max(x, y)))",
+   "dtype": "float16",
+   "ranges": {
+    "x": [
+     "-20",
+     "20"
+    ],
+    "y": [
+     "-20",
+     "20"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe",
+    "nan_possible": "proved_safe",
+    "division_by_zero_possible": "proved_safe"
+   },
+   "story": "Max-shifted softmax: exponents <= 0, denominator >= 1.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "softmax2_bf16",
+   "expr": "exp(x) / (exp(x) + exp(y))",
+   "dtype": "bfloat16",
+   "ranges": {
+    "x": [
+     "-100",
+     "100"
+    ],
+    "y": [
+     "-100",
+     "100"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Naive softmax in bf16 with logits up to 100: exp(89) > 3.39e38.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "softmax2_fp32",
+   "expr": "exp(x) / (exp(x) + exp(y))",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-100",
+     "100"
+    ],
+    "y": [
+     "-100",
+     "100"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed",
+    "nan_possible": "confirmed"
+   },
+   "story": "Naive softmax in float32 with logits up to 100.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "exp_fp32_safe",
+   "expr": "exp(x)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-80",
+     "80"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "exp below its float32 limit (~88.72).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "logsumexp_fp32",
+   "expr": "log(exp(x) + exp(y))",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-1000",
+     "1000"
+    ],
+    "y": [
+     "-1000",
+     "1000"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Naive log-sum-exp over logits in [-1000, 1000].",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "logsumexp_shifted_fp32",
+   "expr": "max(x, y) + log(exp(x - max(x, y)) + exp(y - max(x, y)))",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-1000",
+     "1000"
+    ],
+    "y": [
+     "-1000",
+     "1000"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe",
+    "division_by_zero_possible": "proved_safe"
+   },
+   "story": "Stable log-sum-exp.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "variance_fp32",
+   "expr": "(x * x + y * y) / 2 - ((x + y) / 2) * ((x + y) / 2)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-1e20",
+     "1e20"
+    ],
+    "y": [
+     "-1e20",
+     "1e20"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "One-pass variance E[x^2]-E[x]^2 on large float32 values.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "variance_fp32_safe",
+   "expr": "(x * x + y * y) / 2 - ((x + y) / 2) * ((x + y) / 2)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-1e3",
+     "1e3"
+    ],
+    "y": [
+     "-1e3",
+     "1e3"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Same formula on bounded data (precision is C2's job, range is fine).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "numel_int32",
+   "expr": "n * c * h * w",
+   "dtype": "int32",
+   "ranges": {
+    "n": [
+     "1",
+     "64"
+    ],
+    "c": [
+     "1",
+     "1024"
+    ],
+    "h": [
+     "1",
+     "2048"
+    ],
+    "w": [
+     "1",
+     "2048"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Tensor element count in 32-bit index math (PyTorch splits kernels when numel > 2^31-1).",
+   "source": "https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/TensorIterator.cpp",
+   "split": "held"
+  },
+  {
+   "id": "numel_int64",
+   "expr": "n * c * h * w",
+   "dtype": "int64",
+   "ranges": {
+    "n": [
+     "1",
+     "64"
+    ],
+    "c": [
+     "1",
+     "1024"
+    ],
+    "h": [
+     "1",
+     "2048"
+    ],
+    "w": [
+     "1",
+     "2048"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Same count in int64.",
+   "source": "https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/native/TensorIterator.cpp",
+   "split": "dev"
+  },
+  {
+   "id": "comb3_int64",
+   "expr": "n * (n - 1) * (n - 2) // 6",
+   "dtype": "int64",
+   "ranges": {
+    "n": [
+     "0",
+     "3000000"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "C(n,3) with the product formed first: n^3 > 9.22e18 for n = 3e6.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "comb3_int64_safe",
+   "expr": "n * (n - 1) * (n - 2) // 6",
+   "dtype": "int64",
+   "ranges": {
+    "n": [
+     "0",
+     "2000000"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Same formula, n <= 2e6: 8e18 < 9.22e18.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "factorial21_int64",
+   "expr": "f * n",
+   "dtype": "int64",
+   "ranges": {
+    "f": [
+     "1",
+     "2432902008176640000"
+    ],
+    "n": [
+     "1",
+     "21"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "21! does not fit int64 (20! = 2432902008176640000 does).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "dist_fp32_big",
+   "expr": "sqrt(dx * dx + dy * dy)",
+   "dtype": "float32",
+   "ranges": {
+    "dx": [
+     "-1e20",
+     "1e20"
+    ],
+    "dy": [
+     "-1e20",
+     "1e20"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Euclidean distance: dx*dx overflows although the distance (1.4e20) fits.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "dist_fp32_game",
+   "expr": "sqrt(dx * dx + dy * dy)",
+   "dtype": "float32",
+   "ranges": {
+    "dx": [
+     "-1e4",
+     "1e4"
+    ],
+    "dy": [
+     "-1e4",
+     "1e4"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe",
+    "nan_possible": "proved_safe"
+   },
+   "story": "Game-world distance with coordinates in +-1e4.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "dist_fp16_game",
+   "expr": "sqrt(dx * dx + dy * dy)",
+   "dtype": "float16",
+   "ranges": {
+    "dx": [
+     "-500",
+     "500"
+    ],
+    "dy": [
+     "-500",
+     "500"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Same distance in fp16 (GPU half-precision shader): 500^2 > 65504.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "ts_ms_fp32",
+   "expr": "t + 1",
+   "dtype": "float32",
+   "ranges": {
+    "t": [
+     "1600000000000",
+     "1800000000000",
+     "int"
+    ]
+   },
+   "real_problem": true,
+   "target": "integer_precision_loss",
+   "expect": {
+    "integer_precision_loss": "confirmed"
+   },
+   "story": "Millisecond Unix timestamps stored in float32 lose whole milliseconds.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "ts_ms_fp64",
+   "expr": "t + 1",
+   "dtype": "float64",
+   "ranges": {
+    "t": [
+     "1600000000000",
+     "1800000000000",
+     "int"
+    ]
+   },
+   "real_problem": false,
+   "target": "integer_precision_loss",
+   "expect": {
+    "integer_precision_loss": "proved_safe"
+   },
+   "story": "Same in float64: < 2^53.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "ts_diff_fp32",
+   "expr": "t1 - t0",
+   "dtype": "float32",
+   "ranges": {
+    "t0": [
+     "1600000000000",
+     "1800000000000",
+     "int"
+    ],
+    "t1": [
+     "1600000000000",
+     "1800000000000",
+     "int"
+    ]
+   },
+   "real_problem": true,
+   "target": "integer_precision_loss",
+   "expect": {
+    "integer_precision_loss": "confirmed"
+   },
+   "story": "Duration between two ms timestamps in float32.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "cents_mul_int32",
+   "expr": "price * qty",
+   "dtype": "int32",
+   "ranges": {
+    "price": [
+     "0",
+     "10000000"
+    ],
+    "qty": [
+     "0",
+     "1000"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Order total in cents in int32: 100 000.00 x 1000 items.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "cents_add_int32_safe",
+   "expr": "a + b",
+   "dtype": "int32",
+   "ranges": {
+    "a": [
+     "0",
+     "1000000000"
+    ],
+    "b": [
+     "0",
+     "1000000000"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Two balances up to 10 000 000.00 in cents: 2e9 < 2^31-1.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "cents_mul_int64",
+   "expr": "price * qty",
+   "dtype": "int64",
+   "ranges": {
+    "price": [
+     "0",
+     "10000000"
+    ],
+    "qty": [
+     "0",
+     "1000"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Order total in int64.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "matsize_uint16",
+   "expr": "rows * cols",
+   "dtype": "uint16",
+   "ranges": {
+    "rows": [
+     "1",
+     "1024"
+    ],
+    "cols": [
+     "1",
+     "1024"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Matrix element count in uint16 (embedded / texture metadata).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "matsize_uint16_safe",
+   "expr": "rows * cols",
+   "dtype": "uint16",
+   "ranges": {
+    "rows": [
+     "1",
+     "255"
+    ],
+    "cols": [
+     "1",
+     "255"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "255*255 = 65025 <= 65535.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "len_diff_uint32",
+   "expr": "a - b",
+   "dtype": "uint32",
+   "ranges": {
+    "a": [
+     "0",
+     "100"
+    ],
+    "b": [
+     "0",
+     "100"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Unsigned length difference wraps to ~4e9 when b > a.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "pixel_avg_uint8",
+   "expr": "(a + b) // 2",
+   "dtype": "uint8",
+   "ranges": {
+    "a": [
+     "0",
+     "255"
+    ],
+    "b": [
+     "0",
+     "255"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Averaging two uint8 images in NumPy: a + b wraps.",
+   "source": "https://numpy.org/doc/stable/user/basics.types.html#overflow-errors",
+   "split": "dev"
+  },
+  {
+   "id": "pixel_avg_uint8_fixed",
+   "expr": "a // 2 + b // 2",
+   "dtype": "uint8",
+   "ranges": {
+    "a": [
+     "0",
+     "255"
+    ],
+    "b": [
+     "0",
+     "255"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Halve first: at most 254.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "audio_mix_int16",
+   "expr": "a + b",
+   "dtype": "int16",
+   "ranges": {
+    "a": [
+     "-32768",
+     "32767"
+    ],
+    "b": [
+     "-32768",
+     "32767"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Mixing two 16-bit PCM samples without saturation.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "abs_int32_min",
+   "expr": "abs(x)",
+   "dtype": "int32",
+   "ranges": {
+    "x": [
+     "-2**31",
+     "2**31-1"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "abs(INT_MIN) == INT_MIN: one input in 2^32.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "abs_int32_safe",
+   "expr": "abs(x)",
+   "dtype": "int32",
+   "ranges": {
+    "x": [
+     "-2**31+1",
+     "2**31-1"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "abs with INT_MIN excluded.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "div_int32",
+   "expr": "x // y",
+   "dtype": "int32",
+   "ranges": {
+    "x": [
+     "-2**31",
+     "2**31-1"
+    ],
+    "y": [
+     "-1",
+     "1"
+    ]
+   },
+   "real_problem": true,
+   "target": "division_by_zero_possible",
+   "expect": {
+    "division_by_zero_possible": "confirmed",
+    "overflow": "confirmed"
+   },
+   "story": "Integer division: y = 0, and INT_MIN // -1.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "log_fp32_domain",
+   "expr": "log(x)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-1",
+     "1"
+    ]
+   },
+   "real_problem": true,
+   "target": "nan_possible",
+   "expect": {
+    "nan_possible": "confirmed",
+    "division_by_zero_possible": "confirmed"
+   },
+   "story": "log of a value that can be <= 0.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "sqrt_fp32_domain",
+   "expr": "sqrt(x - 1)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "0",
+     "2"
+    ]
+   },
+   "real_problem": true,
+   "target": "nan_possible",
+   "expect": {
+    "nan_possible": "confirmed"
+   },
+   "story": "sqrt of a possibly negative difference.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "sqrt_square_safe",
+   "expr": "sqrt(x * x)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-10",
+     "10"
+    ]
+   },
+   "real_problem": false,
+   "target": "nan_possible",
+   "expect": {
+    "nan_possible": "proved_safe"
+   },
+   "story": "x*x is never negative (interval x*x must not be [-100, 100]).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "inv_diff_fp32",
+   "expr": "1 / (x - y)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "0",
+     "1"
+    ],
+    "y": [
+     "0",
+     "1"
+    ]
+   },
+   "real_problem": true,
+   "target": "division_by_zero_possible",
+   "expect": {
+    "division_by_zero_possible": "confirmed"
+   },
+   "story": "1/(x-y) at x == y (random sampling almost never hits it).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "inv_safe_fp32",
+   "expr": "1 / (x * x + 1)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-1e18",
+     "1e18"
+    ]
+   },
+   "real_problem": false,
+   "target": "division_by_zero_possible",
+   "expect": {
+    "division_by_zero_possible": "proved_safe",
+    "overflow": "proved_safe"
+   },
+   "story": "Denominator >= 1.",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "exp_underflow_fp32",
+   "expr": "exp(-x)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "0",
+     "200"
+    ]
+   },
+   "real_problem": true,
+   "target": "underflow_to_zero",
+   "expect": {
+    "underflow_to_zero": "confirmed"
+   },
+   "story": "Decay factor exp(-x) flushes to 0 for x > ~104.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "likelihood_fp32",
+   "expr": "p * q * r",
+   "dtype": "float32",
+   "ranges": {
+    "p": [
+     "1e-20",
+     "1"
+    ],
+    "q": [
+     "1e-20",
+     "1"
+    ],
+    "r": [
+     "1e-20",
+     "1"
+    ]
+   },
+   "real_problem": true,
+   "target": "underflow_to_zero",
+   "expect": {
+    "underflow_to_zero": "confirmed"
+   },
+   "story": "Product of probabilities underflows (why we sum log-probabilities).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "grad_fp16",
+   "expr": "g * 0.0001",
+   "dtype": "float16",
+   "ranges": {
+    "g": [
+     "1e-6",
+     "1e-3"
+    ]
+   },
+   "real_problem": true,
+   "target": "underflow_to_zero",
+   "expect": {
+    "underflow_to_zero": "confirmed"
+   },
+   "story": "Small gradient times learning rate in fp16 becomes 0 (motivation for loss scaling).",
+   "source": "https://arxiv.org/abs/1710.03740",
+   "split": "held"
+  },
+  {
+   "id": "subnormal_fp32",
+   "expr": "x * 0.001",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "1e-36",
+     "1"
+    ]
+   },
+   "real_problem": true,
+   "target": "subnormal",
+   "expect": {
+    "subnormal": "confirmed"
+   },
+   "story": "Scaling tiny values into the subnormal range (slow path, lost bits).",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "bf16_square_safe",
+   "expr": "x * x",
+   "dtype": "bfloat16",
+   "ranges": {
+    "x": [
+     "-1e18",
+     "1e18"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "bf16 keeps float32's range: (1e18)^2 = 1e36 fits.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "bf16_counter",
+   "expr": "i + 1",
+   "dtype": "bfloat16",
+   "ranges": {
+    "i": [
+     "0",
+     "1000",
+     "int"
+    ]
+   },
+   "real_problem": true,
+   "target": "integer_precision_loss",
+   "expect": {
+    "integer_precision_loss": "confirmed"
+   },
+   "story": "Step counter / position id in bf16: 257 is not representable (8-bit significand).",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "fp32_counter",
+   "expr": "i + 1",
+   "dtype": "float32",
+   "ranges": {
+    "i": [
+     "0",
+     "2**25",
+     "int"
+    ]
+   },
+   "real_problem": true,
+   "target": "integer_precision_loss",
+   "expect": {
+    "integer_precision_loss": "confirmed"
+   },
+   "story": "float32 loop counter sticks at 16777216.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "snowflake_fp64",
+   "expr": "id",
+   "dtype": "float64",
+   "ranges": {
+    "id": [
+     "0",
+     "2**63-1",
+     "int"
+    ]
+   },
+   "real_problem": true,
+   "target": "integer_precision_loss",
+   "expect": {
+    "integer_precision_loss": "confirmed"
+   },
+   "story": "64-bit Snowflake IDs parsed as double lose digits; hence id_str.",
+   "source": "https://developer.x.com/en/docs/twitter-ids",
+   "split": "dev"
+  },
+  {
+   "id": "x_minus_x_fp32",
+   "expr": "x - x",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "-3e38",
+     "3e38"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Bait: naive intervals give [-6e38, 6e38].",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "x_times_y_div_y",
+   "expr": "x * y / y",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "1",
+     "2"
+    ],
+    "y": [
+     "1e20",
+     "1e30"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe",
+    "division_by_zero_possible": "proved_safe"
+   },
+   "story": "Bait: large but bounded.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "exp_over_exp_fp32",
+   "expr": "exp(x) / exp(x)",
+   "dtype": "float32",
+   "ranges": {
+    "x": [
+     "0",
+     "100"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed",
+    "nan_possible": "confirmed"
+   },
+   "story": "exp(x)/exp(x) is NaN for x > 88.72, not 1.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "hash_int32",
+   "expr": "h * 31 + c",
+   "dtype": "int32",
+   "ranges": {
+    "h": [
+     "-2**31",
+     "2**31-1"
+    ],
+    "c": [
+     "0",
+     "65535"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Java-style string hash step (wraps by design, still a real wrap).",
+   "source": "own",
+   "split": "held"
+  },
+  {
+   "id": "mean3_int8",
+   "expr": "(a + b + c) // 3",
+   "dtype": "int8",
+   "ranges": {
+    "a": [
+     "-128",
+     "127"
+    ],
+    "b": [
+     "-128",
+     "127"
+    ],
+    "c": [
+     "-128",
+     "127"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Mean of three int8 samples summed in int8.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "poly_int32_safe",
+   "expr": "x * x - 2 * x + 1",
+   "dtype": "int32",
+   "ranges": {
+    "x": [
+     "-1000",
+     "1000"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe"
+   },
+   "story": "Small polynomial, no wrap.",
+   "source": "own",
+   "split": "dev"
+  },
+  {
+   "id": "layernorm_var_fp16",
+   "expr": "(x - m) * (x - m)",
+   "dtype": "float16",
+   "ranges": {
+    "x": [
+     "-300",
+     "300"
+    ],
+    "m": [
+     "-300",
+     "300"
+    ]
+   },
+   "real_problem": true,
+   "target": "overflow",
+   "expect": {
+    "overflow": "confirmed"
+   },
+   "story": "Squared deviation in fp16 (AMP autocasts layer_norm to float32).",
+   "source": "https://pytorch.org/docs/stable/amp.html",
+   "split": "held"
+  },
+  {
+   "id": "tanh_fp16_safe",
+   "expr": "tanh(x)",
+   "dtype": "float16",
+   "ranges": {
+    "x": [
+     "-1e4",
+     "1e4"
+    ]
+   },
+   "real_problem": false,
+   "target": "overflow",
+   "expect": {
+    "overflow": "proved_safe",
+    "nan_possible": "proved_safe"
+   },
+   "story": "tanh is bounded.",
+   "source": "own",
+   "split": "dev"
+  }
+ ]
+}

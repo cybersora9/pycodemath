@@ -1,0 +1,4781 @@
+{
+ "license": "cases authored for pycodemath (MIT); expected values from scipy (BSD-3), mpmath (BSD-3), Fraction arithmetic; point sets from Kettner et al. 2008 are facts, not copyrighted text",
+ "cases": [
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xyz",
+    "frame": "intrinsic",
+    "angles_deg": [
+     -11.547,
+     19.217,
+     -103.152
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.21485662307020337,
+      0.9195101918674815,
+      0.329146834368335
+     ],
+     [
+      -0.9390702172759313,
+      -0.28708773124810194,
+      0.1890178869635175
+     ],
+     [
+      0.26829789143450994,
+      -0.26848024437311047,
+      0.9251673361252822
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-001",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xyz",
+    "frame": "extrinsic",
+    "angles_deg": [
+     -8.593,
+     81.497,
+     -84.164
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.015034730303487398,
+      0.9686241598423877,
+      0.24807497627598252
+     ],
+     [
+      -0.14709483359921482,
+      0.24754626521462877,
+      -0.9576450054726476
+     ],
+     [
+      -0.9890081227235296,
+      -0.022092612971681858,
+      0.1462014009473329
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-002",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xzy",
+    "frame": "intrinsic",
+    "angles_deg": [
+     137.6,
+     26.228,
+     -109.709
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.30252143021420197,
+      -0.44194428321223955,
+      -0.8444915836153567
+     ],
+     [
+      -0.5247387621034518,
+      -0.6624258264285879,
+      0.5346412404842509
+     ],
+     [
+      -0.7956946749899046,
+      0.6048779009158969,
+      -0.03150728766948674
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-003",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xzy",
+    "frame": "extrinsic",
+    "angles_deg": [
+     -59.241,
+     -70.7415,
+     -137.512
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.24322336429254793,
+      0.22438742999138417,
+      -0.9436591950084925
+     ],
+     [
+      -0.9440400994121014,
+      0.16868468001152107,
+      0.28343212491070985
+     ],
+     [
+      0.2227794554356482,
+      0.9597894352363294,
+      0.1708026763388782
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-004",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yxz",
+    "frame": "intrinsic",
+    "angles_deg": [
+     -162.337,
+     45.467,
+     -98.765
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.3589629174164516,
+      -0.9087710288405643,
+      -0.21279295350159566
+     ],
+     [
+      -0.693129691494954,
+      -0.10686863030579408,
+      -0.7128466361179477
+     ],
+     [
+      0.6250734794310026,
+      0.40337862238426325,
+      -0.6682580581746801
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-005",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yxz",
+    "frame": "extrinsic",
+    "angles_deg": [
+     -36.353,
+     44.205,
+     -133.889
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.8561905902255229,
+      0.516622315744213,
+      0.00624948672753034
+     ],
+     [
+      -0.29390770127542587,
+      -0.49696576299173784,
+      0.8164822677468477
+     ],
+     [
+      0.42491874086731685,
+      0.6972276624526073,
+      0.5773366871857422
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-006",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yzx",
+    "frame": "intrinsic",
+    "angles_deg": [
+     -155.446,
+     -25.9345,
+     -36.376
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.8179714147776757,
+      -0.07382561836663365,
+      -0.5705020093561384
+     ],
+     [
+      -0.4373433676035547,
+      0.7240601208829828,
+      0.5333551538703849
+     ],
+     [
+      0.373702479814878,
+      0.6857745397867321,
+      -0.6245476260146269
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-007",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yzx",
+    "frame": "extrinsic",
+    "angles_deg": [
+     72.293,
+     65.9815,
+     166.118
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.12379843436326743,
+      -0.9134140804921114,
+      0.3877481982007834
+     ],
+     [
+      -0.041143404420937835,
+      -0.3951429748005415,
+      -0.9176977986997862
+     ],
+     [
+      0.9914540674796077,
+      0.09765626976558572,
+      -0.08649904654741702
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-008",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zxy",
+    "frame": "intrinsic",
+    "angles_deg": [
+     7.473,
+     -34.205,
+     -72.016
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.23658768758466941,
+      -0.1075628679596804,
+      -0.965637869762587
+     ],
+     [
+      0.5703045602364325,
+      0.8200069296479625,
+      0.04838743538203455
+     ],
+     [
+      0.7866250534129128,
+      -0.5621555521077859,
+      0.25534713739833126
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-009",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zxy",
+    "frame": "extrinsic",
+    "angles_deg": [
+     146.939,
+     -84.495,
+     8.263
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.907430515120431,
+      -0.41997592115471927,
+      0.013787163541293251
+     ],
+     [
+      0.052334275647276746,
+      -0.08040019011255804,
+      0.9953878304572241
+     ],
+     [
+      -0.4169304304326372,
+      0.9039668329535713,
+      0.09493672155254919
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-010",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zyx",
+    "frame": "intrinsic",
+    "angles_deg": [
+     41.33,
+     75.028,
+     -41.467
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.19399751028934117,
+      -0.9752276038459413,
+      0.10628304991126575
+     ],
+     [
+      0.17061103386698484,
+      0.1402307590764084,
+      0.9753087764045256
+     ],
+     [
+      -0.966052193788915,
+      -0.17107441335792434,
+      0.19358900787458605
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-011",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zyx",
+    "frame": "extrinsic",
+    "angles_deg": [
+     -95.499,
+     42.738,
+     -154.375
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.07038255831347648,
+      0.7310845599378992,
+      0.6786469344995658
+     ],
+     [
+      0.9256201213445043,
+      -0.2057468849878674,
+      0.3176406936775801
+     ],
+     [
+      0.37185169953549363,
+      0.6505256225070595,
+      -0.6622255869523371
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-012",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xyx",
+    "frame": "intrinsic",
+    "angles_deg": [
+     -50.058,
+     71.732,
+     135.133
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.3134621478046274,
+      0.6699086108348357,
+      -0.6730259541971991
+     ],
+     [
+      -0.7280538574169654,
+      -0.2854796027374009,
+      -0.6232487281344202
+     ],
+     [
+      -0.6096548717052844,
+      0.6853640270325224,
+      0.39824249880666535
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-013",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xyx",
+    "frame": "extrinsic",
+    "angles_deg": [
+     -107.406,
+     53.763,
+     -129.675
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.591126656668208,
+      -0.7696447062848174,
+      -0.24128054597091683
+     ],
+     [
+      -0.6208060759140385,
+      -0.2431624172879422,
+      -0.7452998422963053
+     ],
+     [
+      0.514945717415418,
+      0.5903550329305594,
+      -0.6215398967154712
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-014",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xzx",
+    "frame": "intrinsic",
+    "angles_deg": [
+     -54.871,
+     114.129,
+     72.487
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.4087924349535527,
+      -0.27462982541985903,
+      0.8703259183286474
+     ],
+     [
+      0.5251433942414192,
+      0.7091647294729269,
+      0.4704357575229504
+     ],
+     [
+      -0.7464001343845987,
+      0.649356485654412,
+      -0.145681137863502
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-015",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "xzx",
+    "frame": "extrinsic",
+    "angles_deg": [
+     -155.526,
+     8.186,
+     158.027
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.9898110521831649,
+      0.12959351095119107,
+      -0.0589881589422755
+     ],
+     [
+      -0.13204412387700812,
+      0.9904476176477882,
+      -0.03972236203165403
+     ],
+     [
+      0.05327692113484952,
+      0.04710667272440256,
+      0.9974680601699619
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-016",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yxy",
+    "frame": "intrinsic",
+    "angles_deg": [
+     153.476,
+     131.865,
+     -77.566
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.4836946030881132,
+      0.33257129437616995,
+      0.8095899363877934
+     ],
+     [
+      -0.7272517319610937,
+      -0.6673777568463702,
+      -0.16034914413958273
+     ],
+     [
+      0.48697479329326904,
+      -0.6663356990464087,
+      0.5646700690432527
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-017",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yxy",
+    "frame": "extrinsic",
+    "angles_deg": [
+     27.894,
+     23.278,
+     141.036
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.9574456521325886,
+      0.24850987723924783,
+      0.1467673810045542
+     ],
+     [
+      0.18488592546136734,
+      0.9185981922038083,
+      -0.3492771905610054
+     ],
+     [
+      -0.22161908261405586,
+      -0.30727870442715216,
+      -0.9254538238220614
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-018",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yzy",
+    "frame": "intrinsic",
+    "angles_deg": [
+     88.808,
+     20.366,
+     154.274
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.4515433379415406,
+      -0.007239711249703906,
+      -0.8922198162681843
+     ],
+     [
+      -0.31352051521179747,
+      0.9374886712703874,
+      0.15106249627559024
+     ],
+     [
+      0.8353523211806744,
+      0.347940480284638,
+      -0.42558656190880223
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-019",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "yzy",
+    "frame": "extrinsic",
+    "angles_deg": [
+     50.905,
+     25.76,
+     57.4
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.3478391663190998,
+      -0.23415110438353498,
+      0.9078442458320725
+     ],
+     [
+      0.27406381895715587,
+      0.9006224006029402,
+      0.33729558946244176
+     ],
+     [
+      -0.8966029988311731,
+      0.3661318776727419,
+      -0.24909939911364581
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-020",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zxz",
+    "frame": "intrinsic",
+    "angles_deg": [
+     -155.194,
+     106.548,
+     78.422
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.29924709126854526,
+      0.8652805200519499,
+      -0.40217011324306773
+     ],
+     [
+      0.16907479630452704,
+      0.46289965802159866,
+      0.8701365524204058
+     ],
+     [
+      0.9390766164812632,
+      0.19238900234190626,
+      -0.28481850388622637
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-021",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zxz",
+    "frame": "extrinsic",
+    "angles_deg": [
+     -85.198,
+     51.265,
+     22.741
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.31823778955709686,
+      0.8987759427145201,
+      0.3015402362794046
+     ],
+     [
+      -0.5426908878143717,
+      0.43351785264147763,
+      -0.7194086958915438
+     ],
+     [
+      -0.7773103045637968,
+      0.0652998946304531,
+      0.6257192774561047
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-022",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zyz",
+    "frame": "intrinsic",
+    "angles_deg": [
+     61.985,
+     136.822,
+     -19.445
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.029091077897363635,
+      -0.9464958426161096,
+      0.32140212988900785
+     ],
+     [
+      -0.7634279175294438,
+      0.22859485789684042,
+      0.6040879122112777
+     ],
+     [
+      -0.6452375716923392,
+      -0.22779379019969898,
+      -0.7292314208967063
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-023",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "euler_to_matrix",
+   "input": {
+    "seq": "zyz",
+    "frame": "extrinsic",
+    "angles_deg": [
+     1.855,
+     124.574,
+     142.678
+    ]
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.4314130444861512,
+      -0.6205839412613942,
+      -0.6547964240095271
+     ],
+     [
+      -0.3696154377961779,
+      -0.7836869059650435,
+      0.49921865105550345
+     ],
+     [
+      -0.8229624615922221,
+      0.026653428811528795,
+      -0.5674701591649194
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Rotation.from_euler (uppercase=intrinsic)",
+   "id": "G1-024",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "zyx",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      1.1102230246251565e-16,
+      -0.34202014332566877,
+      0.9396926207859086
+     ],
+     [
+      8.326672684688674e-17,
+      0.9396926207859086,
+      0.34202014332566877
+     ],
+     [
+      -1.0000000000000002,
+      2.7755575615628914e-17,
+      5.551115123125783e-17
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [30, 90, 10] (gimbal / near-gimbal)",
+   "id": "G1-025",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "zyx",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      1.1102230246251565e-16,
+      -0.6427876096865393,
+      -0.7660444431189781
+     ],
+     [
+      1.1102230246251565e-16,
+      0.7660444431189781,
+      -0.6427876096865393
+     ],
+     [
+      1.0,
+      0.0,
+      1.1102230246251565e-16
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [30, -90, 10] (gimbal / near-gimbal)",
+   "id": "G1-026",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "xyz",
+    "frame": "extrinsic",
+    "matrix": [
+     [
+      3.469446951953614e-18,
+      -0.25881904510252096,
+      -0.9659258262890683
+     ],
+     [
+      1.6653345369377348e-16,
+      -0.9659258262890683,
+      0.25881904510252096
+     ],
+     [
+      -1.0,
+      -1.6653345369377348e-16,
+      5.898059818321144e-17
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [-45, 90, 120] (gimbal / near-gimbal)",
+   "id": "G1-027",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "zxz",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      0.42261826174069955,
+      -0.9063077870366499,
+      0.0
+     ],
+     [
+      0.9063077870366499,
+      0.42261826174069955,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [40, 0, 25] (gimbal / near-gimbal)",
+   "id": "G1-028",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "zxz",
+    "frame": "extrinsic",
+    "matrix": [
+     [
+      0.9659258262890684,
+      -0.2588190451025207,
+      5.1755810150196594e-17
+     ],
+     [
+      -0.2588190451025207,
+      -0.9659258262890684,
+      -1.1099069304367545e-16
+     ],
+     [
+      7.871877887341985e-17,
+      9.381338752702733e-17,
+      -1.0000000000000002
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [40, 180, 25] (gimbal / near-gimbal)",
+   "id": "G1-029",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "yxz",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      0.9848077530122079,
+      -0.1736481776669303,
+      3.030732609321518e-10
+     ],
+     [
+      5.969377769865503e-10,
+      1.6400730773469263e-09,
+      -0.9999999999999998
+     ],
+     [
+      0.1736481776669303,
+      0.9848077530122079,
+      1.7188138690116261e-09
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [10, 89.9999999, 20] (gimbal / near-gimbal)",
+   "id": "G1-030",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "xyz",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      4.0109993160175605e-08,
+      -3.3656280484795076e-08,
+      0.9999999999999982
+     ],
+     [
+      0.8405666034956838,
+      0.54170821028274,
+      -1.5483237247870818e-08
+     ],
+     [
+      -0.5417082102827386,
+      0.8405666034956831,
+      5.001825803541138e-08
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [17.2, 89.999997, 40.0] (gimbal / near-gimbal)",
+   "id": "G1-031",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "zyz",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      0.9781476007338055,
+      -0.20791169081775931,
+      1.738687747261183e-08
+     ],
+     [
+      0.20791169081775931,
+      0.9781476007338056,
+      1.5211546729678043e-09
+     ],
+     [
+      -1.732319832413999e-08,
+      2.1270212996634615e-09,
+      0.9999999999999999
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [5, 1e-06, 7] (gimbal / near-gimbal)",
+   "id": "G1-032",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "zyx",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [0, 0, 0] (gimbal / near-gimbal)",
+   "id": "G1-033",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_euler_roundtrip",
+   "input": {
+    "seq": "xyz",
+    "frame": "intrinsic",
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      -1.0,
+      -1.2246467991473532e-16
+     ],
+     [
+      0.0,
+      1.2246467991473532e-16,
+      -1.0
+     ]
+    ]
+   },
+   "expected": {
+    "recompose_tol": 1e-13
+   },
+   "source": "round trip of scipy matrix for angles [180, 0, 0] (gimbal / near-gimbal)",
+   "id": "G1-034",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "order": "wxyz",
+    "algebra": "hamilton"
+   },
+   "expected": {
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy Rotation.from_quat (scalar-last!)",
+   "id": "G1-035",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_quat",
+   "input": {
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   },
+   "expected": {
+    "quat_wxyz_up_to_sign": [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy as_matrix of the same quaternion",
+   "id": "G1-036",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    "order": "wxyz",
+    "algebra": "hamilton"
+   },
+   "expected": {
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      -1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      -1.0
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy Rotation.from_quat (scalar-last!)",
+   "id": "G1-037",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_quat",
+   "input": {
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      -1.0,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      -1.0
+     ]
+    ]
+   },
+   "expected": {
+    "quat_wxyz_up_to_sign": [
+     0.0,
+     1.0,
+     0.0,
+     0.0
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy as_matrix of the same quaternion",
+   "id": "G1-038",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "order": "wxyz",
+    "algebra": "hamilton"
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.0,
+      0.0,
+      1.0
+     ],
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy Rotation.from_quat (scalar-last!)",
+   "id": "G1-039",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_quat",
+   "input": {
+    "matrix": [
+     [
+      0.0,
+      0.0,
+      1.0
+     ],
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ]
+    ]
+   },
+   "expected": {
+    "quat_wxyz_up_to_sign": [
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy as_matrix of the same quaternion",
+   "id": "G1-040",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     0.9233805168766387,
+     0.10259783520851541,
+     -0.3077935056255462,
+     0.20519567041703082
+    ],
+    "order": "wxyz",
+    "algebra": "hamilton"
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.7263157894736842,
+      -0.4421052631578947,
+      -0.5263157894736842
+     ],
+     [
+      0.31578947368421056,
+      0.8947368421052632,
+      -0.3157894736842105
+     ],
+     [
+      0.6105263157894737,
+      0.06315789473684214,
+      0.7894736842105263
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy Rotation.from_quat (scalar-last!)",
+   "id": "G1-041",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_quat",
+   "input": {
+    "matrix": [
+     [
+      0.7263157894736842,
+      -0.4421052631578947,
+      -0.5263157894736842
+     ],
+     [
+      0.31578947368421056,
+      0.8947368421052632,
+      -0.3157894736842105
+     ],
+     [
+      0.6105263157894737,
+      0.06315789473684214,
+      0.7894736842105263
+     ]
+    ]
+   },
+   "expected": {
+    "quat_wxyz_up_to_sign": [
+     0.9233805168766387,
+     0.10259783520851541,
+     -0.3077935056255462,
+     0.20519567041703082
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy as_matrix of the same quaternion",
+   "id": "G1-042",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     -0.2,
+     0.4,
+     0.4,
+     0.8
+    ],
+    "order": "wxyz",
+    "algebra": "hamilton"
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.6000000000000001,
+      0.6400000000000001,
+      0.4800000000000001
+     ],
+     [
+      0.0,
+      -0.6000000000000001,
+      0.8000000000000002
+     ],
+     [
+      0.8000000000000002,
+      0.4800000000000001,
+      0.3600000000000001
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy Rotation.from_quat (scalar-last!)",
+   "id": "G1-043",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_quat",
+   "input": {
+    "matrix": [
+     [
+      -0.6000000000000001,
+      0.6400000000000001,
+      0.4800000000000001
+     ],
+     [
+      0.0,
+      -0.6000000000000001,
+      0.8000000000000002
+     ],
+     [
+      0.8000000000000002,
+      0.4800000000000001,
+      0.3600000000000001
+     ]
+    ]
+   },
+   "expected": {
+    "quat_wxyz_up_to_sign": [
+     -0.2,
+     0.4,
+     0.4,
+     0.8
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy as_matrix of the same quaternion",
+   "id": "G1-044",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     0.7071067811865476,
+     0.0,
+     0.7071067811865476,
+     0.0
+    ],
+    "order": "wxyz",
+    "algebra": "hamilton"
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.0,
+      0.0,
+      1.0000000000000002
+     ],
+     [
+      0.0,
+      1.0000000000000002,
+      0.0
+     ],
+     [
+      -1.0000000000000002,
+      0.0,
+      0.0
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy Rotation.from_quat (scalar-last!)",
+   "id": "G1-045",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_quat",
+   "input": {
+    "matrix": [
+     [
+      0.0,
+      0.0,
+      1.0000000000000002
+     ],
+     [
+      0.0,
+      1.0000000000000002,
+      0.0
+     ],
+     [
+      -1.0000000000000002,
+      0.0,
+      0.0
+     ]
+    ]
+   },
+   "expected": {
+    "quat_wxyz_up_to_sign": [
+     0.7071067811865476,
+     0.0,
+     0.7071067811865476,
+     0.0
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy as_matrix of the same quaternion",
+   "id": "G1-046",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     1e-09,
+     0.6,
+     0.8,
+     0.0
+    ],
+    "order": "wxyz",
+    "algebra": "hamilton"
+   },
+   "expected": {
+    "matrix": [
+     [
+      -0.28000000000000014,
+      0.96,
+      1.6000000000000003e-09
+     ],
+     [
+      0.96,
+      0.28000000000000014,
+      -1.2e-09
+     ],
+     [
+      -1.6000000000000003e-09,
+      1.2e-09,
+      -1.0
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy Rotation.from_quat (scalar-last!)",
+   "id": "G1-047",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "matrix_to_quat",
+   "input": {
+    "matrix": [
+     [
+      -0.28000000000000014,
+      0.96,
+      1.6000000000000003e-09
+     ],
+     [
+      0.96,
+      0.28000000000000014,
+      -1.2e-09
+     ],
+     [
+      -1.6000000000000003e-09,
+      1.2e-09,
+      -1.0
+     ]
+    ]
+   },
+   "expected": {
+    "quat_wxyz_up_to_sign": [
+     1e-09,
+     0.6,
+     0.8,
+     0.0
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy as_matrix of the same quaternion",
+   "id": "G1-048",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "quat_to_matrix",
+   "input": {
+    "quat_wxyz": [
+     0.10259783520851541,
+     -0.3077935056255462,
+     0.20519567041703082,
+     0.9233805168766387
+    ],
+    "order": "xyzw",
+    "algebra": "jpl"
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.7263157894736842,
+      0.31578947368421056,
+      0.6105263157894737
+     ],
+     [
+      -0.4421052631578947,
+      0.8947368421052632,
+      0.06315789473684214
+     ],
+     [
+      -0.5263157894736842,
+      -0.3157894736842105,
+      0.7894736842105263
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "JPL = transpose of Hamilton for the same components (Sola 2017 \u00a72.6)",
+   "id": "G1-049",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "axis_angle_to_matrix",
+   "input": {
+    "axis": [
+     0,
+     0,
+     1
+    ],
+    "angle_deg": 90
+   },
+   "expected": {
+    "matrix": [
+     [
+      2.220446049250313e-16,
+      -1.0,
+      0.0
+     ],
+     [
+      1.0,
+      2.220446049250313e-16,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy from_rotvec",
+   "id": "G1-050",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "axis_angle_to_matrix",
+   "input": {
+    "axis": [
+     1,
+     1,
+     1
+    ],
+    "angle_deg": 120
+   },
+   "expected": {
+    "matrix": [
+     [
+      -1.1102230246251565e-16,
+      1.1102230246251565e-16,
+      0.9999999999999999
+     ],
+     [
+      0.9999999999999999,
+      -1.1102230246251565e-16,
+      1.1102230246251565e-16
+     ],
+     [
+      1.1102230246251565e-16,
+      0.9999999999999999,
+      -1.1102230246251565e-16
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy from_rotvec",
+   "id": "G1-051",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "axis_angle_to_matrix",
+   "input": {
+    "axis": [
+     3,
+     -4,
+     12
+    ],
+    "angle_deg": 37.5
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.8043581919917019,
+      -0.576606762377903,
+      -0.14329180212389314
+     ],
+     [
+      0.5472604911766583,
+      0.8129175210920649,
+      -0.19917594909680958
+     ],
+     [
+      0.2313306157276273,
+      0.08179086429183073,
+      0.9694309674987034
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy from_rotvec",
+   "id": "G1-052",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "axis_angle_to_matrix",
+   "input": {
+    "axis": [
+     1,
+     0,
+     0
+    ],
+    "angle_deg": 180
+   },
+   "expected": {
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      -1.0,
+      -1.2246467991473532e-16
+     ],
+     [
+      0.0,
+      1.2246467991473532e-16,
+      -1.0
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy from_rotvec",
+   "id": "G1-053",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "axis_angle_to_matrix",
+   "input": {
+    "axis": [
+     0,
+     1,
+     0
+    ],
+    "angle_deg": -270
+   },
+   "expected": {
+    "matrix": [
+     [
+      -2.220446049250313e-16,
+      0.0,
+      1.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ],
+     [
+      -1.0,
+      0.0,
+      -2.220446049250313e-16
+     ]
+    ],
+    "tol": 1e-13
+   },
+   "source": "scipy from_rotvec",
+   "id": "G1-054",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "slerp",
+   "input": {
+    "q0": [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "q1": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "t": 0.5
+   },
+   "expected": {
+    "matrix": [
+     [
+      2.220446049250313e-16,
+      -1.0,
+      0.0
+     ],
+     [
+      1.0,
+      2.220446049250313e-16,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Slerp (always the shorter arc); antipodal/near-parallel included",
+   "id": "G1-055",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "slerp",
+   "input": {
+    "q0": [
+     0.9233805168766387,
+     0.10259783520851541,
+     -0.3077935056255462,
+     0.20519567041703082
+    ],
+    "q1": [
+     -0.8626621856275073,
+     -0.21566554640687682,
+     0.3234983196103152,
+     -0.3234983196103152
+    ],
+    "t": 0.25
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.6935967729674437,
+      -0.5110981097148554,
+      -0.5076438109295238
+     ],
+     [
+      0.34690698260830677,
+      0.8545931931275952,
+      -0.3864272501747008
+     ],
+     [
+      0.631331182460322,
+      0.0919195110185127,
+      0.7700465840112333
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Slerp (always the shorter arc); antipodal/near-parallel included",
+   "id": "G1-056",
+   "split": "dev"
+  },
+  {
+   "category": "rotation",
+   "op": "slerp",
+   "input": {
+    "q0": [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "q1": [
+     1.0,
+     1e-09,
+     0.0,
+     0.0
+    ],
+    "t": 0.3
+   },
+   "expected": {
+    "matrix": [
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      -6e-10
+     ],
+     [
+      0.0,
+      6e-10,
+      1.0
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Slerp (always the shorter arc); antipodal/near-parallel included",
+   "id": "G1-057",
+   "split": "held"
+  },
+  {
+   "category": "rotation",
+   "op": "slerp",
+   "input": {
+    "q0": [
+     0.5,
+     0.5,
+     0.5,
+     0.5
+    ],
+    "q1": [
+     -0.5,
+     -0.5,
+     -0.5,
+     -0.5
+    ],
+    "t": 0.7
+   },
+   "expected": {
+    "matrix": [
+     [
+      0.0,
+      0.0,
+      1.0
+     ],
+     [
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      0.0,
+      1.0,
+      0.0
+     ]
+    ],
+    "tol": 1e-12
+   },
+   "source": "scipy Slerp (always the shorter arc); antipodal/near-parallel included",
+   "id": "G1-058",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "R1@R2",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "Hamilton product composes like column-vector matrices",
+   "id": "G1-059",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "R2@R1",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "reversed_order"
+   },
+   "source": "irrlicht/three.js: multiply vs premultiply",
+   "id": "G1-060",
+   "split": "held"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2*q3",
+    "b": "R1@R2@R3",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "associativity, 3 factors",
+   "id": "G1-061",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "R1@R2",
+    "conventions": {
+     "algebra": "jpl"
+    }
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "JPL product with JPL matrix map composes the same",
+   "id": "G1-062",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "R1@R2",
+    "conventions": {
+     "algebra_a": "jpl",
+     "algebra_b": "hamilton"
+    }
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "jpl_vs_hamilton"
+   },
+   "source": "ROS/aerospace JPL code mixed with Hamilton (Sola 2017)",
+   "id": "G1-063",
+   "split": "held"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "R1@R2",
+    "conventions": {
+     "vectors_b": "row"
+    }
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "row_vs_column_vectors"
+   },
+   "source": "DirectX/Unity row-vector matrices read as column-vector",
+   "id": "G1-064",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "R2@R1",
+    "conventions": {
+     "vectors_b": "row"
+    }
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "row-vector matrices compose in reverse: q1*q2 <-> M2@M1 (M = R^T)",
+   "id": "G1-065",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "conj(q1)",
+    "b": "R1.T",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "inverse of unit quaternion = transpose",
+   "id": "G1-066",
+   "split": "held"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*conj(q1)",
+    "b": "R1@R1.T",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "identity",
+   "id": "G1-067",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "conj(q1*q2)",
+    "b": "R2.T@R1.T",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "(AB)^T = B^T A^T",
+   "id": "G1-068",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "conj(q1*q2)",
+    "b": "R1.T@R2.T",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "reversed_order"
+   },
+   "source": "forgot to reverse when inverting a product",
+   "id": "G1-069",
+   "split": "held"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "(R1@R2).T",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "transposed"
+   },
+   "source": "active vs passive (alias/alibi) mix-up",
+   "id": "G1-070",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1",
+    "b": "Sz@R1@Sz",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "handedness_mirror"
+   },
+   "source": "OpenGL<->DirectX/Unity z-flip applied to one side only",
+   "id": "G1-071",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2",
+    "b": "q1*q2",
+    "conventions": {
+     "order_a": "wxyz",
+     "order_b": "xyzw"
+    }
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "component_order"
+   },
+   "source": "scipy/ROS/Unity store xyzw, Eigen/glm-ctor/numpy-quaternion take wxyz",
+   "id": "G1-072",
+   "split": "held"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q1*q2*conj(q1)",
+    "b": "R1@R2@R1.T",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "verified",
+    "cause": null
+   },
+   "source": "conjugation (change of frame)",
+   "id": "G1-073",
+   "split": "dev"
+  },
+  {
+   "category": "convention",
+   "op": "compare_rotation_expressions",
+   "input": {
+    "a": "q2*q1",
+    "b": "R1@R2",
+    "conventions": {}
+   },
+   "expected": {
+    "status": "refuted",
+    "cause": "reversed_order"
+   },
+   "source": "Unity: rotation*q applies q first",
+   "id": "G1-074",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5,
+     0.5000000000000001
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": 1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-075",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000039,
+     0.5000000000000028
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": -1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-076",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.500000000000006,
+     0.5000000000000121
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": 1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-077",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000074,
+     0.5000000000000122
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": 1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-078",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000089,
+     0.5000000000000123
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": 1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-079",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000104,
+     0.5000000000000053
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": -1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-080",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000119,
+     0.5000000000000054
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": -1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-081",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000141,
+     0.5000000000000154
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": 1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-082",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000165,
+     0.5000000000000182
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": 1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-083",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.500000000000018,
+     0.5000000000000183
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": 1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-084",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000194,
+     0.5000000000000183
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": -1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-085",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000209,
+     0.5000000000000184
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": -1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-086",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000223,
+     0.5000000000000185
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": -1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-087",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5000000000000244,
+     0.5000000000000241
+    ],
+    "b": [
+     12.0,
+     12.0
+    ],
+    "c": [
+     24.0,
+     24.0
+    ]
+   },
+   "expected": {
+    "sign": -1,
+    "naive_float_sign": 0
+   },
+   "source": "Kettner et al. CGTA 2008, grid around (0.5,0.5); exact Fraction det",
+   "id": "G1-088",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0.5,
+     0.5
+    ],
+    "b": [
+     12,
+     12
+    ],
+    "c": [
+     24,
+     24
+    ]
+   },
+   "expected": {
+    "sign": 0
+   },
+   "source": "exactly collinear",
+   "id": "G1-089",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     0,
+     0
+    ],
+    "b": [
+     1,
+     0
+    ],
+    "c": [
+     0,
+     1
+    ]
+   },
+   "expected": {
+    "sign": 1
+   },
+   "source": "ccw unit triangle",
+   "id": "G1-090",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     1e-310,
+     0
+    ],
+    "b": [
+     0,
+     1e-310
+    ],
+    "c": [
+     0,
+     0
+    ]
+   },
+   "expected": {
+    "sign": 1
+   },
+   "source": "subnormal coordinates: products underflow to 0 in float",
+   "id": "G1-091",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient2d",
+   "input": {
+    "a": [
+     1e+200,
+     1e+200
+    ],
+    "b": [
+     -1e+200,
+     1e+200
+    ],
+    "c": [
+     0,
+     -1e+200
+    ]
+   },
+   "expected": {
+    "sign": 1
+   },
+   "source": "products overflow to inf in float",
+   "id": "G1-092",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient3d",
+   "input": {
+    "a": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "b": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "c": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "d": [
+     0.1,
+     0.2,
+     1e-17
+    ]
+   },
+   "expected": {
+    "sign": -1
+   },
+   "source": "Shewchuk sign convention: positive if d is below plane abc (abc ccw seen from above)",
+   "id": "G1-093",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient3d",
+   "input": {
+    "a": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "b": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "c": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "d": [
+     0.1,
+     0.2,
+     0.0
+    ]
+   },
+   "expected": {
+    "sign": 0
+   },
+   "source": "Shewchuk sign convention: positive if d is below plane abc (abc ccw seen from above)",
+   "id": "G1-094",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient3d",
+   "input": {
+    "a": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "b": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "c": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "d": [
+     0.1,
+     0.2,
+     -1e-300
+    ]
+   },
+   "expected": {
+    "sign": 1
+   },
+   "source": "Shewchuk sign convention: positive if d is below plane abc (abc ccw seen from above)",
+   "id": "G1-095",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "orient3d",
+   "input": {
+    "a": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "b": [
+     1.0,
+     0.0,
+     0.0
+    ],
+    "c": [
+     0.0,
+     1.0,
+     0.0
+    ],
+    "d": [
+     0.3333333333333333,
+     0.14285714285714285,
+     0.0
+    ]
+   },
+   "expected": {
+    "sign": 0
+   },
+   "source": "Shewchuk sign convention: positive if d is below plane abc (abc ccw seen from above)",
+   "id": "G1-096",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "orient3d",
+   "input": {
+    "a": [
+     0.1,
+     0.3,
+     0.6
+    ],
+    "b": [
+     0.7,
+     0.2,
+     0.1
+    ],
+    "c": [
+     0.25,
+     0.25,
+     0.5
+    ],
+    "d": [
+     0.3,
+     0.3,
+     0.39999999999999997
+    ]
+   },
+   "expected": {
+    "sign": 1
+   },
+   "source": "decimal-rounded points on x+y+z=1 (nearly coplanar)",
+   "id": "G1-097",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "incircle",
+   "input": {
+    "a": [
+     1.0,
+     0.0
+    ],
+    "b": [
+     0.0,
+     1.0
+    ],
+    "c": [
+     -1.0,
+     0.0
+    ],
+    "d": [
+     0.5,
+     0.5
+    ]
+   },
+   "expected": {
+    "sign": 1
+   },
+   "source": "unit circle through (1,0),(0,1),(-1,0); d on/near the circle",
+   "id": "G1-098",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "incircle",
+   "input": {
+    "a": [
+     1.0,
+     0.0
+    ],
+    "b": [
+     0.0,
+     1.0
+    ],
+    "c": [
+     -1.0,
+     0.0
+    ],
+    "d": [
+     1.0,
+     1.0
+    ]
+   },
+   "expected": {
+    "sign": -1
+   },
+   "source": "unit circle through (1,0),(0,1),(-1,0); d on/near the circle",
+   "id": "G1-099",
+   "split": "held"
+  },
+  {
+   "category": "predicate",
+   "op": "incircle",
+   "input": {
+    "a": [
+     1.0,
+     0.0
+    ],
+    "b": [
+     0.0,
+     1.0
+    ],
+    "c": [
+     -1.0,
+     0.0
+    ],
+    "d": [
+     1.0,
+     1.0000000000000002
+    ]
+   },
+   "expected": {
+    "sign": -1
+   },
+   "source": "unit circle through (1,0),(0,1),(-1,0); d on/near the circle",
+   "id": "G1-100",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "incircle",
+   "input": {
+    "a": [
+     1.0,
+     0.0
+    ],
+    "b": [
+     0.0,
+     1.0
+    ],
+    "c": [
+     -1.0,
+     0.0
+    ],
+    "d": [
+     0.7071067811865476,
+     0.7071067811865476
+    ]
+   },
+   "expected": {
+    "sign": -1
+   },
+   "source": "unit circle through (1,0),(0,1),(-1,0); d on/near the circle",
+   "id": "G1-101",
+   "split": "dev"
+  },
+  {
+   "category": "predicate",
+   "op": "incircle",
+   "input": {
+    "a": [
+     1.0,
+     0.0
+    ],
+    "b": [
+     0.0,
+     1.0
+    ],
+    "c": [
+     -1.0,
+     0.0
+    ],
+    "d": [
+     1.0,
+     0
+    ]
+   },
+   "expected": {
+    "sign": 0
+   },
+   "source": "unit circle through (1,0),(0,1),(-1,0); d on/near the circle",
+   "id": "G1-102",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     0,
+     0
+    ],
+    "p2": [
+     2,
+     2
+    ],
+    "q1": [
+     0,
+     2
+    ],
+    "q2": [
+     2,
+     0
+    ]
+   },
+   "expected": {
+    "kind": "proper",
+    "point": [
+     "1",
+     "1"
+    ]
+   },
+   "source": "X crossing",
+   "id": "G1-103",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     0,
+     0
+    ],
+    "p2": [
+     2,
+     0
+    ],
+    "q1": [
+     1,
+     0
+    ],
+    "q2": [
+     1,
+     5
+    ]
+   },
+   "expected": {
+    "kind": "touching",
+    "point": [
+     "1",
+     "0"
+    ]
+   },
+   "source": "T junction: endpoint on interior",
+   "id": "G1-104",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     0,
+     0
+    ],
+    "p2": [
+     2,
+     0
+    ],
+    "q1": [
+     1,
+     0
+    ],
+    "q2": [
+     3,
+     0
+    ]
+   },
+   "expected": {
+    "kind": "collinear_overlap",
+    "segment": [
+     [
+      "1",
+      "0"
+     ],
+     [
+      "2",
+      "0"
+     ]
+    ]
+   },
+   "source": "collinear overlap",
+   "id": "G1-105",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     0,
+     0
+    ],
+    "p2": [
+     1,
+     0
+    ],
+    "q1": [
+     2,
+     0
+    ],
+    "q2": [
+     3,
+     0
+    ]
+   },
+   "expected": {
+    "kind": "disjoint"
+   },
+   "source": "collinear but disjoint",
+   "id": "G1-106",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     0,
+     0
+    ],
+    "p2": [
+     1,
+     0
+    ],
+    "q1": [
+     1,
+     0
+    ],
+    "q2": [
+     2,
+     0
+    ]
+   },
+   "expected": {
+    "kind": "collinear_overlap",
+    "segment": [
+     [
+      "1",
+      "0"
+     ],
+     [
+      "1",
+      "0"
+     ]
+    ]
+   },
+   "source": "collinear, share one endpoint",
+   "id": "G1-107",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     0.1,
+     0.1
+    ],
+    "p2": [
+     0.3,
+     0.3
+    ],
+    "q1": [
+     0.1,
+     0.3
+    ],
+    "q2": [
+     0.3,
+     0.1
+    ]
+   },
+   "expected": {
+    "kind": "proper",
+    "point_float": [
+     0.2,
+     0.2
+    ]
+   },
+   "source": "decimal inputs (exact binary values used)",
+   "id": "G1-108",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     0,
+     0
+    ],
+    "p2": [
+     1,
+     1
+    ],
+    "q1": [
+     0,
+     1
+    ],
+    "q2": [
+     0.4,
+     0.6000000000000001
+    ]
+   },
+   "expected": {
+    "kind": "disjoint"
+   },
+   "source": "misses by one ulp",
+   "id": "G1-109",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "segment_intersection",
+   "input": {
+    "p1": [
+     1,
+     1
+    ],
+    "p2": [
+     1,
+     1
+    ],
+    "q1": [
+     0,
+     0
+    ],
+    "q2": [
+     2,
+     2
+    ]
+   },
+   "expected": {
+    "kind": "touching",
+    "point": [
+     "1",
+     "1"
+    ]
+   },
+   "source": "degenerate segment (a point) on the other segment",
+   "id": "G1-110",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_triangle",
+   "input": {
+    "origin": [
+     0.25,
+     0.25,
+     1
+    ],
+    "direction": [
+     0,
+     0,
+     -1
+    ],
+    "triangle": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "hit": true,
+    "t": "1",
+    "u": "1/4",
+    "v": "1/4"
+   },
+   "source": "interior hit",
+   "id": "G1-111",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_triangle",
+   "input": {
+    "origin": [
+     0.5,
+     0.5,
+     1
+    ],
+    "direction": [
+     0,
+     0,
+     -1
+    ],
+    "triangle": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "hit": true,
+    "t": "1",
+    "on_edge": true
+   },
+   "source": "hit exactly on hypotenuse",
+   "id": "G1-112",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_triangle",
+   "input": {
+    "origin": [
+     0,
+     0,
+     1
+    ],
+    "direction": [
+     0,
+     0,
+     -1
+    ],
+    "triangle": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "hit": true,
+    "t": "1",
+    "on_vertex": true
+   },
+   "source": "hit exactly on a vertex",
+   "id": "G1-113",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_triangle",
+   "input": {
+    "origin": [
+     0.25,
+     0.25,
+     1
+    ],
+    "direction": [
+     1,
+     0,
+     0
+    ],
+    "triangle": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "hit": false
+   },
+   "source": "ray parallel to the plane",
+   "id": "G1-114",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_triangle",
+   "input": {
+    "origin": [
+     0.25,
+     0.25,
+     -1
+    ],
+    "direction": [
+     0,
+     0,
+     -1
+    ],
+    "triangle": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "hit": false
+   },
+   "source": "triangle behind the origin (t<0)",
+   "id": "G1-115",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_triangle",
+   "input": {
+    "origin": [
+     0.6,
+     0.6,
+     1
+    ],
+    "direction": [
+     0,
+     0,
+     -1
+    ],
+    "triangle": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      1,
+      0,
+      0
+     ],
+     [
+      0,
+      1,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "hit": false
+   },
+   "source": "outside past the hypotenuse",
+   "id": "G1-116",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_triangle",
+   "input": {
+    "origin": [
+     6.103515625e-05,
+     6.103515625e-05,
+     1
+    ],
+    "direction": [
+     0,
+     0,
+     -1
+    ],
+    "triangle": [
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0.000244140625,
+      0,
+      0
+     ],
+     [
+      0,
+      0.000244140625,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "hit": true,
+    "t": "1"
+   },
+   "source": "tiny triangle (det = 2^-24 < typical EPSILON=1e-6)",
+   "id": "G1-117",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_sphere",
+   "input": {
+    "origin": [
+     0,
+     0,
+     -5
+    ],
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "center": [
+     0,
+     0,
+     0
+    ],
+    "radius": 1
+   },
+   "expected": {
+    "kind": "secant",
+    "t": [
+     "4",
+     "6"
+    ]
+   },
+   "source": "two hits",
+   "id": "G1-118",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_sphere",
+   "input": {
+    "origin": [
+     1,
+     0,
+     -5
+    ],
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "center": [
+     0,
+     0,
+     0
+    ],
+    "radius": 1
+   },
+   "expected": {
+    "kind": "tangent",
+    "t": [
+     "5"
+    ]
+   },
+   "source": "tangent exactly",
+   "id": "G1-119",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_sphere",
+   "input": {
+    "origin": [
+     1.0000000000000002,
+     0,
+     -5
+    ],
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "center": [
+     0,
+     0,
+     0
+    ],
+    "radius": 1
+   },
+   "expected": {
+    "kind": "miss"
+   },
+   "source": "misses by one ulp",
+   "id": "G1-120",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_sphere",
+   "input": {
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "direction": [
+     0,
+     0,
+     2
+    ],
+    "center": [
+     0,
+     0,
+     0
+    ],
+    "radius": 1
+   },
+   "expected": {
+    "kind": "inside",
+    "t": [
+     "-1/2",
+     "1/2"
+    ]
+   },
+   "source": "origin inside; unnormalized direction",
+   "id": "G1-121",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "ray_sphere",
+   "input": {
+    "origin": [
+     0,
+     0,
+     5
+    ],
+    "direction": [
+     0,
+     0,
+     1
+    ],
+    "center": [
+     0,
+     0,
+     0
+    ],
+    "radius": 1
+   },
+   "expected": {
+    "kind": "miss"
+   },
+   "source": "sphere behind the ray",
+   "id": "G1-122",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     0.5,
+     0.5
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "inside",
+    "half_open": true
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-123",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     1,
+     0.5
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "boundary",
+    "half_open": false
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-124",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     0,
+     0.5
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "boundary",
+    "half_open": true
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-125",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     0,
+     0
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "boundary",
+    "half_open": true
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-126",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     1,
+     1
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "boundary",
+    "half_open": false
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-127",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     2,
+     0.5
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "outside",
+    "half_open": false
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-128",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     0.5,
+     0
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "boundary",
+    "half_open": true
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-129",
+   "split": "held"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     0.5,
+     1
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "boundary",
+    "half_open": false
+   },
+   "source": "half-open rule: left/bottom edges owned, right/top not (consistent tiling)",
+   "id": "G1-130",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     2,
+     2
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      0
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      0,
+      4
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "outside",
+    "half_open": false
+   },
+   "source": "concave polygon notch",
+   "id": "G1-131",
+   "split": "dev"
+  },
+  {
+   "category": "intersection",
+   "op": "point_in_polygon",
+   "input": {
+    "point": [
+     2,
+     1
+    ],
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      4,
+      0
+     ],
+     [
+      4,
+      4
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      0,
+      4
+     ]
+    ]
+   },
+   "expected": {
+    "boundary_rule": "boundary",
+    "half_open": null
+   },
+   "source": "reflex vertex",
+   "id": "G1-132",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 0.0,
+    "preset": "ease"
+   },
+   "expected": {
+    "y": "0",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-133",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 0.1,
+    "preset": "ease"
+   },
+   "expected": {
+    "y": "0.0947963057160432566326432310237",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-134",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 0.25,
+    "preset": "ease"
+   },
+   "expected": {
+    "y": "0.408510591355395872975740758361",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-135",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 0.5,
+    "preset": "ease"
+   },
+   "expected": {
+    "y": "0.802403387584856990570789101035",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-136",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 0.75,
+    "preset": "ease"
+   },
+   "expected": {
+    "y": "0.960458978348974084453680231177",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-137",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 0.9,
+    "preset": "ease"
+   },
+   "expected": {
+    "y": "0.994316477484556371502868653337",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-138",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 1.0,
+    "preset": "ease"
+   },
+   "expected": {
+    "y": "1",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-139",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 1,
+    "y2": 1,
+    "x": 0.3,
+    "preset": "ease-in"
+   },
+   "expected": {
+    "y": "0.129576760845352548361005537624",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-140",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 1,
+    "y2": 1,
+    "x": 0.5,
+    "preset": "ease-in"
+   },
+   "expected": {
+    "y": "0.315356812572539311596330875278",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-141",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 1,
+    "y2": 1,
+    "x": 0.8,
+    "preset": "ease-in"
+   },
+   "expected": {
+    "y": "0.69163393331931320840257672167",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-142",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0,
+    "y1": 0,
+    "x2": 0.58,
+    "y2": 1,
+    "x": 0.2,
+    "preset": "ease-out"
+   },
+   "expected": {
+    "y": "0.308366066680686890942115505827",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-143",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0,
+    "y1": 0,
+    "x2": 0.58,
+    "y2": 1,
+    "x": 0.6,
+    "preset": "ease-out"
+   },
+   "expected": {
+    "y": "0.785139061247106618659656011439",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-144",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 0.58,
+    "y2": 1,
+    "x": 0.1,
+    "preset": "ease-in-out"
+   },
+   "expected": {
+    "y": "0.0197224535483111994779622385483",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-145",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 0.58,
+    "y2": 1,
+    "x": 0.5,
+    "preset": "ease-in-out"
+   },
+   "expected": {
+    "y": "0.500000000000000035890830537451",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-146",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 0.58,
+    "y2": 1,
+    "x": 0.7,
+    "preset": "ease-in-out"
+   },
+   "expected": {
+    "y": "0.812604093294687418847198869246",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-147",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 0.58,
+    "y2": 1,
+    "x": 0.999,
+    "preset": "ease-in-out"
+   },
+   "expected": {
+    "y": "0.999998109498448054606480777979",
+    "tol": 1e-14
+   },
+   "source": "W3C css-easing-1 keyword; mpmath 60-digit bisection",
+   "id": "G1-148",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.68,
+    "y1": -0.55,
+    "x2": 0.265,
+    "y2": 1.55,
+    "x": 0.3
+   },
+   "expected": {
+    "y": "-0.0493167184886674899560931718783",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-149",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.68,
+    "y1": -0.55,
+    "x2": 0.265,
+    "y2": 1.55,
+    "x": 0.85
+   },
+   "expected": {
+    "y": "1.0822261468014671866808255514",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-150",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.0,
+    "y1": 1.0,
+    "x2": 1.0,
+    "y2": 0.0,
+    "x": 0.5
+   },
+   "expected": {
+    "y": "0.5",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-151",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 1.0,
+    "y1": 0.0,
+    "x2": 0.0,
+    "y2": 1.0,
+    "x": 0.5
+   },
+   "expected": {
+    "y": "0.499999999999999999997203158831",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-152",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.0,
+    "y1": 0.0,
+    "x2": 1.0,
+    "y2": 1.0,
+    "x": 0.37
+   },
+   "expected": {
+    "y": "0.369999999999999995559107901499",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-153",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.0,
+    "y1": 0.0,
+    "x2": 0.0,
+    "y2": 1.0,
+    "x": 0.001
+   },
+   "expected": {
+    "y": "0.028000000000000000374700270811",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-154",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 1.0,
+    "y1": 0.0,
+    "x2": 1.0,
+    "y2": 0.0,
+    "x": 0.999
+   },
+   "expected": {
+    "y": "0.72899999999999992805754800429",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-155",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.5,
+    "y1": 2.0,
+    "x2": 0.5,
+    "y2": -1.0,
+    "x": 0.5
+   },
+   "expected": {
+    "y": "0.5",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-156",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.33,
+    "y1": 0.0,
+    "x2": 0.67,
+    "y2": 1.0,
+    "x": 0.123456789
+   },
+   "expected": {
+    "y": "0.042493888413139590879380168987",
+    "tol": 1e-13
+   },
+   "source": "custom curve incl. overshoot, flat ends, x-tangent at end",
+   "id": "G1-157",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": -0.5
+   },
+   "expected": {
+    "y": "-3602879701896397/18014398509481984",
+    "tol": 1e-15
+   },
+   "source": "css-easing-1 \u00a72.2: outside [0,1] extrapolate along end tangent",
+   "id": "G1-158",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.25,
+    "y1": 0.1,
+    "x2": 0.25,
+    "y2": 1.0,
+    "x": 1.5
+   },
+   "expected": {
+    "y": "1/1",
+    "tol": 1e-15
+   },
+   "source": "css-easing-1 \u00a72.2: outside [0,1] extrapolate along end tangent",
+   "id": "G1-159",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.0,
+    "y1": 0.5,
+    "x2": 1.0,
+    "y2": 0.5,
+    "x": -1.0
+   },
+   "expected": {
+    "y": "-1/2",
+    "tol": 1e-15
+   },
+   "source": "css-easing-1 \u00a72.2: outside [0,1] extrapolate along end tangent",
+   "id": "G1-160",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "css_easing",
+   "input": {
+    "x1": 0.42,
+    "y1": 0,
+    "x2": 0.58,
+    "y2": 1,
+    "x": -1.0
+   },
+   "expected": {
+    "y": "0/1",
+    "tol": 1e-15
+   },
+   "source": "css-easing-1 \u00a72.2: outside [0,1] extrapolate along end tangent",
+   "id": "G1-161",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "bezier_point",
+   "input": {
+    "control": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      3,
+      3
+     ],
+     [
+      4,
+      0
+     ]
+    ],
+    "t": "1/3"
+   },
+   "expected": {
+    "point": [
+     "34/27",
+     "14/9"
+    ]
+   },
+   "source": "hand: B(1/3) = (8*0+12*1+6*3+1*4)/27, (12*2+6*3)/27",
+   "id": "G1-162",
+   "split": "held"
+  },
+  {
+   "category": "curve",
+   "op": "bezier_point",
+   "input": {
+    "control": [
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      0
+     ],
+     [
+      1
+     ],
+     [
+      0
+     ]
+    ],
+    "t": "1/2"
+   },
+   "expected": {
+    "point": [
+     "1/2"
+    ]
+   },
+   "source": "quartic: (4*1+4*1)/16",
+   "id": "G1-163",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "bezier_arc_length",
+   "input": {
+    "control": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ]
+    ]
+   },
+   "expected": {
+    "length": "1.41421356237309504880168872421",
+    "tol": 1e-12
+   },
+   "source": "straight line: sqrt(2)",
+   "id": "G1-164",
+   "split": "dev"
+  },
+  {
+   "category": "curve",
+   "op": "bezier_arc_length",
+   "input": {
+    "control": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      2
+     ],
+     [
+      2,
+      0
+     ]
+    ]
+   },
+   "expected": {
+    "length": "2.95788571508919486765581203887",
+    "tol": 1e-10
+   },
+   "source": "parabola: closed form via mpmath.quad at 60 digits",
+   "id": "G1-165",
+   "split": "held"
+  }
+ ]
+}

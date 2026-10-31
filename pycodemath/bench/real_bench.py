@@ -19,7 +19,11 @@ rules were added AFTER that run, each fixing an extraction error found on test
 data (a claim the text does not make: ``$E = 5$`` read as Euler's number, ``17\\%5``
 read as a percentage, ...); each is marked "test sample" / "full population" in a
 comment, and ``dev-journal/BENCH_REAL.md`` reports the frozen and the final
-numbers side by side. None of them was chosen by what the VERIFIER does.
+numbers side by side. None of them was chosen by what the VERIFIER does. Module
+X0b later added rejecting rules for extraction errors found on ProcessBench
+(money ``$``, operands cut by ``\\text{ of }`` or a unit, sentence numbers,
+trials the step rejects, ...), marked "ProcessBench, X0b"; their effect on this
+benchmark is in the same report.
 
 EXTRACTION — rules only, deterministic, no language model anywhere. A step is
 prose with mathematics. ``extract`` takes the math segments (``$..$``, ``$$..$$``,
@@ -309,6 +313,14 @@ _RELATIONS = frozenset(
     "text mbox textbf textit textrm mathrm hbox".split()
 )
 _TEXTUAL = frozenset("text mbox textbf textit textrm mathrm hbox".split())
+#: What a textual cut says about its neighbours (ProcessBench, X0b): ``\text{ of }``
+#: is an operator, ``\mathrm{~g}`` a unit — the numbers next to it are operands of
+#: a larger expression, not the whole side of a claim.
+_TEXT_OPERATOR = re.compile(r"\b(of|times|plus|minus|by|over|per|into|divided|multiplied|less|more|than)\b", re.I)
+_UNIT = re.compile(r"\s*~?\s*[A-Za-z]{1,3}\s*")
+_TEXT_RELS = frozenset(("text", "text-op", "units"))
+_OPERATOR_START = re.compile(r"\s*([-+*/×÷−^]|\\(times|cdot|div)(?![A-Za-z]))")
+_OPERATOR_END = re.compile(r"([-+*/×÷−^]|\\(times|cdot|div))\s*$")
 
 _SKIPS: "tuple[tuple[re.Pattern[str], str], ...]" = tuple(
     (re.compile(p), reason)
@@ -522,6 +534,10 @@ def translate(part: str, euler: bool = True) -> str:
     s = part
     for u, v in _UNICODE.items():
         s = s.replace(u, v)
+    if re.search(r"\^\s*(\{[^{}]*\}|\\?\w+)\s*\^", s):
+        # "\sin 2^4^\circ": a double superscript is not LaTeX — is it (2^4)° or
+        # 2^(4°)? (ProcessBench, X0b)
+        raise Skip("double-superscript")
     if re.search(r"(?<![A-Za-z\\])[EI](?![A-Za-z])", s):
         # a face or a point named E, I: the parser would read Euler's number /
         # the imaginary unit (test sample: $E = 5$ "caught" as e != 5)
@@ -544,22 +560,25 @@ def translate(part: str, euler: bool = True) -> str:
     return text
 
 
-_THOUSANDS = (r"(\d),\\!(\d{3})", r"(\d)\{,\}(\d{3})", r"(\d)\\[,!]\s*(\d{3})(?!\d)", r"(\d),(\d{3})(?!\d)")
+#: Separator patterns, matched by lookaround so that a number with four or more
+#: groups loses every separator (``7,999,999,999``: the consuming form stopped at
+#: ``7999,999999`` — ProcessBench, X0b).
+_THOUSANDS = (r"(?<=\d),\\!(?=\d{3})", r"(?<=\d)\{,\}(?=\d{3})", r"(?<=\d)\\[,!]\s*(?=\d{3}(?!\d))",
+              r"(?<=\d),(?=\d{3}(?!\d))")
 
 
 def _thousands(s: str) -> str:
     """``200,\\!000``, ``1{,}000``, ``1\\,000``, ``1,000`` -> digits only (before
     splitting, so a thousands comma is never read as a list separator)."""
     for pat in _THOUSANDS:
-        prev = None
-        while prev != s:
-            prev, s = s, re.sub(pat, r"\1\2", s)
+        s = re.sub(pat, "", s)
     return s
 
 
 def _split(seg: str) -> "list[tuple[str, str]]":
     """``seg`` -> [(part, relation-after), ...] at depth 0; relation is ``=``, ``rel``
-    (any other relation or separator) or ``end``."""
+    (any other relation or separator), a textual cut (``text``, ``text-op`` — the
+    words are an operator, ``units``) or ``end``."""
     parts: list[tuple[str, str]] = []
     depth = 0
     start = 0
@@ -577,12 +596,16 @@ def _split(seg: str) -> "list[tuple[str, str]]":
             if depth == 0 and name == "\\":
                 cut(i, "rel", j)
             elif depth == 0 and name in _RELATIONS:
+                rel = "rel"
                 if name in _TEXTUAL:
                     while j < len(seg) and seg[j] == " ":
                         j += 1
+                    content = ""
                     if j < len(seg) and seg[j] == "{":
-                        _, j = _group(seg, j)
-                cut(i, "rel", j)
+                        content, j = _group(seg, j)
+                    rel = ("text-op" if _TEXT_OPERATOR.search(content)
+                           else "units" if _UNIT.fullmatch(content) else "text")
+                cut(i, rel, j)
             elif name in ("{", "}"):
                 pass  # escaped brace, a set: rejected by translate
             i = j
@@ -621,21 +644,46 @@ def _closed(text: str) -> bool:
     return not e.free_symbols
 
 
-def _segments(step: str) -> "tuple[list[str], str]":
-    """The math segments of ``step`` (align lines split) and the remaining prose."""
-    step = step.replace("\\$", " ")
-    segs: list[str] = []
+_CURRENCY = re.compile(r"\$(?=\d)")
+_PROSE_WORD = re.compile(r"(?<![\\A-Za-z])[A-Za-z]{3,}(?![A-Za-z])")
+_TEXT_GROUP = re.compile(r"\\(text|mbox|textbf|textit|textrm|mathrm|hbox|operatorname)\s*\{[^{}]*\}")
+
+
+def _currency(step: str) -> str:
+    """Dollar signs that are money, not LaTeX, removed (ProcessBench, X0b).
+
+    ``salary is $100,000. Savings = 20% of $100,000`` pairs two money signs into
+    one "segment" of prose. When a ``$..$`` pair holds a prose word and some ``$``
+    stands before a digit, every ``$``-before-a-digit is read as money; a step
+    whose pairs are all math is left alone."""
+    if not _CURRENCY.search(step):
+        return step
+    for m in _SEGMENT.finditer(step):
+        body = m.group("e")
+        if body is not None and _PROSE_WORD.search(_TEXT_GROUP.sub(" ", body)):
+            return _CURRENCY.sub("", step)
+    return step
+
+
+def _segments(step: str) -> "tuple[list[tuple[str, str, str, str]], str]":
+    """The math segments of ``step`` as ``(body, text before, text after, gap)`` —
+    the raw step around the segment, and the prose since the previous segment —
+    and the remaining prose."""
+    step = _currency(step.replace("\\$", " "))
+    segs: list[tuple[str, str, str, str]] = []
     prose: list[str] = []
     pos = 0
     for m in _SEGMENT.finditer(step):
-        prose.append(step[pos:m.start()])
+        gap = step[pos:m.start()]
+        prose.append(gap)
+        before, after = step[:m.start()], step[m.end():]
         pos = m.end()
         body = next(g for g in (m.group("a"), m.group("b"), m.group("c"), m.group("d"), m.group("e")) if g is not None)
         body = re.sub(r"\\(begin|end)\{(align\*?|aligned|eqnarray\*?|gather\*?|split)\}", " ", body)
         # a matrix / cases / array body has its own \\ and &: one opaque token
         body = re.sub(r"\\begin\{(\w+\*?)\}.*?\\end\{\1\}", r" \\begin{env} ", body, flags=re.S)
         body = re.sub(r"\\boxed\s*\{", "{", body)
-        segs.append(body)
+        segs.append((body, before, after, gap))
     prose.append(step[pos:])
     return segs, " ".join(prose)
 
@@ -643,11 +691,46 @@ def _segments(step: str) -> "tuple[list[str], str]":
 _LITERAL = re.compile(r"\(?-?\d+(\.\d+)?\)?")
 _DECIMAL = re.compile(r"-?\d*\.(\d+)")
 _REMAINDER = re.compile(
-    r"\bremainders?\b|\bquotient\b|\\(text|mbox)\{\s*R\s*\}", re.I)  # "\text{ R }17": full population
+    r"\bremainders?\b|\bquotient\b|\\(text|mbox)\{\s*R\s*\}"  # "\text{ R }17": full population
+    # "= 6 full rotations with 90 degrees remaining": ProcessBench, X0b ("the
+    # remaining two letters" is no division)
+    r"|\bwith\b[^.=$]{0,40}\b(remaining|left\s*over)\b", re.I)
 #: A step that calls its own equation false ("$5 = 3 + 4$, which is false") does
 #: not claim it (test sample: 1 case, counted as a catch by the frozen rules).
 _STATED_FALSE = re.compile(
-    r"\b(false|impossible|contradiction|contradicts|absurd|not true|untrue|incorrect|wrong|mistake)\b", re.I)
+    r"\b(false|impossible|contradiction|contradicts|absurd|not true|untrue|incorrect|wrong|mistake)\b"
+    r"|\bnot\s+correct\b", re.I)  # "\frac{1}{8} = 1. This is not correct": ProcessBench, X0b
+#: A trial the step itself rejects ("Check: 60 = 5^2 + 6^2 = 61. This does not
+#: work", "Since this does not equal 1", "should be 5, not 0"): the tested
+#: hypothesis — a number set equal to an expression — is not claimed. The
+#: computation around it still is ("x = 5050 - 77 \times 68 = 5050 - 5256 ...
+#: does not satisfy": ProcessBench, X0b).
+_TRIAL_REJECTED = re.compile(
+    r"\b(does|do|did)\s*(n't|not)\s+(work|equal|equate|hold|satisfy)\b|\bshould\s+be\b[^.]*,\s*not\b", re.I)
+#: Text just before a math segment that makes the segment's first part an operand
+#: ("Expected gain = (...) × \( \frac{1}{100} = ..\)", "$10\%$ of $\$1.50 = ..$"),
+#: and text just after it that makes the last part one (ProcessBench, X0b).
+_HEAD_OPERATOR = re.compile(
+    r"([×÷+−^/]|[\w)\]}]\s*[-*]|\\(times|cdot|div)|(\d|%)\$?\s*of"
+    r"|\b(times|plus|minus|over|into|divided\s+by|multiplied\s+by))\s*$")
+_TAIL_OPERATOR = re.compile(
+    r"\s*([×÷*/+^]|-\s*[\d(\\$]|\\(times|cdot|div)(?![A-Za-z])|(times|plus|minus|divided|multiplied)\b)")
+#: A decimal with four or more places inside an expression: a rounded input
+#: (``(2.8284)^2 = 8``: ProcessBench, X0b).
+_LONG_DECIMAL = re.compile(r"\d\.\d{4,}")
+
+
+def _rounding_gap(expr: str, value: str) -> bool:
+    """Could inputs rounded to ``n`` places explain ``expr`` differing from the
+    integer ``value``? True when the gap is within ``10^(1-n)`` relative (or when
+    the numbers cannot be evaluated — then nothing is certain)."""
+    places = max(len(d) for d in re.findall(r"\d\.(\d{4,})", expr))
+    try:
+        a = complex(parse(expr).sy.evalf(30))
+        b = complex(parse(value).sy.evalf(30))
+    except (PycodemathError, TypeError, ValueError):
+        return True
+    return abs(a - b) <= 10 ** (1 - places) * max(1.0, abs(b))
 
 
 def _claim(left: str, right: str, source: str) -> Claim:
@@ -703,12 +786,17 @@ class _Extractor:
         self.carry: "str | None" = None
         self.remainder = False
         self.stated_false = False
+        self.trial = False
         self.euler = True
 
-    def _pairs(self, parts: "list[tuple[str, str]]", source: str, plain: bool, ex: Extraction) -> None:
+    def _pairs(self, parts: "list[tuple[str, str]]", source: str, plain: bool, ex: Extraction,
+               head: bool = False, tail: bool = False) -> None:
+        """``head`` / ``tail``: the first / last part is an operand of an expression
+        that goes on outside ``parts``."""
         if not plain and parts and not parts[0][0].strip() and parts[0][1] == "=" and self.carry is not None:
             parts = [(self.carry, "=")] + parts[1:]
-        for (left, rel), (right, _) in zip(parts, parts[1:]):
+        fragments = _fragments(parts, head, tail)
+        for k, ((left, rel), (right, _)) in enumerate(zip(parts, parts[1:])):
             if rel != "=":
                 continue
             ex.relation = True
@@ -716,6 +804,9 @@ class _Extractor:
                 ex.dropped["dangling"] += 1
                 continue
             try:
+                for side in (k, k + 1):
+                    if side in fragments:
+                        raise Skip(fragments[side])
                 lt = _plain(left) if plain else translate(left, self.euler)
                 rt = _plain(right) if plain else translate(right, self.euler)
                 if not plain and re.search(r"\\%", left + right) and not (
@@ -738,9 +829,18 @@ class _Extractor:
                     raise Skip("bare-literals")
                 if self.stated_false:
                     raise Skip("stated-false")
+                if self.trial and (_LITERAL.fullmatch(lt) or _LITERAL.fullmatch(rt)):
+                    raise Skip("rejected-trial")
                 if self.remainder and "/" in lt + rt:
                     # "223 / 3 = 74 with remainder 1": integer division
                     raise Skip("integer-division")
+                for a, b in ((lt, rt), (rt, lt)):
+                    if (_LONG_DECIMAL.search(a) and not _LITERAL.fullmatch(a)
+                            and re.fullmatch(r"\(?-?\d+\)?", b) and _rounding_gap(a, b)):
+                        # "(2.8284)^2 = 8": the input is rounded, the result is
+                        # exact — an approximation written with "=" (a gap the
+                        # rounding cannot explain, "ceil(9.0909) = 9", stays)
+                        raise Skip("approximate-input")
             except Skip as why:
                 ex.dropped[why.args[0]] += 1
                 continue
@@ -753,39 +853,87 @@ class _Extractor:
         ex = Extraction()
         self.remainder = bool(_REMAINDER.search(text))
         self.stated_false = bool(_STATED_FALSE.search(text))
+        self.trial = bool(_TRIAL_REJECTED.search(text))
         segs, prose = _segments(text)
-        self.euler = not any(re.search(r"(?<![A-Za-z\\])e(?![A-Za-z])(?!\s*\^)", seg) for seg in segs)
+        self.euler = not any(re.search(r"(?<![A-Za-z\\])e(?![A-Za-z])(?!\s*\^)", seg) for seg, _, _, _ in segs)
         modular = bool(_PROSE_MODULAR.search(prose))
         base = bool(_PROSE_BASE.search(prose))
-        for seg in segs:
+        for n_seg, (seg, before, after, gap) in enumerate(segs):
             ex.math = True
-            for line in _lines(seg):
-                if not line.strip():
-                    continue
+            if n_seg and re.search(r"[A-Za-z]", gap):
+                # "Substitute $\cos 72^\circ$ for $\sin 18^\circ$ in the expression:
+                # $= ..$": words between two expressions — the "=" continues
+                # neither with certainty. A step's first segment may continue the
+                # step before, if that step ENDED with an expression ("Combine
+                # like terms: $= ..$"; ProcessBench, X0b)
+                self.carry = None
+            lines = [ln for ln in _lines(seg) if ln.strip()]
+            for n, line in enumerate(lines):
                 parts = _split(_thousands(line.replace("&", " ")))
                 if modular or base or re.search(r"\\(bmod|pmod|mod|equiv)\b", line):
                     ex.relation = ex.relation or any(r == "=" for _, r in parts[:-1])
-                    n = sum(1 for _, r in parts[:-1] if r == "=")
-                    ex.dropped["number-base" if base and not modular else "modular"] += n
+                    count = sum(1 for _, r in parts[:-1] if r == "=")
+                    ex.dropped["number-base" if base and not modular else "modular"] += count
                     continue
-                self._pairs(parts, line, False, ex)
+                self._pairs(parts, line, False, ex,
+                            head=n == 0 and bool(_HEAD_OPERATOR.search(before)),
+                            tail=n == len(lines) - 1 and bool(_TAIL_OPERATOR.match(after)))
+        if re.search(r"[A-Za-z]", segs[-1][2] if segs else text):
+            self.carry = None
         for m in _PLAIN.finditer(prose):
-            run = m.group(0)
-            if "=" not in run or not re.search(r"\d", run):
-                continue
-            ex.math = ex.relation = True
-            start = m.start() + len(run) - len(run.lstrip())
-            end = m.end() - (len(run) - len(run.rstrip()))
-            if _mixed(prose[:start], prose[start:end], prose[end:]):
-                ex.dropped["prose-mixed"] += run.count("=")
-                continue
-            if modular or base:
-                ex.dropped["modular" if modular else "number-base"] += run.count("=")
-                continue
-            parts = [(p, "=") for p in run.split("=")]
-            parts[-1] = (parts[-1][0], "end")
-            self._pairs(parts, run, True, ex)
+            for start, end in _sentences(m):
+                run = prose[start:end]
+                if "=" not in run or not re.search(r"\d", run):
+                    continue
+                ex.math = ex.relation = True
+                if _mixed(prose[:start], run, prose[end:]):
+                    ex.dropped["prose-mixed"] += run.count("=")
+                    continue
+                if modular or base:
+                    ex.dropped["modular" if modular else "number-base"] += run.count("=")
+                    continue
+                parts = [(p, "=") for p in run.split("=")]
+                parts[-1] = (parts[-1][0], "end")
+                self._pairs(parts, run, True, ex)
         return ex
+
+
+def _sentences(m: "re.Match[str]") -> "Iterator[tuple[int, int]]":
+    """The pieces of a plain-text run between sentence ends, trimmed: ``30. 30 - 24
+    = 6`` is "... from 30." then "30 - 24 = 6" — a period followed by a space is
+    never a decimal point (ProcessBench, X0b)."""
+    pos = m.start()
+    for cut in [c for c in re.finditer(r"\.\s+", m.group(0))] + [None]:
+        # the period stays with its sentence (``_plain`` strips it)
+        stop = m.start() + cut.start() + 1 if cut else m.end()
+        piece = m.string[pos:stop]
+        start = pos + len(piece) - len(piece.lstrip())
+        end = stop - (len(piece) - len(piece.rstrip()))
+        if start < end:
+            yield start, end
+        if cut:
+            pos = m.start() + cut.end()
+
+
+def _fragments(parts: "list[tuple[str, str]]", head: bool, tail: bool) -> "dict[int, str]":
+    """Indices of parts that are operands of a larger expression, with the reason:
+    a part next to ``\\text{ of }`` or a unit, a part after a textual cut that opens
+    with an operator (``\\text{Naomi's Points} + 17``), a part before a textual cut
+    that ends with one; ``head`` / ``tail`` mark the first / last part (ProcessBench, X0b)."""
+    out: dict[int, str] = {}
+    if head:
+        out[0] = "fragment"
+    if tail:
+        out[len(parts) - 1] = "fragment"
+    for i, (part, rel) in enumerate(parts[:-1]):
+        if rel not in _TEXT_RELS:
+            continue
+        nxt = parts[i + 1][0]
+        if rel == "text-op" or _OPERATOR_START.match(nxt) or _OPERATOR_END.search(part):
+            reason = "units" if rel == "units" else "text"
+            out.setdefault(i, reason)
+            out.setdefault(i + 1, reason)
+    return out
 
 
 #: Words that make a plain-text number part of a larger expression (``3 x 4 = 12``,
@@ -802,9 +950,10 @@ def _mixed(before: str, run: str, after: str) -> bool:
     ``x = y + 7 = 10`` (a variable before), ``6 \\cdot 36 = 216`` (a command
     before), ``3 x 4 = 12`` (an operator word), ``+ 10 = 67`` (starts with a
     binary operator): the run is then not the whole claim."""
-    if before[-1:] and (before[-1].isalnum() or before[-1] in "_$\\!%'"):
+    # "√": "= 4√3 / 6√3 = 4 / 6" (ProcessBench, X0b)
+    if before[-1:] and (before[-1].isalnum() or before[-1] in "_$\\!%'√"):
         return True
-    if after[:1] and (after[0].isalnum() or after[0] in "_$\\!%'"):
+    if after[:1] and (after[0].isalnum() or after[0] in "_$\\!%'√"):
         return True
     words_before = before.split()
     words_after = after.split()
@@ -824,9 +973,7 @@ def _plain(part: str) -> str:
     s = part
     for u, v in _UNICODE.items():
         s = s.replace(u, v)
-    prev = None
-    while prev != s:
-        prev, s = s, re.sub(r"(\d),(\d{3})(?!\d)", r"\1\2", s)
+    s = re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", s)
     s = s.strip().rstrip(".,").strip()
     if not re.search(r"\d", s):
         raise Skip("dangling")

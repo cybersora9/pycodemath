@@ -86,9 +86,118 @@ Commands:
                                           independent route (e.g. certify integrate
                                           x*cos(x) dx); the command's own budget
                                           also bounds the certificate
+  certificate <verify/certify line>     — the same check, written down as JSON
+                                          (schema 1: claim, verdict, counterexample,
+                                          budget, versions, sha256) — save it with
+                                          > file.json (e.g. certificate verify
+                                          sqrt(x^2) == x)
+  recheck <file.json> [budget <s>]      — re-run a certificate from the file alone:
+                                          REPRODUCED, or an error naming the mismatch
+                                          (another verdict, a digest broken by a hand
+                                          edit, a claim that now parses differently)
 
+CHECK THE MATH IN YOUR CODE (series FULL; every answer ends with a certificate
+line — the same check written down, see `certificate` / `recheck`):
+  verify code <file.py>[:<f>] == <formula> [where n: integer, n>=0] [--emit-test]
+                                        — does the function compute the formula?
+                                          REFUTED comes with the call that was really
+                                          executed; --emit-test prints the pytest
+                                          (e.g. verify code sums.py:sum_to == n*(n+1)/2)
+  stability <expr> for x in [a, b] [as float32] [samples N] — bits of float error,
+                                          the worst input, the culprit operation
+                                          (e.g. stability sqrt(x + 1) - sqrt(x) for x in [1e10, 1e15])
+  improve <expr> for x in [a, b] [as float32] [emit python|numpy|c]
+                                        — a rewrite PROVED equal and MEASURED better
+  ranges <expr> for x in [a, b][ int], y in [c, d] as <dtype>
+                                        — overflow / underflow / NaN / lost precision
+                                          with an executed witness, or a proof of safety
+                                          (e.g. ranges (lo + hi) // 2 for lo in [0, 2^31-1],
+                                          hi in [0, 2^31-1] as int32)
+  maxsafe <expr> for <x> as <dtype>     — the largest safe input (e.g. maxsafe exp(x) for x as float32)
+  iterations <file.py>[:<f>] [== <count>] — how many times the loops run: the exact count,
+                                          where it holds, Θ proved by a limit, then counted
+                                          by running it; a claimed count REFUTED with the
+                                          n where it fails (e.g. iterations sums.py:f == n)
+  complexity <file.py>[:<f>] is O(n log n) — O / Theta / Omega / o / omega, decided by a limit
+  recurrence T(n) = 2*T(n/2) + n, T(1) = 1 — Θ and the exact form, every condition checked
+  master <a> <b> <f(n)>                 — the master theorem, or why it does not apply
+  lint <paths> [--select PCM4] [--format sarif] [--no-execute]
+                                        — the math-in-code linter (python -m pycodemath.lint):
+                                          every finding with an executed witness; exit codes
+                                          0 clean / 1 findings / 2 error, as ruff
+
+NUMBERS YOU CAN TRUST (exact answer + proved decimal):
+  <exact number>                        — shown with its proved decimal: sqrt(2)/2  ≈ 0.707…
+  evalf <expr> <digits>   N(<expr>, <d>) — digits that are PROVED (interval arithmetic) or
+                                          marked "NOT rigorous" (e.g. evalf sqrt(2) 50)
+  identify <number> [digits <d>] [basis pi,log(3)] — a closed form, only when a coincidence
+                                          is excluded (>= 50 digits; e.g. identify zeta(2))
+  latex <expr>                          — LaTeX of the parsed expression
+
+SOLUTION SETS AND DEFINITE INTEGRALS (every answer proved):
+  solve <f> < <g> [for x [in [a, b]]]   — an inequality: the real line cut at every zero,
+                                          each cell's sign proved (e.g. solve x^2-4 > 0 for x)
+  solve <eq1>, <eq2> for x, y           — a system, with a completeness proof
+  solve <eq> all                        — every real solution: periodic families, period proved
+  reduce <relation> [for x]             — the same as solve for relations and systems
+  integrate <expr> d<var> from <a> to <b> [pv] [budget <s>]
+                                        — definite or improper: convergence proved, the value
+                                          cross-checked by quadrature; a divergence proved;
+                                          pv = Cauchy principal value, only on request
+
+CALCULATOR (exact; each answer certified):
+  factor | isprime | nextprime | prevprime | totient | divisors | fibonacci |
+  lucas | bell | catalan | partitions <n>           (e.g. factor 2^64+1)
+  gcd | lcm <a> <b> ...;  powmod <a> <e> <m>;  modinv <a> <m>;  sqrtmod <a> <n>;
+  legendre | jacobi <a> <n>;  binomial | permutations | combinations |
+  stirling1 | stirling2 <n> <k>;  mod <a> <m> [floor|euclid|trunc];
+  crt <r1,r2,...> mod <m1,m2,...>       (e.g. crt 2,3,2 mod 3,5,7)
+  special <function> <args> [digits <d>] — zeta, gamma, erf, besselj, lambertw...
+                                          (e.g. special zeta 3 digits 50)
+  mean | median <x1> <x2> ...;  var | std sample|population <x1> ...;
+  quantile <q> [type 1..9] <x1> ...
+  cdf | sf | pdf | pmf | ppf <distribution> <x> [param=value ...] (e.g. ppf t 0.975 df=10)
+  samplesize p1=<p> p2=<p> [power=0.8] [alpha=0.05] [method=evanmiller|pooled|arcsine] [relative]
+  power p1= p2= n=;  ci wilson|exact <s>/<n>;  ztest <s1>/<n1> <s2>/<n2>;
+  welch [x...] [y...];  holm | bonferroni <p1> <p2> ...
+
+UNITS:
+  convert <quantity> to <unit>          — exact (e.g. convert 5 km/h to m/s; the
+                                          bare line 5 km/h to m/s works too)
+  units <lhs> = <rhs> where F:N m:kg v:m/s [numbers]
+                                        — dimensional check: REFUTED with a witness
+  dims <expr> where m:kg v:m/s          — the dimension of an expression
+
+MONEY (exact decimals at the currency's ISO 4217 scale):
+  money round <amount> <CUR> [mode half_even] [step 0.05]
+  money split <amount> <CUR> into <n> | by 1:2:3   (e.g. money split 100 PLN into 3)
+  money vat <net1,net2,...> at <rate>% <CUR> — VAT per line vs on the total
+  money float <expr> for <x> in <lo>..<hi> [step 0.01] [currency <CUR>]
+                                        — which input loses a cent in floats?
+  money interest | loan <amount> <CUR> at <rate>% for <n> months|years [equal_principal] [schedule]
+  money npv <rate>% <c0,c1,...>;  money irr <c0,c1,...> — every IRR, not one
+
+GEOMETRY:
+  quat2mat <w> <x> <y> <z> [order xyzw] [algebra jpl] [normalize]
+  euler2mat <a> <b> <c> seq zyx frame intrinsic|extrinsic [deg]
+  mat2euler [[...],[...],[...]] seq zyx frame intrinsic [deg]
+  rotcheck <expr> == <expr>             — two rotation formulas equal, or integer
+                                          quaternions where they differ + the likely bug
+  orient2d | orient3d | incircle <points>;  segment p1 p2 q1 q2
+  easing <ease|cubic-bezier(...)> <x>;  arclength (x,y) (x,y) ...
+  emit <formula> python|numpy|c|glsl;   epsilon <orient2d|...> <epsilon>
+
+  implicit on|off          — REPL setting: off (default, strict) reads a
+                             multi-letter name as ONE variable (speed*time);
+                             on splits it into letters (2xy = 2*x*y). One-shot:
+                             python -m pycodemath --implicit "<command>"
   help                     — help
   quit / exit              — exit
+
+Strict parsing (K1): an unknown command word (factor 2^64+1) or an unknown word
+next to another term (5 km/h to m/s) is a ParseError with a hint, never a
+product of letters; so is a command whose variable shows up in only one of the
+two readings (diff xy dx).
 
 Trailing options (module 11): the bracketed ``<key> <value>`` pairs above go at
 the END of the command, in any order, each at most once — e.g.
@@ -113,21 +222,28 @@ ends its runs itself), max_evals, atol (rtol already steers the ODE error).
 
 from __future__ import annotations
 
+import difflib
 import math
 import re
 import sys
+import warnings
 from dataclasses import dataclass
 from typing import Any, Callable, Sequence, TypeVar
+
+from sympy.utilities.exceptions import SymPyDeprecationWarning
 
 from .. import __version__
 from ..codegen.pipeline import generate, generate_system
 from ..core.budget import time_budget
-from ..core.errors import DomainError, ParseError
+from ..core.errors import DomainError, ParseError, PycodemathError
 from ..core.ir import Matrix
 from ..core.result import QuadratureResult, SolveResult
 from ..engine import linalg, numerics, ode, symbolic
-from ..frontend.parser import parse
+from ..frontend.parser import KNOWN_NAMES, is_strict, parse, parse_mode, set_strict
+from . import full
 from ..verify import (
+    Certificate,
+    CertificateMismatch,
     StepsResult,
     Verdict,
     VerdictStatus,
@@ -139,6 +255,8 @@ from ..verify import (
     certify_solve,
     check_equal,
     check_steps,
+    from_verdict,
+    recheck,
 )
 
 _T = TypeVar("_T")
@@ -287,13 +405,61 @@ def _budgeted(m: re.Match, run: Callable[[], _T]) -> _T:
         return run()
 
 
+# --- parsing a command's expression (K1) -------------------------------------
+def _parse_for(texts: "Sequence[str]", names: "Sequence[str]") -> list:
+    """Parse ``texts`` and refuse when a command variable is visible in only ONE
+    of the two readings of a multi-letter name.
+
+    Strict mode reads ``xy`` as one variable, implicit mode as ``x*y``. Either
+    reading alone can turn a command into a silent zero: ``diff xy dx`` is 0 in
+    strict mode, ``diff speed*time dtime`` was 0 with splitting (the worst of the
+    30.10 probes). When the variable is absent from the expression as parsed but
+    present under the other reading, the line is ambiguous — a ``ParseError``
+    naming the setting that changes it, not an answer.
+    """
+    exprs = [parse(t) for t in texts]
+    present = {str(sym) for e in exprs for sym in e.sy.free_symbols}
+    for name in names:
+        if name in present:
+            continue
+        strict = is_strict()
+        try:
+            with parse_mode(strict=not strict):
+                other = {str(sym) for t in texts for sym in parse(t).sy.free_symbols}
+        except PycodemathError:
+            continue
+        if name not in other:
+            continue
+        if strict:
+            raise ParseError(
+                f"'{name}' does not appear in {' ; '.join(texts)!r}: multi-letter "
+                f"names are read as ONE variable (strict parsing) — write the "
+                f"product with '*' (e.g. x*y), or switch 'implicit on' to split names"
+            )
+        raise ParseError(
+            f"'{name}' does not appear in {' ; '.join(texts)!r}: with 'implicit on' "
+            f"multi-letter names are split into letters — switch 'implicit off' "
+            f"to keep '{name}' one variable"
+        )
+    return exprs
+
+
+def _expr(m: re.Match) -> Any:
+    """The command's ``expr`` group, parsed and checked against its variable(s)."""
+    groups = m.groupdict()
+    names = [groups["var"]] if groups.get("var") else []
+    if groups.get("vars"):
+        names = _split_names(groups["vars"])
+    return _parse_for([m["expr"]], names)[0]
+
+
 # --- command handlers (receive the regex match, return text) --------
 def _cmd_diff(m: re.Match) -> str:
-    return str(symbolic.diff(parse(m["expr"]), m["var"]))
+    return str(symbolic.diff(_expr(m), m["var"]))
 
 
 def _cmd_integrate(m: re.Match) -> str:
-    return _budgeted(m, lambda: str(symbolic.integrate(parse(m["expr"]), m["var"])))
+    return _budgeted(m, lambda: str(symbolic.integrate(_expr(m), m["var"])))
 
 
 def _cmd_solve(m: re.Match) -> str:
@@ -302,7 +468,7 @@ def _cmd_solve(m: re.Match) -> str:
     # restores the full set of roots.
     def run() -> str:
         real = not bool(m["complex"])
-        roots = symbolic.solve(parse(m["expr"]), m["var"], real=real)
+        roots = symbolic.solve(_expr(m), m["var"], real=real)
         return ", ".join(str(r) for r in roots) if roots else "(no solutions)"
 
     return _budgeted(m, run)
@@ -313,7 +479,7 @@ def _cmd_limit(m: re.Match) -> str:
         m,
         lambda: str(
             symbolic.limit(
-                parse(m["expr"]), m["var"], parse(m["to"]), dir=m["dir"] or "+"
+                _expr(m), m["var"], parse(m["to"]), dir=m["dir"] or "+"
             )
         ),
     )
@@ -323,7 +489,7 @@ def _cmd_series(m: re.Match) -> str:
     def run() -> str:
         at = parse(m["at"]) if m["at"] else 0
         n = int(m["n"]) if m["n"] else 6
-        return str(symbolic.series(parse(m["expr"]), m["var"], at=at, n=n))
+        return str(symbolic.series(_expr(m), m["var"], at=at, n=n))
 
     return _budgeted(m, run)
 
@@ -333,14 +499,14 @@ def _cmd_sum(m: re.Match) -> str:
         m,
         lambda: str(
             symbolic.summation(
-                parse(m["expr"]), m["var"], parse(m["lo"]), parse(m["hi"])
+                _expr(m), m["var"], parse(m["lo"]), parse(m["hi"])
             )
         ),
     )
 
 
 def _cmd_code(m: re.Match) -> str:
-    return generate(parse(m["expr"])).source
+    return generate(_expr(m)).source
 
 
 def _cmd_matrix(m: re.Match) -> str:
@@ -385,14 +551,14 @@ def _fmt_named(names: "Sequence[str]", values: "Sequence[float]") -> str:
 
 
 def _cmd_root(m: re.Match) -> str:
-    return _fmt_scalar(numerics.root_find(parse(m["expr"]), m["var"], _num(m["x0"])))
+    return _fmt_scalar(numerics.root_find(_expr(m), m["var"], _num(m["x0"])))
 
 
 def _cmd_min(m: re.Match) -> str:
     method = (m["method"] or "gd").lower()
     return _fmt_scalar(
         numerics.minimize(
-            parse(m["expr"]),
+            _expr(m),
             m["var"],
             _num(m["x0"]),
             method=method,
@@ -403,7 +569,7 @@ def _cmd_min(m: re.Match) -> str:
 
 def _cmd_nintegrate(m: re.Match) -> str:
     val = numerics.integrate_num(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["a"]),
         _num(m["b"]),
@@ -421,12 +587,12 @@ def _split_floats(raw: str) -> list[float]:
 
 
 def _cmd_grad(m: re.Match) -> str:
-    return str(numerics.gradient(parse(m["expr"]), _split_names(m["vars"])))
+    return str(numerics.gradient(_expr(m), _split_names(m["vars"])))
 
 
 def _cmd_solve_nd(m: re.Match) -> str:
-    exprs = [parse(e.strip()) for e in m["exprs"].split(";")]
     names = _split_names(m["vars"])
+    exprs = _parse_for([e.strip() for e in m["exprs"].split(";")], names)
     sol = numerics.root_find_nd(exprs, names, _split_floats(m["x0"]))
     return _fmt_named(names, sol)
 
@@ -435,7 +601,7 @@ def _cmd_min_nd(m: re.Match) -> str:
     names = _split_names(m["vars"])
     method = (m["method"] or "gd").lower()
     sol = numerics.minimize_nd(
-        parse(m["expr"]),
+        _expr(m),
         names,
         _split_floats(m["x0"]),
         method=method,
@@ -446,7 +612,7 @@ def _cmd_min_nd(m: re.Match) -> str:
 
 def _cmd_dsolve(m: re.Match) -> str:
     def run() -> str:
-        sols = ode.dsolve(parse(m["expr"]), m["func"], m["var"])
+        sols = ode.dsolve(_expr(m), m["func"], m["var"])
         return ", ".join(f"{m['func']}({m['var']}) = {s}" for s in sols)
 
     return _budgeted(m, run)
@@ -455,7 +621,7 @@ def _cmd_dsolve(m: re.Match) -> str:
 def _cmd_ode(m: re.Match) -> str:
     n = int(m["n"]) if m["n"] else 100
     ts, ys = ode.solve_ode_num(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["y0"]),
         (_num(m["t0"]), _num(m["t1"])),
@@ -468,7 +634,7 @@ def _cmd_ode(m: re.Match) -> str:
 def _cmd_ode_stiff(m: re.Match) -> str:
     n = int(m["n"]) if m["n"] else 100
     ts, ys = ode.solve_ode_stiff(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["y0"]),
         (_num(m["t0"]), _num(m["t1"])),
@@ -481,7 +647,7 @@ def _cmd_ode_stiff(m: re.Match) -> str:
 def _cmd_ode_stiff_adaptive(m: re.Match) -> str:
     rtol = _num(m["rtol"]) if m["rtol"] else 1e-6
     ts, ys = ode.solve_ode_stiff_adaptive(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["y0"]),
         (_num(m["t0"]), _num(m["t1"])),
@@ -497,7 +663,7 @@ def _cmd_ode_stiff_adaptive(m: re.Match) -> str:
 def _cmd_ode_adaptive(m: re.Match) -> str:
     rtol = _num(m["rtol"]) if m["rtol"] else 1e-6
     ts, ys = ode.solve_ode_adaptive(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["y0"]),
         (_num(m["t0"]), _num(m["t1"])),
@@ -510,7 +676,7 @@ def _cmd_ode_adaptive(m: re.Match) -> str:
 def _cmd_ode_dense(m: re.Match) -> str:
     rtol = _num(m["rtol"]) if m["rtol"] else 1e-6
     sol = ode.solve_ode_dense(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["y0"]),
         (_num(m["t0"]), _num(m["t1"])),
@@ -526,7 +692,7 @@ def _cmd_ode_events(m: re.Match) -> str:
     rtol = _num(m["rtol"]) if m["rtol"] else 1e-6
     terminal = bool(m["stop"])
     sol = ode.solve_ode_events(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["y0"]),
         (_num(m["t0"]), _num(m["t1"])),
@@ -565,14 +731,17 @@ class Checked:
 
     ``verdict`` is set for ``verify <a> == <b>`` and ``certify`` (the certificate),
     ``steps`` for ``verify steps``, ``answer`` for ``certify`` (the engine's answer
-    that was certified, as ``handle`` prints it). All three are ``None`` on a usage
-    message — the line did not fit the grammar, so nothing was checked.
+    that was certified, as ``handle`` prints it). ``certificate`` (X1) is the same
+    check written down for ``recheck`` — built from the verdict already in hand,
+    nothing is re-run. All four are ``None`` on a usage message — the line did not
+    fit the grammar, so nothing was checked.
     """
 
     text: str
     verdict: "Verdict | None" = None
     steps: "StepsResult | None" = None
     answer: "str | None" = None
+    certificate: "Certificate | None" = None
 
 
 def _verdict_line(v: Verdict) -> str:
@@ -605,13 +774,33 @@ def _steps_text(result: StepsResult) -> str:
     return "\n".join(lines)
 
 
+def _source(m: re.Match) -> str:
+    return " ".join(m.string.split()) if "\n" not in m.string else m.string.strip()
+
+
+def _written_down(*args: Any, **kwargs: Any) -> "Certificate | None":
+    """``from_verdict``, or ``None`` when the claim cannot be recorded — the
+    certificate is a by-product, and it never costs the line its verdict."""
+    try:
+        return from_verdict(*args, **kwargs)
+    except PycodemathError:
+        return None
+
+
 def _check_verify(m: re.Match) -> Checked:
+    if m["code"] is not None:  # C1: a function in a file against a formula (I1)
+        done = full.check_code_line(m["code"] + (m["opts"] or ""), source_line=_source(m))
+        return Checked(done.text, verdict=done.verdict, certificate=done.certificate)
     budget = _options(m, _BUDGET_OPTS).get("budget")
     if m["steps"] is not None:
         result = check_steps(m["steps"], budget=budget)
-        return Checked(_steps_text(result), steps=result)
+        cert = _written_down("steps", [m["steps"]], result, source=_source(m), budget=budget)
+        return Checked(_steps_text(result), steps=result, certificate=cert)
     verdict = check_equal(m["a"], m["b"], budget=budget)
-    return Checked(_verdict_line(verdict), verdict=verdict)
+    cert = _written_down(
+        "identity", [m["a"], m["b"]], verdict, source=_source(m), budget=budget
+    )
+    return Checked(_verdict_line(verdict), verdict=verdict, certificate=cert)
 
 
 # Each certifier runs the SAME engine call its plain ``_cmd_*`` twin makes and
@@ -624,47 +813,68 @@ def _cert_budget(m: re.Match) -> "float | None":
     return _options(m, _BUDGET_OPTS).get("budget")
 
 
-def _cert_integrate(m: re.Match) -> "tuple[str, Verdict]":
-    expr, budget = parse(m["expr"]), _cert_budget(m)
+@dataclass(frozen=True, slots=True)
+class _Certified:
+    """A certifier's answer, its verdict, and the claim as a certificate records
+    it (X1): the kind, the arguments in the kind's order, the options, the budget."""
+
+    answer: str
+    verdict: Verdict
+    kind: str
+    args: "list[Any]"
+    options: "dict[str, Any]"
+    budget: "float | None"
+
+
+def _cert_integrate(m: re.Match) -> _Certified:
+    expr, budget = _expr(m), _cert_budget(m)
     result = _budgeted(m, lambda: symbolic.integrate(expr, m["var"]))
-    return str(result), certify_integrate(expr, m["var"], result, budget=budget)
+    verdict = certify_integrate(expr, m["var"], result, budget=budget)
+    return _Certified(str(result), verdict, "integral",
+                      [m["expr"], m["var"], result], {}, budget)
 
 
-def _cert_diff(m: re.Match) -> "tuple[str, Verdict]":
-    expr = parse(m["expr"])
+def _cert_diff(m: re.Match) -> _Certified:
+    expr = _expr(m)
     result = symbolic.diff(expr, m["var"])
-    return str(result), certify_diff(expr, m["var"], result)
+    verdict = certify_diff(expr, m["var"], result)
+    return _Certified(str(result), verdict, "derivative",
+                      [m["expr"], m["var"], result], {}, None)
 
 
-def _cert_solve(m: re.Match) -> "tuple[str, Verdict]":
-    expr, real, budget = parse(m["expr"]), not bool(m["complex"]), _cert_budget(m)
+def _cert_solve(m: re.Match) -> _Certified:
+    expr, real, budget = _expr(m), not bool(m["complex"]), _cert_budget(m)
     roots = _budgeted(m, lambda: symbolic.solve(expr, m["var"], real=real))
     text = ", ".join(str(r) for r in roots) if roots else "(no solutions)"
-    return text, certify_solve(expr, m["var"], roots, real=real, budget=budget)
+    verdict = certify_solve(expr, m["var"], roots, real=real, budget=budget)
+    return _Certified(text, verdict, "roots",
+                      [m["expr"], m["var"], list(roots)], {"real": real}, budget)
 
 
-def _cert_limit(m: re.Match) -> "tuple[str, Verdict]":
-    expr, to, side = parse(m["expr"]), parse(m["to"]), m["dir"] or "+"
+def _cert_limit(m: re.Match) -> _Certified:
+    expr, to, side = _expr(m), parse(m["to"]), m["dir"] or "+"
     budget = _cert_budget(m)
     result = _budgeted(m, lambda: symbolic.limit(expr, m["var"], to, dir=side))
-    return str(result), certify_limit(
-        expr, m["var"], to, result, dir=side, budget=budget
-    )
+    verdict = certify_limit(expr, m["var"], to, result, dir=side, budget=budget)
+    return _Certified(str(result), verdict, "limit",
+                      [m["expr"], m["var"], m["to"], result], {"dir": side}, budget)
 
 
-def _cert_dsolve(m: re.Match) -> "tuple[str, Verdict]":
-    expr, budget = parse(m["expr"]), _cert_budget(m)
+def _cert_dsolve(m: re.Match) -> _Certified:
+    expr, budget = _expr(m), _cert_budget(m)
     sols = _budgeted(m, lambda: ode.dsolve(expr, m["func"], m["var"]))
     text = ", ".join(f"{m['func']}({m['var']}) = {s}" for s in sols)
-    return text, certify_dsolve(expr, m["func"], m["var"], sols, budget=budget)
+    verdict = certify_dsolve(expr, m["func"], m["var"], sols, budget=budget)
+    return _Certified(text, verdict, "ode",
+                      [m["expr"], m["func"], m["var"], list(sols)], {}, budget)
 
 
-def _cert_nintegrate(m: re.Match) -> "tuple[str, Verdict]":
+def _cert_nintegrate(m: re.Match) -> _Certified:
     # The certificate checks the claim the run MADE: its own ``error_estimate``
     # (the engine documents that estimate as able to lie — this is what catches
     # it). Where the evidence cannot be had (``handle_full``'s fallback case) the
     # bare value is held to ``certify_nintegrate``'s default relative tolerance.
-    expr, a, b = parse(m["expr"]), _num(m["a"]), _num(m["b"])
+    expr, a, b = _expr(m), _num(m["a"]), _num(m["b"])
     claim: "QuadratureResult | float"
     try:
         answer = _ev_nintegrate(m)
@@ -673,10 +883,16 @@ def _cert_nintegrate(m: re.Match) -> "tuple[str, Verdict]":
     except DomainError:
         text = _cmd_nintegrate(m)
         claim = float(text)
-    return text, certify_nintegrate(expr, m["var"], a, b, claim)
+    verdict = certify_nintegrate(expr, m["var"], a, b, claim)
+    if isinstance(claim, QuadratureResult):
+        value, options = claim.value, {"error_estimate": claim.error_estimate}
+    else:
+        value, options = claim, {}
+    return _Certified(text, verdict, "quadrature",
+                      [m["expr"], m["var"], a, b, value], options, None)
 
 
-_CERTIFY: dict[str, Callable[[re.Match], "tuple[str, Verdict]"]] = {
+_CERTIFY: dict[str, Callable[[re.Match], _Certified]] = {
     "integrate": _cert_integrate,
     "diff": _cert_diff,
     "solve": _cert_solve,
@@ -703,11 +919,16 @@ def _check_certify(m: re.Match) -> Checked:
                 "(e.g. ", "(e.g. certify ", 1
             )
         )
-    answer, verdict = certifier(match)
+    done = certifier(match)
+    cert = _written_down(
+        done.kind, done.args, done.verdict,
+        source=_source(m), budget=done.budget, **done.options,
+    )
     return Checked(
-        f"{answer}\ncertificate: {_verdict_line(verdict)}",
-        verdict=verdict,
-        answer=answer,
+        f"{done.answer}\ncertificate: {_verdict_line(done.verdict)}",
+        verdict=done.verdict,
+        answer=done.answer,
+        certificate=cert,
     )
 
 
@@ -717,6 +938,32 @@ def _cmd_verify(m: re.Match) -> str:
 
 def _cmd_certify(m: re.Match) -> str:
     return _check_certify(m).text
+
+
+# --- certificates (X1) -----------------------------------------------------
+# ``certificate`` prints a verify/certify line's check as JSON; ``recheck`` reads
+# one back and re-runs it. A certificate that does not reproduce RAISES
+# (``CertificateMismatch``, the report as its message) — so a one-shot
+# ``pycodemath recheck file.json`` exits 1 on a mismatch and a script can rely on
+# the exit code, while the REPL prints the report as an error.
+def _cmd_certificate(m: re.Match) -> str:
+    checked = handle_checked(m["line"])
+    if checked.certificate is not None:
+        return checked.certificate.to_json()
+    if checked.verdict is None and checked.steps is None:
+        return checked.text  # the inner line's usage message: nothing was checked
+    raise DomainError(
+        f"certificate: the check ran ({checked.text.splitlines()[-1]}) but its "
+        f"claim cannot be recorded for a re-check"
+    )
+
+
+def _cmd_recheck(m: re.Match) -> str:
+    budget = _options(m, _BUDGET_OPTS).get("budget")
+    result = recheck(Certificate.load(m["path"]), budget=budget)
+    if not result.ok:
+        raise CertificateMismatch(result.text())
+    return result.text()
 
 
 # --- command table --------------------------------------------------------
@@ -963,13 +1210,16 @@ _COMMANDS: dict[str, tuple[re.Pattern[str], Callable[[re.Match], str], str]] = {
     # reading ``a == b == c`` as one claim would silently drop a step.
     "verify": (
         re.compile(
-            r"^verify\s+(?:steps\s+(?P<steps>.+?)"
+            r"^verify\s+(?:code\s+(?P<code>\S+?\.py\b.*?)"
+            r"|steps\s+(?P<steps>.+?)"
             r"|(?P<a>(?:(?!==).)+?)\s*==\s*(?P<b>(?:(?!==).)+?))"
             rf"{_VERIFY_OPTS}\s*$",
             re.IGNORECASE | re.DOTALL,
         ),
         _cmd_verify,
         "Usage: verify <a> == <b> [budget <s>]   (e.g. verify sqrt(x^2) == x)\n"
+        "       verify code <file.py>[:<function>] == <formula> [where <param>: <spec>]"
+        " [--emit-test] [budget <s>]\n"
         "       verify steps <derivation> [budget <s>]"
         "   (e.g. verify steps 2x + 3 = 7 -> 2x = 4 -> x = 2)\n"
         "       certify <command>   (e.g. certify integrate x*cos(x) dx)",
@@ -980,8 +1230,36 @@ _COMMANDS: dict[str, tuple[re.Pattern[str], Callable[[re.Match], str], str]] = {
         "Usage: certify <command>   — one of: integrate, diff, solve, limit,"
         " dsolve, nintegrate   (e.g. certify integrate x*cos(x) dx)",
     ),
+    "certificate": (
+        re.compile(
+            r"^certificate\s+(?P<line>(?:verify|certify)\s.+?)\s*$",
+            re.IGNORECASE | re.DOTALL,
+        ),
+        _cmd_certificate,
+        "Usage: certificate <verify or certify line>"
+        "   (e.g. certificate verify sqrt(x^2) == x > c.json)",
+    ),
+    "recheck": (
+        re.compile(rf"^recheck\s+(?P<path>\S+){_VERIFY_OPTS}\s*$", re.IGNORECASE),
+        _cmd_recheck,
+        "Usage: recheck <file.json> [budget <s>]   (e.g. recheck c.json)",
+    ),
 }
 
+
+# --- the FULL-series commands (I1) ------------------------------------------
+# Nine modules, one table: ``full.COMMANDS`` holds their patterns and handlers
+# (each returns an ``Outcome`` — text, the module's ``to_dict()``, a certificate),
+# merged here so the REPL, the one-shot CLI and MCP ``math_eval`` route them with
+# the same rule as every other command, and K1's "did you mean" knows them too.
+def _text_of(handler: Callable[[re.Match], "full.Outcome"]) -> Callable[[re.Match], str]:
+    return lambda m: handler(m).text
+
+
+for _word, (_pattern, _full_handler, _usage) in full.COMMANDS.items():
+    assert _word not in _COMMANDS, f"I1: command {_word!r} defined twice"
+    _COMMANDS[_word] = (_pattern, _text_of(_full_handler), _usage)
+del _word, _pattern, _full_handler, _usage
 
 # --- evidence handlers (module 6) -----------------------------------------
 # The twins of the five numerical ``_cmd_*`` handlers above, asking the engine for
@@ -1004,6 +1282,7 @@ class Answer:
 
     text: str
     evidence: "SolveResult[Any] | QuadratureResult | None" = None
+    outcome: "full.Outcome | None" = None
 
 
 def _solved(result: "SolveResult[Any]", text: str) -> Answer:
@@ -1040,7 +1319,7 @@ def _integrated(result: QuadratureResult, text: str) -> Answer:
 
 def _ev_root(m: re.Match) -> Answer:
     res = numerics.root_find(
-        parse(m["expr"]), m["var"], _num(m["x0"]), full_result=True
+        _expr(m), m["var"], _num(m["x0"]), full_result=True
     )
     return _solved(res, _fmt_scalar(res.value))
 
@@ -1048,7 +1327,7 @@ def _ev_root(m: re.Match) -> Answer:
 def _ev_min(m: re.Match) -> Answer:
     method = (m["method"] or "gd").lower()
     res = numerics.minimize(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["x0"]),
         method=method,
@@ -1060,7 +1339,7 @@ def _ev_min(m: re.Match) -> Answer:
 
 def _ev_nintegrate(m: re.Match) -> Answer:
     res = numerics.integrate_num(
-        parse(m["expr"]),
+        _expr(m),
         m["var"],
         _num(m["a"]),
         _num(m["b"]),
@@ -1071,8 +1350,8 @@ def _ev_nintegrate(m: re.Match) -> Answer:
 
 
 def _ev_solve_nd(m: re.Match) -> Answer:
-    exprs = [parse(e.strip()) for e in m["exprs"].split(";")]
     names = _split_names(m["vars"])
+    exprs = _parse_for([e.strip() for e in m["exprs"].split(";")], names)
     res = numerics.root_find_nd(
         exprs, names, _split_floats(m["x0"]), full_result=True
     )
@@ -1083,7 +1362,7 @@ def _ev_min_nd(m: re.Match) -> Answer:
     names = _split_names(m["vars"])
     method = (m["method"] or "gd").lower()
     res = numerics.minimize_nd(
-        parse(m["expr"]),
+        _expr(m),
         names,
         _split_floats(m["x0"]),
         method=method,
@@ -1122,16 +1401,114 @@ def _route(line: str) -> "tuple[str, re.Match] | str":
         return __doc__ or ""
 
     token = line.split(None, 1)[0].lower()
+    if token in _WAVE2_SHAPES:
+        # K5 (I2): a relation, a system, ``all`` or ``from a to b`` picks the module;
+        # every other ``solve`` / ``integrate`` line keeps its old meaning
+        outcome = full.wave2_route(line)
+        if outcome is not None:
+            return "outcome", outcome  # type: ignore[return-value]
     entry = _COMMANDS.get(token)
     if entry is None:
-        # default: parse and simplify
-        return str(symbolic.simplify(parse(line)))
+        bare = full.BARE_CONVERSION.match(line)
+        if bare is not None and _reads_as_units(bare["q"], bare["to"]):
+            return "convert", _COMMANDS["convert"][0].match(f"convert {bare['q']} to {bare['to']}")  # type: ignore[return-value]
+        precision = _precision_request(line)
+        if precision is not None:  # N(pi, 50), evalf(e, 30), pi digits 50 (K2, I2)
+            return "outcome", full.approx_outcome(*precision, source=line)  # type: ignore[return-value]
+        _refuse_unknown_command(line)
+        # default: parse and simplify — with the proved decimal beside an exact
+        # number (K2's dual answer, I2), the way SymPy Gamma and W|A show both
+        try:
+            value = symbolic.simplify(parse(line))
+            text = str(value)
+            dual = full.dual_outcome(text, value, source=line)
+            return text if dual is None else ("outcome", dual)  # type: ignore[return-value]
+        except ParseError as exc:
+            # ``gcd(12, 18)``: a function the parser does not know, the calculator
+            # does (I1) — only once the parser has refused, so nothing it reads moves
+            if "unknown function" not in str(exc) or full.call_route(line) is None:
+                raise
+            return "call", full._CALL.match(line.strip())  # type: ignore[return-value]
 
     pattern, _handler, usage = entry
     match = pattern.match(line)
     if match is None:
+        rest = line[len(token):].lstrip()
+        if token in full.COMMANDS and rest and rest[0] in _EXPRESSION_CONTINUES:
+            # ``mean + 1``, ``power(2, 3)``: an expression that happens to open
+            # with a FULL command word (rule 3 of ``full``) — not a command line
+            return str(symbolic.simplify(parse(line)))
         return usage
     return token, match
+
+
+#: First words whose line K5 may take by its shape (``full.wave2_route``).
+_WAVE2_SHAPES = ("solve", "integrate", "nintegrate", "reduce")
+
+
+def _precision_request(line: str) -> "tuple[str, int] | None":
+    """``N(e, d)`` / ``evalf(e, d)`` / ``e digits d`` -> ``(e, d)`` — K2's purely
+    syntactic reader, consulted only for a line that is not a command."""
+    from ..engine.precision import parse_precision_request
+
+    call = re.match(r"^\s*(?:N|evalf)\s*\(", line)
+    if not call and not re.search(r"\sdigits\s+\d+\s*$", line):
+        return None
+    request = parse_precision_request(line)
+    if request is None and call:
+        raise ParseError(f"{line.strip()!r}: write N(<expression>, <digits>) with digits a whole "
+                         f"number from 1 to 10000 (e.g. N(pi, 50))")
+    return request
+
+
+def _reads_as_units(quantity: str, target: str) -> bool:
+    """Do both sides of ``<number> <unit> to <unit>`` read as units (J1)?"""
+    from ..engine import units
+
+    try:
+        units.parse_unit(target)
+        units.convert(quantity, target)
+    except PycodemathError:
+        return False
+    return True
+
+
+#: Characters that, right after a first word, make it part of an expression
+#: (``ab + c``, ``zeta (2)``) rather than a command with arguments.
+_EXPRESSION_CONTINUES = "+-*/^=<>!),]([."
+
+
+def _refuse_unknown_command(line: str) -> None:
+    """A line opening with an unknown WORD and its arguments is a ``ParseError``.
+
+    ``factor 2^64+1``, ``isprime 2^61-1``, ``latex x^2/2``, ``evalf sqrt(2) 50``
+    used to fall through to "parse and simplify" and came back as products of
+    letters with exit code 0 (K1). A first word that is not a command, not a
+    known function or constant, followed by more text that does not continue an
+    expression, is a command the grammar does not have: say so, with the closest
+    command names (difflib) when there are any.
+    """
+    parts = line.split(None, 1)
+    word = parts[0]
+    if len(parts) < 2 or not word.isalpha() or len(word) < 2 or word in KNOWN_NAMES:
+        return
+    if parts[1][0] in _EXPRESSION_CONTINUES:
+        return
+    if word.lower() == "implicit":
+        raise ParseError(
+            "'implicit on|off' is a setting of the interactive REPL (one-shot: "
+            "--implicit); this surface always parses strictly"
+        )
+    close = difflib.get_close_matches(word.lower(), list(_COMMANDS) + ["help"], n=3, cutoff=0.75)
+    hint = (
+        " — did you mean " + " or ".join(f"'{c}'" for c in close) + "?"
+        if close
+        else ""
+    )
+    raise ParseError(
+        f"unknown command {word!r}{hint} (type 'help' for the list of commands; "
+        f"write {word}*(...) if a product is meant)"
+    )
 
 
 def handle(line: str) -> str:
@@ -1140,7 +1517,17 @@ def handle(line: str) -> str:
     if isinstance(routed, str):
         return routed
     token, match = routed
+    if token == "call":
+        return _called(match).text
+    if token == "outcome":
+        return match.text  # type: ignore[attr-defined]
     return _COMMANDS[token][1](match)
+
+
+def _called(match: re.Match) -> "full.Outcome":
+    outcome = full.call_route(match.string)
+    assert outcome is not None  # ``_route`` only returns "call" for a routed name
+    return outcome
 
 
 def handle_full(line: str) -> Answer:
@@ -1166,6 +1553,14 @@ def handle_full(line: str) -> Answer:
     if isinstance(routed, str):
         return Answer(routed)
     token, match = routed
+    if token == "call":
+        outcome = _called(match)
+        return Answer(outcome.text, outcome=outcome)
+    if token == "outcome":
+        return Answer(match.text, outcome=match)  # type: ignore[arg-type,attr-defined]
+    if token in full.COMMANDS:
+        outcome = full.COMMANDS[token][1](match)
+        return Answer(outcome.text, outcome=outcome)
     evidence = _EVIDENCE.get(token)
     if evidence is None:
         return Answer(_COMMANDS[token][1](match))
@@ -1226,6 +1621,26 @@ def _read_steps(line: str, read: Callable[[str], str]) -> str:
     return "\n".join(lines)
 
 
+def _implicit_setting(line: str) -> "str | None":
+    """``implicit on|off`` (or bare ``implicit``): the REPL session's parsing mode.
+
+    Off (strict, the default) reads ``speed`` as one variable; on splits a
+    multi-letter name into a product of letters (``2xy`` = 2*x*y). Returns the
+    text to print, or ``None`` when the line is not this setting.
+    """
+    words = line.strip().lower().split()
+    if not words or words[0] != "implicit" or len(words) > 2:
+        return None
+    if len(words) == 2:
+        if words[1] not in ("on", "off"):
+            return "Usage: implicit on|off"
+        set_strict(words[1] == "off")
+    state = "off (strict: 'speed' is one variable)" if is_strict() else (
+        "on ('xy' is x*y — multi-letter names split into letters)"
+    )
+    return f"implicit multiplication of names: {state}"
+
+
 def run() -> None:
     """Run the REPL — interactively or one-shot from command-line arguments.
 
@@ -1243,7 +1658,30 @@ def run() -> None:
     except ImportError:
         pass
 
+    # SymPy's deprecation warnings are about SymPy's own API, never about the
+    # user's math, and on stderr they buried the actual answer or refusal
+    # (``N(pi, 50)`` printed a SymPyDeprecationWarning before its error, K1).
+    warnings.filterwarnings("ignore", category=SymPyDeprecationWarning)
+
     args = sys.argv[1:]
+    if args and args[0] == "--implicit":  # one-shot opt-in to name splitting
+        set_strict(False)
+        args = args[1:]
+    if args and args[0].split(None, 1)[0].lower() == "lint":
+        # L1 (I2): ruff's exit codes for ``lint`` ONLY — 0 clean, 1 findings, 2 usage
+        # or error; every other command keeps 0 = answered, 1 = refused. One quoted
+        # line ("lint a.py --concise") or separate words (lint a.py --concise).
+        import shlex
+
+        line = args[0] if len(args) == 1 else "lint " + " ".join(shlex.quote(a) for a in args[1:])
+        try:
+            answer = handle_full(line)
+        except Exception as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            raise SystemExit(2)
+        print(answer.text)
+        result = answer.outcome.result if answer.outcome is not None else None
+        raise SystemExit(int((result or {}).get("exit_code", 2)))
     if args:
         try:
             out = handle(" ".join(args))
@@ -1263,6 +1701,10 @@ def run() -> None:
             break
         if line.strip().lower() in ("quit", "exit"):
             break
+        setting = _implicit_setting(line)
+        if setting is not None:
+            print(setting)
+            continue
         try:
             line = _read_steps(line, input)
         except KeyboardInterrupt:  # abandons the derivation, not the session

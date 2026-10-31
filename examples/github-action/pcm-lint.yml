@@ -1,0 +1,32 @@
+# GitHub Actions workflow: run pycodemath lint and upload the SARIF report to code scanning.
+# Copy to .github/workflows/pcm-lint.yml. Findings then appear in the "Security -> Code scanning"
+# tab and as annotations on pull requests, each with its witness (properties.witness / codeFlows).
+name: pycodemath lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write   # upload-sarif needs it
+
+jobs:
+  pcm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pycodemath
+        run: python -m pip install pycodemath
+      - name: Lint (SARIF)
+        # --exit-zero: let code scanning decide what blocks a merge; drop it to fail the job on findings
+        run: python -m pycodemath.lint . --format sarif --output pcm-lint.sarif --exit-zero
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: pcm-lint.sarif
+          category: pycodemath-lint

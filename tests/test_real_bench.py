@@ -65,6 +65,101 @@ def test_extractor_drops_what_it_cannot_read(step: str, reason: str) -> None:
     assert ex.dropped[reason] >= 1
 
 
+# --- X0b: extraction errors found on ProcessBench -------------------------------
+# Verbatim steps (ProcessBench IDs in the comments; dev-journal/BENCH_PROCESSBENCH.md
+# §3). Each was a false veto of the frozen rules; each is now read correctly or
+# dropped with a named reason, never guessed.
+@pytest.mark.parametrize(
+    ("step", "claims"),
+    [
+        # gsm8k-83: "$" is money — two dollar signs are not one LaTeX segment
+        ("Her current annual salary is $100,000. Savings = 20% of $100,000 = 0.20 * $100,000 = $20,000.", []),
+        # gsm8k-162
+        ("The total cost of the pot and pan is $120.00, and the discount is 20%, so the discount amount "
+         "is 20/100 * $120 = $24. The discounted price of the pot and pan is $120 - $24 = $96.",
+         [("20/100*120", "24"), ("120-24", "96")]),
+        # gsm8k-136: "25\% \text{ of } \$2,000.00": the number after "of" is an operand
+        ("Calculate 25% of $2,000.00:\n\\[ 25\\% \\text{ of } \\$2,000.00 = 0.25 \\times 2000 = \\$500.00 \\]",
+         [("0.25*2000", "500.00")]),
+        # gsm8k-193: "\text{Naomi's Points} + 17" leaves "+ 17"
+        (r"\[ \text{Brianna's Points} = \text{Naomi's Points} + 17 = 68 + 17 = 85 \]", [("68+17", "85")]),
+        # gsm8k-275: "30. 30 - 24" — a period and a space end a sentence
+        ("so we need to subtract 24 from 30. 30 - 24 = 6. Now, Patricia has 6 roses left.", [("30-24", "6")]),
+        # omnimath-440: four thousands groups
+        (r"Notice that: \[7,999,999,999 = 8,000,000,000 - 1.\]", [("7999999999", "8000000000-1")]),
+    ],
+)
+def test_x0b_reads_processbench_steps(step: str, claims: "list[tuple[str, str]]") -> None:
+    assert _pairs(step) == claims
+
+
+@pytest.mark.parametrize(
+    ("step", "reason"),
+    [
+        # olympiadbench-987: "$10\%$ of" before the segment
+        (r"- Small cookie price increase: $10\%$ of $\$1.50 = 0.10 \times \$1.50 = \$0.15$", "fragment"),
+        # omnimath-719: "× \(" before the segment
+        (r"Expected gain = (Expected number of coins after Round 1) × \( \frac{1}{100} = \frac{101}{100} "
+         r"\times \frac{1}{100} = \frac{101}{10000} \).", "fragment"),
+        # olympiadbench-356: a unit cut out of a difference
+        (r"Bottle B: $10 \mathrm{~g} - 0.2(30) = 10 \mathrm{~g} - 6 \mathrm{~g} = 4 \mathrm{~g}$ of acid left.",
+         "units"),
+        # gsm8k-292
+        (r"\[ \text{Alyana's Age} = \text{Chenny's Age} - 4 = 10 - 4 = 6 \]", "text"),
+        # olympiadbench-385: "2^4^\circ" is not LaTeX
+        (r"\[ \frac{1}{\sin 2^4^\circ} = \frac{1}{2 \sin 2^3^\circ \cos 2^3^\circ} \]", "double-superscript"),
+        # math-929: the sentence ends at "3." — a lone digit before the run may still be an operand
+        ("so we move on to the next prime number, which is 3. 4641 ÷ 3 = 1547.", "prose-mixed"),
+        # olympiadbench-993
+        ("Ratio = Area of PQR / Area of STUVWXYZ = 4√3 / 6√3 = 4 / 6 = 2 / 3.", "prose-mixed"),
+        # math-372: division with a remainder
+        (r"\[2250 \div 360 = 6 \text{ full rotations with } 90 \text{ degrees remaining}\]", "integer-division"),
+        # math-883: a rounded input, an exact result
+        (r"\[ x^2 = (2.8284)^2 = 8 \]", "approximate-input"),
+        # omnimath-305, omnimath-787, olympiadbench-610: a trial the step rejects
+        ("- Check: \\( 60 = 5^2 + 6^2 = 25 + 36 = 61 \\)\n- This does not work.", "rejected-trial"),
+        (r"\[1 = \frac{1}{3} + \frac{1}{5} + \frac{1}{7}\] This still does not equate to 1 directly.",
+         "rejected-trial"),
+        ("Substituting the values, we get 0 + (15 - 1) * 71 = 999, which simplifies to 14 * 71 = 994. "
+         "Since 994 is less than 999, our first term 'a' should be 5, not 0.", "rejected-trial"),
+    ],
+)
+def test_x0b_drops_what_it_cannot_read(step: str, reason: str) -> None:
+    ex = rb.extract(step)
+    assert all(check.status != "REFUTED" for check in map(rb.check_claim, ex.claims))
+    assert ex.dropped[reason] >= 1
+
+
+def test_x0b_keeps_real_errors() -> None:
+    # math-82: ceil(9.0909) = 9 is wrong by far more than the rounding of 9.0909
+    ex = rb.extract(r"\[ \frac{100}{11} \approx 9.0909 \quad \Rightarrow \quad \lceil 9.0909 \rceil = 9 \]")
+    assert [rb.check_claim(c).status for c in ex.claims] == ["REFUTED"]
+    # math-542: "does not satisfy" rejects the candidate k, not the product 77 * 68 = 5236
+    ex = rb.extract(r"First, for \(k = 68\): \[x = 5050 - 77 \times 68 = 5050 - 5256 = -206\] "
+                    r"This does not satisfy our condition since \(x\) must be positive.")
+    assert "REFUTED" in [rb.check_claim(c).status for c in ex.claims]
+    # omnimath-612: 11.5098 * 720 = 8287.056 — a decimal result is not an approximation
+    ex = rb.extract(r"\[ 11.5098 \cdot 720 = 8286.656 \]")
+    assert [rb.check_claim(c).status for c in ex.claims] == ["REFUTED"]
+
+
+def test_x0b_continuation_needs_an_expression_right_before() -> None:
+    # math-170 step 3: words between two segments of a step — no continuation
+    first, second = rb.extract_solution([
+        r"we can use the complementary angle identity: $\sin 18^\circ = \cos 72^\circ$.",
+        r"Substitute $\cos 72^\circ$ for $\sin 18^\circ$ in the expression: "
+        r"$= (\cos 72^\circ)^2 \cdot \cos 72^\circ + (\cos 72^\circ)^2 = \cos^3 72^\circ + \cos^2 72^\circ$.",
+    ])
+    assert all("sin" not in c.left for c in second.claims)
+    # math-170 step 8: the step before ENDED with an expression — it continues it
+    _, after = rb.extract_solution([r"So: $= \frac{1}{2} + \frac{1}{4}$.", r"Combine like terms: $= \frac{3}{4}$."])
+    assert [(c.left.replace(" ", ""), c.right) for c in after.claims] == [("((1)/(2))+((1)/(4))", "((3)/(4))")]
+    # omnimath-539: the step before ended with prose ("\times$ Width.")
+    _, after = rb.extract_solution([r"$\frac{1}{3} = \frac{3}{5} \times$ Width.",
+                                    r"Width $= \frac{1}{3} \div \frac{3}{5}$."])
+    assert after.claims == []
+
+
 def test_claims_are_checked_by_the_verifier() -> None:
     wrong, true = rb.extract(r"$200,\!000 = 2^5\cdot 10^4 = 2^9\cdot 5^4$").claims
     assert rb.check_claim(wrong).status == "REFUTED"      # 2^5 * 10^4 = 320000

@@ -14,10 +14,25 @@ means (principal branch, where both sides are defined, decimals as written), and
 ``verify.steps`` checks a whole derivation, pairwise, and names the first wrong
 step: ``check_steps("(x+1)^2 - (x-1)^2 = x^2+2x+1 - x^2+2x+1 = 4x+2")`` refutes
 step 2 at ``x = 0``.
+
+``verify.certificate`` writes a check down as JSON that anyone can re-run:
+``issue("identity", "sqrt(x^2)", "x")`` returns a sealed ``Certificate``, and
+``recheck`` reproduces its verdict from the record alone — or names the mismatch
+(a different verdict, a digest broken by a hand edit, a claim that now parses
+differently).
 """
 
 from __future__ import annotations
 
+from .certificate import (
+    SCHEMA_VERSION,
+    Certificate,
+    CertificateMismatch,
+    Recheck,
+    from_verdict,
+    issue,
+    recheck,
+)
 from .certify import (
     CERTIFIERS,
     certify,
@@ -47,4 +62,11 @@ __all__ = [
     "check_steps",
     "StepCheck",
     "StepsResult",
+    "SCHEMA_VERSION",
+    "Certificate",
+    "CertificateMismatch",
+    "Recheck",
+    "issue",
+    "from_verdict",
+    "recheck",
 ]

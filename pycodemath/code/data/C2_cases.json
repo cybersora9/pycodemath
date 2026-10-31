@@ -1,0 +1,1002 @@
+{
+ "description": "C2 evaluation set: formulas, input ranges and the expected outcome (improvable / stable), fixed before the rewrite engine was written.",
+ "licences": {
+  "FPBench": "MIT, Copyright 2021 FPBench Project Contributors, https://github.com/FPBench/FPBench",
+  "own": "MIT (pycodemath)"
+ },
+ "split_rule": "held if sha256(id) % 3 == 0 else dev",
+ "cases": [
+  {
+   "id": "fpbench-nmse-example-3.1",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.1",
+   "fpcore": "(FPCore (x) :name \"NMSE example 3.1\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (>= x 0) (- (sqrt (+ x 1)) (sqrt x)))",
+   "expr": "sqrt(x + 1) - sqrt(x)",
+   "ranges": {
+    "x": [
+     0.0,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-example-3.3",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.3",
+   "fpcore": "(FPCore (x eps) :name \"NMSE example 3.3\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook (- (sin (+ x eps)) (sin x)))",
+   "expr": "sin(x + eps) - sin(x)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "eps": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-example-3.4",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.4",
+   "fpcore": "(FPCore (x) :name \"NMSE example 3.4\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (!= x 0) (/ (- 1 (cos x)) (sin x)))",
+   "expr": "(1 - cos(x)) / sin(x)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    "!= x 0"
+   ],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-example-3.5",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.5",
+   "fpcore": "(FPCore (N) :name \"NMSE example 3.5\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook (- (atan (+ N 1)) (atan N)))",
+   "expr": "atan(N + 1) - atan(N)",
+   "ranges": {
+    "N": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-example-3.6",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.6",
+   "fpcore": "(FPCore (x) :name \"NMSE example 3.6\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (>= x 0) (- (/ 1 (sqrt x)) (/ 1 (sqrt (+ x 1)))))",
+   "expr": "1 / sqrt(x) - 1 / sqrt(x + 1)",
+   "ranges": {
+    "x": [
+     0.0,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.3.1",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.3.1",
+   "fpcore": "(FPCore (x) :name \"NMSE problem 3.3.1\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (!= x 0) (- (/ 1 (+ x 1)) (/ 1 x)))",
+   "expr": "1 / (x + 1) - 1 / x",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    "!= x 0"
+   ],
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.3.2",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.3.2",
+   "fpcore": "(FPCore (x eps) :name \"NMSE problem 3.3.2\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook (- (tan (+ x eps)) (tan x)))",
+   "expr": "tan(x + eps) - tan(x)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "eps": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.3.3",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.3.3",
+   "fpcore": "(FPCore (x) :name \"NMSE problem 3.3.3\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (!= x 0 1 -1) (+ (- (/ 1 (+ x 1)) (/ 2 x)) (/ 1 (- x 1))))",
+   "expr": "1 / (x + 1) - 2 / x + 1 / (x - 1)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    "!= x 0 1 -1"
+   ],
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.3.4",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.3.4",
+   "fpcore": "(FPCore (x) :name \"NMSE problem 3.3.4\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (>= x 0) (- (pow (+ x 1) (/ 1 3)) (pow x (/ 1 3))))",
+   "expr": "(x + 1)**(1 / 3) - x**(1 / 3)",
+   "ranges": {
+    "x": [
+     0.0,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.3.5",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.3.5",
+   "fpcore": "(FPCore (x eps) :name \"NMSE problem 3.3.5\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook (- (cos (+ x eps)) (cos x)))",
+   "expr": "cos(x + eps) - cos(x)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "eps": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.3.6",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.3.6",
+   "fpcore": "(FPCore (N) :name \"NMSE problem 3.3.6\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (> N 0) (- (log (+ N 1)) (log N)))",
+   "expr": "log(N + 1) - log(N)",
+   "ranges": {
+    "N": [
+     5e-324,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.3.7",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.3.7",
+   "fpcore": "(FPCore (x) :name \"NMSE problem 3.3.7\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook (+ (- (exp x) 2) (exp (- x))))",
+   "expr": "exp(x) - 2 + exp(-x)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-p42-positive",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE p42, positive",
+   "fpcore": "(FPCore (a b c) :name \"NMSE p42, positive\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (and (>= (* b b) (* 4 (* a c))) (!= a 0)) (/ (+ (- b) (sqrt (- (* b b) (* 4 (* a c))))) (* 2 a)))",
+   "expr": "(-b + sqrt(b * b - 4 * (a * c))) / (2 * a)",
+   "ranges": {
+    "a": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "b": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "c": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    ">= ['*', 'b', 'b'] ['*', '4', ['*', 'a', 'c']]",
+    "!= a 0"
+   ],
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "fpbench-nmse-p42-negative",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE p42, negative",
+   "fpcore": "(FPCore (a b c) :name \"NMSE p42, negative\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (and (>= (* b b) (* 4 (* a c))) (!= a 0)) (/ (- (- b) (sqrt (- (* b b) (* 4 (* a c))))) (* 2 a)))",
+   "expr": "(-b - sqrt(b * b - 4 * (a * c))) / (2 * a)",
+   "ranges": {
+    "a": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "b": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "c": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    ">= ['*', 'b', 'b'] ['*', '4', ['*', 'a', 'c']]",
+    "!= a 0"
+   ],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.2.1-positive",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.2.1, positive",
+   "fpcore": "(FPCore (a b2 c) :name \"NMSE problem 3.2.1, positive\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (and (>= (* b2 b2) (* a c)) (!= a 0)) (/ (+ (- b2) (sqrt (- (* b2 b2) (* a c)))) a))",
+   "expr": "(-b2 + sqrt(b2 * b2 - a * c)) / a",
+   "ranges": {
+    "a": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "b2": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "c": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    ">= ['*', 'b2', 'b2'] ['*', 'a', 'c']",
+    "!= a 0"
+   ],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.2.1-negative",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.2.1, negative",
+   "fpcore": "(FPCore (a b2 c) :name \"NMSE problem 3.2.1, negative\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (and (>= (* b2 b2) (* a c)) (!= a 0)) (/ (- (- b2) (sqrt (- (* b2 b2) (* a c)))) a))",
+   "expr": "(-b2 - sqrt(b2 * b2 - a * c)) / a",
+   "ranges": {
+    "a": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "b2": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ],
+    "c": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    ">= ['*', 'b2', 'b2'] ['*', 'a', 'c']",
+    "!= a 0"
+   ],
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "fpbench-nmse-example-3.7",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.7",
+   "fpcore": "(FPCore (x) :name \"NMSE example 3.7\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook (- (exp x) 1))",
+   "expr": "exp(x) - 1",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-example-3.8",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.8",
+   "fpcore": "(FPCore (N) :name \"NMSE example 3.8\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (> N 0) (- (- (* (+ N 1) (log (+ N 1))) (* N (log N))) 1))",
+   "expr": "(N + 1) * log(N + 1) - N * log(N) - 1",
+   "ranges": {
+    "N": [
+     5e-324,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-example-3.9",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.9",
+   "fpcore": "(FPCore (x) :name \"NMSE example 3.9\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (!= x 0) (- (/ 1 x) (/ 1 (tan x))))",
+   "expr": "1 / x - 1 / tan(x)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    "!= x 0"
+   ],
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "fpbench-nmse-example-3.10",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE example 3.10",
+   "fpcore": "(FPCore (x) :name \"NMSE example 3.10\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :daisy-pre (< -0.99 x 0.99) :pre (< -1 x 1) (/ (log (- 1 x)) (log (+ 1 x))))",
+   "expr": "log(1 - x) / log(1 + x)",
+   "ranges": {
+    "x": [
+     -0.9999999999999999,
+     0.9999999999999999
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-nmse-problem-3.4.1",
+   "source": "FPBench benchmarks/hamming-ch3.fpcore (MIT)",
+   "name": "NMSE problem 3.4.1",
+   "fpcore": "(FPCore (x) :name \"NMSE problem 3.4.1\" :cite (hamming-1987 herbie-2015) :fpbench-domain textbook :pre (!= x 0) (/ (- 1 (cos x)) (* x x)))",
+   "expr": "(1 - cos(x)) / (x * x)",
+   "ranges": {
+    "x": [
+     -1.7976931348623157e+308,
+     1.7976931348623157e+308
+    ]
+   },
+   "pre_ignored": [
+    "!= x 0"
+   ],
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-doppler1",
+   "source": "FPBench benchmarks/rosa.fpcore (MIT)",
+   "name": "doppler1",
+   "fpcore": "(FPCore (u v T) :name \"doppler1\" :cite (darulova-kuncak-2014) :fpbench-domain science :precision binary64 :pre (and (<= -100 u 100) (<= 20 v 20000) (<= -30 T 50)) :rosa-ensuring 1e-12 (let ([t1 (+ 331.4 (* 0.6 T))]) (/ (* (- t1) v) (* (+ t1 u) (+ t1 u)))))",
+   "expr": "-(331.4 + 0.6 * T) * v / ((331.4 + 0.6 * T + u) * (331.4 + 0.6 * T + u))",
+   "ranges": {
+    "u": [
+     -100.0,
+     100.0
+    ],
+    "v": [
+     20.0,
+     20000.0
+    ],
+    "T": [
+     -30.0,
+     50.0
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-verhulst",
+   "source": "FPBench benchmarks/rosa.fpcore (MIT)",
+   "name": "verhulst",
+   "fpcore": "(FPCore (x) :name \"verhulst\" :cite (darulova-kuncak-2014 solovyev-et-al-2015) :fpbench-domain science :precision binary64 :pre (<= 0.1 x 0.3) (let ([r 4.0] [K 1.11]) (/ (* r x) (+ 1 (/ x K)))))",
+   "expr": "4 * x / (1 + x / 1.11)",
+   "ranges": {
+    "x": [
+     0.1,
+     0.3
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "fpbench-predatorprey",
+   "source": "FPBench benchmarks/rosa.fpcore (MIT)",
+   "name": "predatorPrey",
+   "fpcore": "(FPCore (x) :name \"predatorPrey\" :cite (darulova-kuncak-2014 solovyev-et-al-2015) :fpbench-domain science :precision binary64 :pre (<= 0.1 x 0.3) (let ([r 4.0] [K 1.11]) (/ (* (* r x) x) (+ 1 (* (/ x K) (/ x K))))))",
+   "expr": "4 * x * x / (1 + x / 1.11 * (x / 1.11))",
+   "ranges": {
+    "x": [
+     0.1,
+     0.3
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "stable",
+   "split": "held"
+  },
+  {
+   "id": "fpbench-rigidbody1",
+   "source": "FPBench benchmarks/rosa.fpcore (MIT)",
+   "name": "rigidBody1",
+   "fpcore": "(FPCore (x1 x2 x3) :name \"rigidBody1\" :cite (darulova-kuncak-2014 solovyev-et-al-2015) :fpbench-domain science :precision binary64 :pre (and (<= -15 x1 15) (<= -15 x2 15) (<= -15 x3 15)) (- (- (- (- (* x1 x2)) (* (* 2 x2) x3)) x1) x3))",
+   "expr": "-(x1 * x2) - 2 * x2 * x3 - x1 - x3",
+   "ranges": {
+    "x1": [
+     -15.0,
+     15.0
+    ],
+    "x2": [
+     -15.0,
+     15.0
+    ],
+    "x3": [
+     -15.0,
+     15.0
+    ]
+   },
+   "pre_ignored": [],
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-sqrt-diff-large",
+   "source": "pycodemath (own)",
+   "name": "sqrt-diff-large",
+   "expr": "sqrt(x + 1) - sqrt(x)",
+   "ranges": {
+    "x": [
+     10000000000.0,
+     1000000000000000.0
+    ]
+   },
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "own-one-minus-cos-over-x2",
+   "source": "pycodemath (own)",
+   "name": "one-minus-cos-over-x2",
+   "expr": "(1 - cos(x)) / (x * x)",
+   "ranges": {
+    "x": [
+     1e-08,
+     0.1
+    ]
+   },
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "own-exp-minus-one",
+   "source": "pycodemath (own)",
+   "name": "exp-minus-one",
+   "expr": "exp(x) - 1",
+   "ranges": {
+    "x": [
+     -0.001,
+     0.001
+    ]
+   },
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "own-log-one-plus",
+   "source": "pycodemath (own)",
+   "name": "log-one-plus",
+   "expr": "log(1 + x)",
+   "ranges": {
+    "x": [
+     -0.001,
+     0.001
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-x-minus-sin",
+   "source": "pycodemath (own)",
+   "name": "x-minus-sin",
+   "expr": "x - sin(x)",
+   "ranges": {
+    "x": [
+     -0.01,
+     0.01
+    ]
+   },
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "own-quadratic-plus",
+   "source": "pycodemath (own)",
+   "name": "quadratic-plus",
+   "expr": "(-b + sqrt(b*b - 4*a*c)) / (2*a)",
+   "ranges": {
+    "a": [
+     0.5,
+     2
+    ],
+    "b": [
+     1000.0,
+     100000000.0
+    ],
+    "c": [
+     0.5,
+     2
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-quadratic-minus-control",
+   "source": "pycodemath (own)",
+   "name": "quadratic-minus-control",
+   "expr": "(-b - sqrt(b*b - 4*a*c)) / (2*a)",
+   "ranges": {
+    "a": [
+     0.5,
+     2
+    ],
+    "b": [
+     1000.0,
+     100000000.0
+    ],
+    "c": [
+     0.5,
+     2
+    ]
+   },
+   "expect": "stable",
+   "split": "held"
+  },
+  {
+   "id": "own-hypot-naive-huge",
+   "source": "pycodemath (own)",
+   "name": "hypot-naive-huge",
+   "expr": "sqrt(x*x + y*y)",
+   "ranges": {
+    "x": [
+     1e+160,
+     1e+300
+    ],
+    "y": [
+     1e+160,
+     1e+300
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-hypot-naive-moderate-control",
+   "source": "pycodemath (own)",
+   "name": "hypot-naive-moderate-control",
+   "expr": "sqrt(x*x + y*y)",
+   "ranges": {
+    "x": [
+     1,
+     1000
+    ],
+    "y": [
+     1,
+     1000
+    ]
+   },
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-logsumexp-2",
+   "source": "pycodemath (own)",
+   "name": "logsumexp-2",
+   "expr": "log(exp(a) + exp(b))",
+   "ranges": {
+    "a": [
+     -1000.0,
+     1000.0
+    ],
+    "b": [
+     -1000.0,
+     1000.0
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-logsumexp-4",
+   "source": "pycodemath (own)",
+   "name": "logsumexp-4",
+   "expr": "log(exp(x1) + exp(x2) + exp(x3) + exp(x4))",
+   "ranges": {
+    "x1": [
+     -1000.0,
+     1000.0
+    ],
+    "x2": [
+     -1000.0,
+     1000.0
+    ],
+    "x3": [
+     -1000.0,
+     1000.0
+    ],
+    "x4": [
+     -1000.0,
+     1000.0
+    ]
+   },
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "own-softmax-3",
+   "source": "pycodemath (own)",
+   "name": "softmax-3",
+   "expr": "exp(x1) / (exp(x1) + exp(x2) + exp(x3))",
+   "ranges": {
+    "x1": [
+     -1000.0,
+     1000.0
+    ],
+    "x2": [
+     -1000.0,
+     1000.0
+    ],
+    "x3": [
+     -1000.0,
+     1000.0
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-log-softmax-3",
+   "source": "pycodemath (own)",
+   "name": "log-softmax-3",
+   "expr": "x1 - log(exp(x1) + exp(x2) + exp(x3))",
+   "ranges": {
+    "x1": [
+     -1000.0,
+     1000.0
+    ],
+    "x2": [
+     -1000.0,
+     1000.0
+    ],
+    "x3": [
+     -1000.0,
+     1000.0
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-variance-one-pass-4",
+   "source": "pycodemath (own)",
+   "name": "variance-one-pass-4",
+   "expr": "(x1*x1 + x2*x2 + x3*x3 + x4*x4)/4 - ((x1 + x2 + x3 + x4)/4)*((x1 + x2 + x3 + x4)/4)",
+   "ranges": {
+    "x1": [
+     1000000.0,
+     1000001.0
+    ],
+    "x2": [
+     1000000.0,
+     1000001.0
+    ],
+    "x3": [
+     1000000.0,
+     1000001.0
+    ],
+    "x4": [
+     1000000.0,
+     1000001.0
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-sigmoid-control",
+   "source": "pycodemath (own)",
+   "name": "sigmoid-control",
+   "expr": "1 / (1 + exp(-x))",
+   "ranges": {
+    "x": [
+     -30,
+     30
+    ]
+   },
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-log-sigmoid",
+   "source": "pycodemath (own)",
+   "name": "log-sigmoid",
+   "expr": "log(1 / (1 + exp(-x)))",
+   "ranges": {
+    "x": [
+     -700,
+     700
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-softplus",
+   "source": "pycodemath (own)",
+   "name": "softplus",
+   "expr": "log(1 + exp(x))",
+   "ranges": {
+    "x": [
+     -700,
+     700
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-distance-control",
+   "source": "pycodemath (own)",
+   "name": "distance-control",
+   "expr": "sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2))",
+   "ranges": {
+    "x1": [
+     -100,
+     100
+    ],
+    "x2": [
+     -100,
+     100
+    ],
+    "y1": [
+     -100,
+     100
+    ],
+    "y2": [
+     -100,
+     100
+    ]
+   },
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-lerp-control",
+   "source": "pycodemath (own)",
+   "name": "lerp-control",
+   "expr": "a + (b - a) * t",
+   "ranges": {
+    "a": [
+     -100,
+     100
+    ],
+    "b": [
+     -100,
+     100
+    ],
+    "t": [
+     0,
+     1
+    ]
+   },
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-x-over-x-plus-1-control",
+   "source": "pycodemath (own)",
+   "name": "x-over-x-plus-1-control",
+   "expr": "x / (x + 1)",
+   "ranges": {
+    "x": [
+     0,
+     1e+300
+    ]
+   },
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-cos2-minus-sin2",
+   "source": "pycodemath (own)",
+   "name": "cos2-minus-sin2",
+   "expr": "cos(x)*cos(x) - sin(x)*sin(x)",
+   "ranges": {
+    "x": [
+     0.78,
+     0.79
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-expm1-over-x",
+   "source": "pycodemath (own)",
+   "name": "expm1-over-x",
+   "expr": "(exp(x) - 1) / x",
+   "ranges": {
+    "x": [
+     -1e-05,
+     1e-05
+    ]
+   },
+   "expect": "improvable",
+   "split": "held"
+  },
+  {
+   "id": "own-sqrt-x2-plus-1-minus-1",
+   "source": "pycodemath (own)",
+   "name": "sqrt-x2-plus-1-minus-1",
+   "expr": "sqrt(x*x + 1) - 1",
+   "ranges": {
+    "x": [
+     1e-09,
+     0.01
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-asinh-naive-negative",
+   "source": "pycodemath (own)",
+   "name": "asinh-naive-negative",
+   "expr": "log(x + sqrt(x*x + 1))",
+   "ranges": {
+    "x": [
+     -1000.0,
+     -1
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-sum-of-squares-control",
+   "source": "pycodemath (own)",
+   "name": "sum-of-squares-control",
+   "expr": "x*x + y*y",
+   "ranges": {
+    "x": [
+     1,
+     10
+    ],
+    "y": [
+     1,
+     10
+    ]
+   },
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-exp-cos-control",
+   "source": "pycodemath (own)",
+   "name": "exp-cos-control",
+   "expr": "exp(x) * cos(y)",
+   "ranges": {
+    "x": [
+     -10,
+     10
+    ],
+    "y": [
+     0,
+     1
+    ]
+   },
+   "expect": "stable",
+   "split": "held"
+  },
+  {
+   "id": "own-midpoint-control",
+   "source": "pycodemath (own)",
+   "name": "midpoint-control",
+   "expr": "(a + b) / 2",
+   "ranges": {
+    "a": [
+     1,
+     1e+300
+    ],
+    "b": [
+     1,
+     1e+300
+    ]
+   },
+   "expect": "stable",
+   "split": "dev"
+  },
+  {
+   "id": "own-tanh-naive-small",
+   "source": "pycodemath (own)",
+   "name": "tanh-naive-small",
+   "expr": "(exp(x) - exp(-x)) / (exp(x) + exp(-x))",
+   "ranges": {
+    "x": [
+     -0.0001,
+     0.0001
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  },
+  {
+   "id": "own-compound-interest",
+   "source": "pycodemath (own)",
+   "name": "compound-interest",
+   "expr": "(1 + r)**n",
+   "ranges": {
+    "r": [
+     1e-10,
+     1e-06
+    ],
+    "n": [
+     1,
+     1000
+    ]
+   },
+   "expect": "improvable",
+   "split": "dev"
+  }
+ ]
+}

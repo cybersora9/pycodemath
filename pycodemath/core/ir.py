@@ -57,19 +57,28 @@ def _lambdify_cached(sy: sp.Expr, syms: tuple) -> Callable:
     return sp.lambdify(syms, sy, modules=["math", "numpy"])
 
 
-@lru_cache(maxsize=256)
 def _reads_back(text: str, expected: sp.Basic) -> bool:
     """Does ``parse`` read the bare name ``text`` back as ``expected``?
 
     The parser is the oracle, not a copy of its rules: which names stay one symbol
-    (``x1``, ``x_1``, ``alpha``) and which split into letters (``ab`` -> ``a*b``)
-    or mean a constant (``E``) is decided in ``frontend.parser`` and would drift
-    out of sync here. Imported late: the parser imports this module.
+    (``x1``, ``x_1``, ``alpha``; ``ab`` in strict mode) and which split into
+    letters (``ab`` -> ``a*b`` with implicit multiplication on, K1) or mean a
+    constant (``E``) is decided in ``frontend.parser`` and would drift out of sync
+    here. The answer depends on the parsing mode, so the mode is part of the cache
+    key. Imported late: the parser imports this module.
     """
-    from ..frontend.parser import parse
+    from ..frontend.parser import is_strict
+
+    return _reads_back_in(text, expected, is_strict())
+
+
+@lru_cache(maxsize=256)
+def _reads_back_in(text: str, expected: sp.Basic, strict: bool) -> bool:
+    from ..frontend.parser import parse, parse_mode
 
     try:
-        return bool(parse(text).sy == expected)
+        with parse_mode(strict=strict):
+            return bool(parse(text).sy == expected)
     except PycodemathError:
         return False
 
@@ -85,7 +94,8 @@ class _SourcePrinter(StrPrinter):
 
     A symbol or constant whose name does not read back as itself has no such text
     — ``EulerGamma`` (``parse("gamma(x)").diff("x").subs({"x": 1})``) would come
-    back as ``E*G*a**2*e*l*m**2*r*u``, a ``Symbol("ab")`` as ``a*b``, an undefined
+    back as ``E*G*a**2*e*l*m**2*r*u``, a ``Symbol("ab")`` as ``a*b`` (with
+    implicit multiplication on — strict mode reads it back as itself), an undefined
     function ``f(x)`` as ``f*x`` — so it is refused. A FUNCTION off the whitelist
     (``re``, ``polygamma``, ``AccumBounds``) is not: ``parse`` refuses the call
     itself with a ``ParseError`` ("unknown function"), which is loud, not wrong.

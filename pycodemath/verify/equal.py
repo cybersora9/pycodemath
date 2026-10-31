@@ -489,9 +489,18 @@ class _Sampling:
 
 
 def _proved(diff: sp.Expr) -> bool:
-    """Does ``diff`` simplify to zero? Guarded: runs under the active budget."""
-    reduced = Expr(diff).simplify().sy
-    return bool(reduced == 0 or reduced.is_zero is True)
+    """Does ``diff`` simplify to zero? Guarded: runs under the active budget.
+
+    A SymPy assumption query can raise inside ``simplify`` on an expression that
+    is undefined everywhere: ``cosh(t1 - log(0))`` holds ``zoo`` and asking its
+    sign compared NaN — a raw ``TypeError: Invalid NaN comparison`` reached the
+    caller (K1). Failing to simplify is not a proof: ``False`` (UNDECIDED).
+    """
+    try:
+        reduced = Expr(diff).simplify().sy
+        return bool(reduced == 0 or reduced.is_zero is True)
+    except (TypeError, ValueError, ArithmeticError):
+        return False
 
 
 def check_equal(

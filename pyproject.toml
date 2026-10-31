@@ -5,17 +5,21 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pycodemath"
 # The version lives in ONE place — ``pycodemath.__version__`` (read statically by
-# setuptools, so building needs no import and no SymPy).
+# setuptools, so building needs no import and no SymPy). Before module 7 the same
+# string was written out three times (here, ``__init__``, the REPL banner); bumping
+# one and forgetting another would ship a wheel whose banner lies about itself.
 dynamic = ["version"]
-description = "Token-efficient exact math for AI agents: symbolic engine, ODE suite, optimizer and an optimized-code generator (SymPy + NumPy)."
+description = "Checks the math in your code: proves a function equals its formula or returns the exact input that breaks it. Also an exact math engine and MCP server for AI agents (SymPy + NumPy)."
 readme = "README.md"
 license = {text = "MIT"}
 authors = [{name = "cybersora"}]
-keywords = ["math", "symbolic", "ode", "codegen", "mcp", "ai-agents", "sympy", "numpy"]
+keywords = ["math", "verification", "code-verification", "linter", "floating-point", "overflow", "symbolic", "ode", "codegen", "mcp", "ai-agents", "sympy", "numpy"]
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Mathematics",
@@ -26,17 +30,40 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
     "sympy>=1.12",
-    "numpy>=1.24",
+    # >=2: NEP 50 type promotion. Under numpy 1.x a Python scalar that does not fit
+    # upcasts float32 to float64, so C3's overflow witnesses would not hold.
+    "numpy>=2.0",
     "mpmath>=1.3",
 ]
 
+[project.urls]
+Homepage = "https://github.com/cybersora9/pycodemath"
+Repository = "https://github.com/cybersora9/pycodemath"
+Issues = "https://github.com/cybersora9/pycodemath/issues"
+Changelog = "https://github.com/cybersora9/pycodemath/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
-dev = ["pytest>=7", "mypy>=1.8", "hypothesis>=6.100"]
+# jsonschema: L1's SARIF test validates against the OASIS schema; pyyaml: its
+# pre-commit hook file test (both skipped without them — I2, L1 §11)
+dev = ["pytest>=7", "mypy>=1.8", "hypothesis>=6.100", "jsonschema>=4", "pyyaml>=6"]
 mcp = ["mcp>=1.0,<2.0"]
+# C3 (pycodemath.code.ranges): real bfloat16 and Z3 integer proofs; both optional
+ranges = ["ml_dtypes>=0.3", "z3-solver>=4.12"]
 
 [project.scripts]
 pycodemath = "pycodemath.cli.repl:run"
 pycodemath-mcp = "pycodemath.cli.mcp_server:run"
+# L1's linter, ruff-like (exit 0 clean / 1 findings / 2 error); the wrapper keeps a
+# cp437/cp1250 console from killing it on "—" (I2)
+pycodemath-lint = "pycodemath.cli.full:lint_entry"
+
+# ``pytest --pcm`` without ``-p`` (L1). The NAME is the module path, not the short
+# "pycodemath" L1 proposed: pytest registers ``-p pycodemath.lint.pytest_plugin``
+# under that path, and the same module registered again under another name is a
+# ValueError ("Plugin already registered under a different name") — measured in I2.
+# Without --pcm the plugin does nothing and imports no engine (test in a subprocess).
+[project.entry-points.pytest11]
+"pycodemath.lint.pytest_plugin" = "pycodemath.lint.pytest_plugin"
 
 [tool.setuptools.dynamic]
 version = {attr = "pycodemath.__version__"}
@@ -46,16 +73,23 @@ include = ["pycodemath*"]
 
 # PEP 561: the marker that tells an installed caller's type checker the package
 # ships its own types. Without it every @overload in ``engine.numerics`` is
-# invisible from outside the repo, and an external mypy silently falls back to
-# ``Any`` for everything imported from pycodemath.
+# invisible from outside the repo — measured before module 7: an external mypy
+# reported `Skipping analyzing "pycodemath"` and revealed ``Any`` for all 14
+# probed expressions, so the "no cast needed" guarantee silently evaporated.
+# It must be listed HERE as package data: a marker that does not reach the wheel
+# is worse than none, because it looks done.
 [tool.setuptools.package-data]
-pycodemath = ["py.typed", "bench/data/*.jsonl", "bench/data/PRM800K_LICENSE"]
+pycodemath = ["py.typed", "bench/data/*.jsonl", "bench/data/PRM800K_LICENSE", "bench/data/PROCESSBENCH_LICENSE",
+              # series FULL (I1): the modules' evaluation sets (licences inside each file)
+              "code/data/*.json", "code/data/*.jsonl",
+              # L1 (I2): the generated rule documentation, shipped with the rules
+              "lint/RULES.md"]
 
 [tool.mypy]
-# Reasonable baseline (not strict): the whole package must pass, without stubs
-# for SymPy/mpmath (libraries without py.typed are treated as Any).
-# 3.12, not 3.11: NumPy stubs use "type X = ..." (PEP 695), which mypy cannot
-# parse under the 3.11 grammar — while our code uses nothing beyond 3.11.
+# Rozsądny baseline (nie strict): pakiet ma przechodzić w całości, bez stubów
+# SymPy/mpmath (biblioteki bez py.typed traktujemy jako Any).
+# 3.12, nie 3.11: stuby NumPy używają "type X = ..." (PEP 695), którego mypy
+# nie parsuje pod grammar 3.11 — a nasz kod nie używa niczego spoza 3.11.
 python_version = "3.12"
 files = ["pycodemath"]
 ignore_missing_imports = true

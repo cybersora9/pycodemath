@@ -34,10 +34,48 @@ Top-level public API. Everything a caller needs is importable from here:
     so the overloads that make ``full_result`` change the return TYPE are visible
     to an installed caller's type checker — no cast anywhere.
 
+The series FULL (I1) adds, loaded lazily on first use (``import pycodemath``
+stays as fast as before — PEP 562):
+
+``check_code`` / ``to_symbolic`` / ``emit_test``
+    does this Python function compute that formula? (C1)
+``diagnose`` / ``improve`` / ``max_safe_input``
+    floating-point accuracy with proved rewrites (C2); value ranges, overflow and
+    NaN with executed witnesses (C3 — ``ranges.analyze``)
+``allocate`` / ``round_money`` / ``float_money_hazard``
+    money without lost cents (C4)
+``convert`` / ``check_dimensions`` / ``dimension_of``
+    exact units and dimensional analysis (J1)
+``compare_rotation_expressions`` / ``orient2d``
+    geometry that never lies (G1)
+``issue`` / ``recheck`` / ``Certificate``
+    every check written down and re-checked from the file alone (X1)
+``code`` / ``stability`` / ``ranges`` / ``money`` / ``geometry`` / ``units`` /
+``calc`` / ``stats``
+    the modules themselves (K3: ``calc`` number theory and special functions,
+    ``stats`` exact statistics and A/B tests).
+
+Wave 2 (I2), lazy as well:
+
+``approx`` / ``evalf_to`` / ``dual`` / ``identify``
+    decimal digits that are proved, the exact and the decimal answer side by side,
+    and a constant recognised only when a coincidence is excluded (K2)
+``solve_inequality`` / ``solve_system`` / ``periodic_solutions`` / ``definite_integral``
+    solution sets and definite or improper integrals, every answer proved (K5)
+``count_iterations`` / ``check_iterations`` / ``check_complexity`` /
+``solve_recurrence`` / ``master_theorem``
+    how many times a loop runs, Θ with a proof, recurrences with their conditions (C5)
+``lint`` / ``lint_source`` / ``lint_paths`` / ``spec`` / ``LintConfig``
+    the math-in-code linter, each finding with an executed witness (L1;
+    ``LintConfig`` is ``pycodemath.lint.Config``)
+
 The README documents each of these with runnable examples.
 """
 
 from __future__ import annotations
+
+import importlib
+from typing import TYPE_CHECKING, Any
 
 from .codegen.pipeline import (
     CodeArtifact,
@@ -104,7 +142,120 @@ from .engine.ode import (
 from .engine.symbolic import limit, series, summation
 from .frontend.parser import parse
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
+
+if TYPE_CHECKING:
+    from .code import geometry, money, ranges, stability
+    from .code.frontend import CodeCheck, check_code, emit_test, to_symbolic
+    from .code.geometry import compare_rotation_expressions, orient2d
+    from .code.money import allocate, float_money_hazard, round_money
+    from .code.ranges import RangeReport, max_safe_input
+    from .code.stability import Improvement, StabilityReport, diagnose, improve
+    from .engine import calc, stats, units
+    from .engine.calc import CalcResult
+    from .engine.units import check_dimensions, convert, dimension_of
+    from .verify.certificate import Certificate, issue, recheck
+    from . import code, lint
+    from .code.loops import check_complexity, check_iterations, count_iterations
+    from .code.recurrence import master_theorem, solve_recurrence
+    from .engine.definite import (
+        DefiniteIntegralResult,
+        IntegralNoClosedForm,
+        IntegralUndecided,
+        definite_integral,
+    )
+    from .engine.identify import Identification, identify
+    from .engine.precision import Approx, PrecisionUndecided, approx, dual, evalf_to
+    from .engine.solvesets import (
+        InequalityResult,
+        PeriodicResult,
+        SolveSetUndecided,
+        SystemResult,
+        periodic_solutions,
+        solve_inequality,
+        solve_system,
+    )
+    from .lint import Config as LintConfig
+    from .lint import lint_paths, lint_source, spec
+
+#: The series-FULL names (I1): name -> (module, attribute or None for the module).
+#: Loaded on first access, so ``import pycodemath`` does not pay for NumPy-heavy
+#: modules a caller never touches (measured: +80 ms when imported eagerly).
+_LAZY: dict[str, tuple[str, "str | None"]] = {
+    "code": (".code", None),
+    "stability": (".code.stability", None),
+    "ranges": (".code.ranges", None),
+    "money": (".code.money", None),
+    "geometry": (".code.geometry", None),
+    "units": (".engine.units", None),
+    "calc": (".engine.calc", None),
+    "stats": (".engine.stats", None),
+    "check_code": (".code.frontend", "check_code"),
+    "to_symbolic": (".code.frontend", "to_symbolic"),
+    "emit_test": (".code.frontend", "emit_test"),
+    "CodeCheck": (".code.frontend", "CodeCheck"),
+    "diagnose": (".code.stability", "diagnose"),
+    "improve": (".code.stability", "improve"),
+    "StabilityReport": (".code.stability", "StabilityReport"),
+    "Improvement": (".code.stability", "Improvement"),
+    "max_safe_input": (".code.ranges", "max_safe_input"),
+    "RangeReport": (".code.ranges", "RangeReport"),
+    "allocate": (".code.money", "allocate"),
+    "round_money": (".code.money", "round_money"),
+    "float_money_hazard": (".code.money", "float_money_hazard"),
+    "convert": (".engine.units", "convert"),
+    "check_dimensions": (".engine.units", "check_dimensions"),
+    "dimension_of": (".engine.units", "dimension_of"),
+    "compare_rotation_expressions": (".code.geometry", "compare_rotation_expressions"),
+    "orient2d": (".code.geometry", "orient2d"),
+    "CalcResult": (".engine.calc", "CalcResult"),
+    "Certificate": (".verify.certificate", "Certificate"),
+    "issue": (".verify.certificate", "issue"),
+    "recheck": (".verify.certificate", "recheck"),
+    # wave 2 (I2)
+    "approx": (".engine.precision", "approx"),
+    "evalf_to": (".engine.precision", "evalf_to"),
+    "dual": (".engine.precision", "dual"),
+    "Approx": (".engine.precision", "Approx"),
+    "PrecisionUndecided": (".engine.precision", "PrecisionUndecided"),
+    "identify": (".engine.identify", "identify"),
+    "Identification": (".engine.identify", "Identification"),
+    "solve_inequality": (".engine.solvesets", "solve_inequality"),
+    "solve_system": (".engine.solvesets", "solve_system"),
+    "periodic_solutions": (".engine.solvesets", "periodic_solutions"),
+    "InequalityResult": (".engine.solvesets", "InequalityResult"),
+    "SystemResult": (".engine.solvesets", "SystemResult"),
+    "PeriodicResult": (".engine.solvesets", "PeriodicResult"),
+    "SolveSetUndecided": (".engine.solvesets", "SolveSetUndecided"),
+    "definite_integral": (".engine.definite", "definite_integral"),
+    "DefiniteIntegralResult": (".engine.definite", "DefiniteIntegralResult"),
+    "IntegralUndecided": (".engine.definite", "IntegralUndecided"),
+    "IntegralNoClosedForm": (".engine.definite", "IntegralNoClosedForm"),
+    "count_iterations": (".code.loops", "count_iterations"),
+    "check_iterations": (".code.loops", "check_iterations"),
+    "check_complexity": (".code.loops", "check_complexity"),
+    "solve_recurrence": (".code.recurrence", "solve_recurrence"),
+    "master_theorem": (".code.recurrence", "master_theorem"),
+    "lint": (".lint", None),
+    "lint_source": (".lint", "lint_source"),
+    "lint_paths": (".lint", "lint_paths"),
+    "spec": (".lint", "spec"),
+    "LintConfig": (".lint", "Config"),
+}
+
+
+def __getattr__(name: str) -> Any:
+    entry = _LAZY.get(name)
+    if entry is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module = importlib.import_module(entry[0], __name__)
+    value = module if entry[1] is None else getattr(module, entry[1])
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(_LAZY))
 
 __all__ = [
     "E",
@@ -177,4 +328,6 @@ __all__ = [
     "solve_ode_system_events",
     "EventSystemSolution",
     "__version__",
+    # series FULL (I1) and wave 2 (I2), loaded lazily — see ``_LAZY``
+    *_LAZY,
 ]

@@ -1,0 +1,130 @@
+{"id": "J1-000", "split": "dev", "kind": "convert", "q": "5 km/h", "to": "m/s", "expected": "25/18", "source": "SI2019", "note": ""}
+{"id": "J1-001", "split": "dev", "kind": "convert", "q": "1 mph", "to": "m/s", "expected": "1397/3125", "source": "SP811", "note": ""}
+{"id": "J1-002", "split": "holdout", "kind": "convert", "q": "1 ft", "to": "m", "expected": "381/1250", "source": "SP811", "note": ""}
+{"id": "J1-003", "split": "dev", "kind": "convert", "q": "1 in", "to": "cm", "expected": "127/50", "source": "SP811", "note": ""}
+{"id": "J1-004", "split": "dev", "kind": "convert", "q": "1 lb", "to": "kg", "expected": "45359237/100000000", "source": "SP811", "note": ""}
+{"id": "J1-005", "split": "holdout", "kind": "convert", "q": "1 psi", "to": "Pa", "expected": "8896443230521/1290320000", "source": "SP811", "note": ""}
+{"id": "J1-006", "split": "dev", "kind": "convert", "q": "1 atm", "to": "kPa", "expected": "4053/40", "source": "SP811", "note": ""}
+{"id": "J1-007", "split": "dev", "kind": "convert", "q": "1 bar", "to": "psi", "expected": "129032000000000/8896443230521", "source": "SP811", "note": ""}
+{"id": "J1-008", "split": "holdout", "kind": "convert", "q": "1 kcal", "to": "J", "expected": "4184", "source": "SP811", "note": ""}
+{"id": "J1-009", "split": "dev", "kind": "convert", "q": "1 eV", "to": "J", "expected": "801088317/5000000000000000000000000000", "source": "SI2019", "note": ""}
+{"id": "J1-010", "split": "dev", "kind": "convert", "q": "1 kWh", "to": "MJ", "expected": "18/5", "source": "SP811", "note": ""}
+{"id": "J1-011", "split": "holdout", "kind": "convert", "q": "1 KiB", "to": "B", "expected": "1024", "source": "IEC", "note": ""}
+{"id": "J1-012", "split": "dev", "kind": "convert", "q": "1 kB", "to": "B", "expected": "1000", "source": "IEC", "note": ""}
+{"id": "J1-013", "split": "dev", "kind": "convert", "q": "1 MiB", "to": "kB", "expected": "131072/125", "source": "IEC", "note": ""}
+{"id": "J1-014", "split": "holdout", "kind": "convert", "q": "1 GB", "to": "GiB", "expected": "1953125/2097152", "source": "IEC", "note": ""}
+{"id": "J1-015", "split": "dev", "kind": "convert", "q": "100 degC", "to": "degF", "expected": "212", "source": "SP811", "note": ""}
+{"id": "J1-016", "split": "dev", "kind": "convert", "q": "-40 degC", "to": "degF", "expected": "-40", "source": "SP811", "note": ""}
+{"id": "J1-017", "split": "holdout", "kind": "convert", "q": "0 degF", "to": "degC", "expected": "-160/9", "source": "SP811", "note": ""}
+{"id": "J1-018", "split": "dev", "kind": "convert", "q": "300 K", "to": "degC", "expected": "537/20", "source": "SI2019", "note": ""}
+{"id": "J1-019", "split": "dev", "kind": "convert", "q": "20 °C", "to": "K", "expected": "5863/20", "source": "SI2019", "note": ""}
+{"id": "J1-020", "split": "holdout", "kind": "convert", "q": "10 delta_degC", "to": "delta_degF", "expected": "18", "source": "SP811", "note": ""}
+{"id": "J1-021", "split": "dev", "kind": "convert", "q": "180 deg", "to": "rad", "expected": "pi", "source": "SI2019", "note": ""}
+{"id": "J1-022", "split": "dev", "kind": "convert", "q": "1 turn", "to": "deg", "expected": "360", "source": "SP811", "note": ""}
+{"id": "J1-023", "split": "holdout", "kind": "convert", "q": "1 rpm", "to": "rad/s", "expected": "pi/30", "source": "SP811", "note": ""}
+{"id": "J1-024", "split": "dev", "kind": "convert", "q": "1 h", "to": "s", "expected": "3600", "source": "SI2019", "note": ""}
+{"id": "J1-025", "split": "dev", "kind": "convert", "q": "1 d", "to": "min", "expected": "1440", "source": "SI2019", "note": ""}
+{"id": "J1-026", "split": "holdout", "kind": "convert", "q": "1 yr", "to": "d", "expected": "1461/4", "source": "IAU", "note": ""}
+{"id": "J1-027", "split": "dev", "kind": "convert", "q": "1 ly", "to": "m", "expected": "9460730472580800", "source": "IAU", "note": ""}
+{"id": "J1-028", "split": "dev", "kind": "convert", "q": "1 au", "to": "km", "expected": "1495978707/10", "source": "IAU", "note": ""}
+{"id": "J1-029", "split": "holdout", "kind": "convert", "q": "1 nmi", "to": "m", "expected": "1852", "source": "SP811", "note": ""}
+{"id": "J1-030", "split": "dev", "kind": "convert", "q": "1 kn", "to": "km/h", "expected": "463/250", "source": "SP811", "note": ""}
+{"id": "J1-031", "split": "dev", "kind": "convert", "q": "1 gal", "to": "L", "expected": "473176473/125000000", "source": "SP811", "note": ""}
+{"id": "J1-032", "split": "holdout", "kind": "convert", "q": "1 hp", "to": "W", "expected": "37284993579113511/50000000000000", "source": "SP811", "note": ""}
+{"id": "J1-033", "split": "dev", "kind": "convert", "q": "1 mmHg", "to": "Pa", "expected": "26664477483/200000000", "source": "ISO 80000-4", "note": ""}
+{"id": "J1-034", "split": "dev", "kind": "convert", "q": "1 Torr", "to": "Pa", "expected": "20265/152", "source": "SP811", "note": ""}
+{"id": "J1-035", "split": "holdout", "kind": "convert", "q": "1 BTU", "to": "kJ", "expected": "52752792631/50000000000", "source": "ISO 31-4", "note": ""}
+{"id": "J1-036", "split": "dev", "kind": "convert", "q": "1 N*m", "to": "J", "expected": "1", "source": "SI2019", "note": ""}
+{"id": "J1-037", "split": "dev", "kind": "convert", "q": "1 J", "to": "eV", "expected": "5000000000000000000000000000/801088317", "source": "SI2019", "note": ""}
+{"id": "J1-038", "split": "holdout", "kind": "convert", "q": "1 Wh", "to": "J", "expected": "3600", "source": "SP811", "note": ""}
+{"id": "J1-039", "split": "dev", "kind": "convert", "q": "9.81 m/s^2", "to": "ft/s^2", "expected": "8175/254", "source": "SP811", "note": ""}
+{"id": "J1-040", "split": "dev", "kind": "convert", "q": "60 mph", "to": "km/h", "expected": "301752/3125", "source": "SP811", "note": ""}
+{"id": "J1-041", "split": "holdout", "kind": "convert", "q": "1 oz", "to": "g", "expected": "45359237/1600000", "source": "SP811", "note": ""}
+{"id": "J1-042", "split": "dev", "kind": "convert", "q": "1 g/cm^3", "to": "kg/m^3", "expected": "1000", "source": "SI2019", "note": ""}
+{"id": "J1-043", "split": "dev", "kind": "convert", "q": "1 L", "to": "m^3", "expected": "1/1000", "source": "SI2019", "note": ""}
+{"id": "J1-044", "split": "holdout", "kind": "convert", "q": "1 ha", "to": "m^2", "expected": "10000", "source": "SI2019", "note": ""}
+{"id": "J1-045", "split": "dev", "kind": "convert", "q": "4.2 J/(kg*degC)", "to": "J/(kg*K)", "expected": "21/5", "source": "SI2019", "note": "°C inside a compound unit is a temperature DIFFERENCE"}
+{"id": "J1-046", "split": "dev", "kind": "convert", "q": "3/4 in", "to": "mm", "expected": "381/20", "source": "SP811", "note": ""}
+{"id": "J1-047", "split": "holdout", "kind": "convert", "q": "1.5e3 m", "to": "km", "expected": "3/2", "source": "SI2019", "note": ""}
+{"id": "J1-048", "split": "dev", "kind": "convert", "q": "1 m^2", "to": "ft^2", "expected": "1562500/145161", "source": "SP811", "note": ""}
+{"id": "J1-049", "split": "dev", "kind": "convert", "q": "1 kg*m^2/s^2", "to": "J", "expected": "1", "source": "SI2019", "note": ""}
+{"id": "J1-050", "split": "holdout", "kind": "convert", "q": "1 L/min", "to": "gal/h", "expected": "2500000000/157725491", "source": "SP811", "note": ""}
+{"id": "J1-051", "split": "dev", "kind": "convert", "q": "100 km/h", "to": "mph", "expected": "781250/12573", "source": "SP811", "note": ""}
+{"id": "J1-052", "split": "dev", "kind": "convert", "q": "1 m", "to": "s", "error": "DimensionError", "source": "own"}
+{"id": "J1-053", "split": "holdout", "kind": "convert", "q": "1 rad/s", "to": "Hz", "error": "DimensionError", "source": "own"}
+{"id": "J1-054", "split": "dev", "kind": "convert", "q": "1 KB", "to": "B", "error": "UnitParseError", "source": "own"}
+{"id": "J1-055", "split": "dev", "kind": "convert", "q": "1 month", "to": "d", "error": "UnitParseError", "source": "own"}
+{"id": "J1-056", "split": "holdout", "kind": "convert", "q": "1 dB", "to": "W", "error": "UnitParseError", "source": "own"}
+{"id": "J1-057", "split": "dev", "kind": "convert", "q": "1 kg", "to": "N", "error": "DimensionError", "source": "own"}
+{"id": "J1-058", "split": "dev", "kind": "convert", "q": "1 J/kg K", "to": "J/(kg*K)", "error": "UnitParseError", "source": "own"}
+{"id": "J1-059", "split": "holdout", "kind": "convert", "q": "2 furlongs", "to": "m", "error": "UnitParseError", "source": "own"}
+{"id": "J1-060", "split": "dev", "kind": "check", "lhs": "F", "rhs": "m*v", "units": {"F": "N", "m": "kg", "v": "m/s"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-061", "split": "dev", "kind": "check", "lhs": "E", "rhs": "m*c", "units": {"E": "J", "m": "kg", "c": "m/s"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-062", "split": "holdout", "kind": "check", "lhs": "p", "rhs": "m/v", "units": {"p": "kg*m/s", "m": "kg", "v": "m/s"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-063", "split": "dev", "kind": "check", "lhs": "P", "rhs": "W*t", "units": {"P": "W", "W": "J", "t": "s"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-064", "split": "dev", "kind": "check", "lhs": "E", "rhs": "m*v^2", "units": {"E": "J", "m": "kg", "v": "m/s"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-065", "split": "holdout", "kind": "check", "lhs": "v", "rhs": "a*t^2", "units": {"v": "m/s", "a": "m/s^2", "t": "s"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-066", "split": "dev", "kind": "check", "lhs": "s", "rhs": "v*t + a*t", "units": {"s": "m", "v": "m/s", "a": "m/s^2", "t": "s"}, "values": "quantities", "expected": "refuted", "location": "a*t", "warning": null, "source": "textbook"}
+{"id": "J1-067", "split": "dev", "kind": "check", "lhs": "x", "rhs": "x0 + v*t + a*t^2/2", "units": {"x": "m", "x0": "m", "v": "m/s", "a": "m/s^2", "t": "s"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-068", "split": "holdout", "kind": "check", "lhs": "T", "rhs": "2*pi*sqrt(L/g)", "units": {"T": "s", "L": "m", "g": "m/s^2"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-069", "split": "dev", "kind": "check", "lhs": "T", "rhs": "2*pi*sqrt(L*g)", "units": {"T": "s", "L": "m", "g": "m/s^2"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-070", "split": "dev", "kind": "check", "lhs": "E", "rhs": "h*f", "units": {"E": "J", "h": "J*s", "f": "Hz"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-071", "split": "holdout", "kind": "check", "lhs": "E", "rhs": "h/f", "units": {"E": "J", "h": "J*s", "f": "Hz"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-072", "split": "dev", "kind": "check", "lhs": "F", "rhs": "G*m1*m2/r^2", "units": {"F": "N", "G": "m^3/(kg*s^2)", "m1": "kg", "m2": "kg", "r": "m"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-073", "split": "dev", "kind": "check", "lhs": "F", "rhs": "G*m1*m2/r", "units": {"F": "N", "G": "m^3/(kg*s^2)", "m1": "kg", "m2": "kg", "r": "m"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-074", "split": "holdout", "kind": "check", "lhs": "P", "rhs": "V*I", "units": {"P": "W", "V": "V", "I": "A"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-075", "split": "dev", "kind": "check", "lhs": "P", "rhs": "V/I", "units": {"P": "W", "V": "V", "I": "A"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-076", "split": "dev", "kind": "check", "lhs": "V", "rhs": "I*R", "units": {"V": "V", "I": "A", "R": "ohm"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-077", "split": "holdout", "kind": "check", "lhs": "p*V", "rhs": "n*R*T", "units": {"p": "Pa", "V": "m^3", "n": "mol", "R": "J/(mol*K)", "T": "K"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-078", "split": "dev", "kind": "check", "lhs": "p*V", "rhs": "n*T", "units": {"p": "Pa", "V": "m^3", "n": "mol", "T": "K"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-079", "split": "dev", "kind": "check", "lhs": "rho", "rhs": "m/V", "units": {"rho": "kg/m^3", "m": "kg", "V": "m^3"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-080", "split": "holdout", "kind": "check", "lhs": "E", "rhs": "m*c^2", "units": {"E": "J", "m": "kg", "c": "m/s"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-081", "split": "dev", "kind": "check", "lhs": "v", "rhs": "sqrt(2*g*h)", "units": {"v": "m/s", "g": "m/s^2", "h": "m"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-082", "split": "dev", "kind": "check", "lhs": "v", "rhs": "sqrt(2*g/h)", "units": {"v": "m/s", "g": "m/s^2", "h": "m"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-083", "split": "holdout", "kind": "check", "lhs": "x", "rhs": "A*sin(omega*t)", "units": {"x": "m", "A": "m", "omega": "rad/s", "t": "s"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-084", "split": "dev", "kind": "check", "lhs": "x", "rhs": "A*sin(omega)", "units": {"x": "m", "A": "m", "omega": "1/s"}, "values": "quantities", "expected": "refuted", "location": "sin", "warning": null, "source": "textbook"}
+{"id": "J1-085", "split": "dev", "kind": "check", "lhs": "N", "rhs": "N0*exp(-t/tau)", "units": {"N": "1", "N0": "1", "t": "s", "tau": "s"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-086", "split": "holdout", "kind": "check", "lhs": "N", "rhs": "N0*exp(-t)", "units": {"N": "1", "N0": "1", "t": "s"}, "values": "quantities", "expected": "refuted", "location": "exp", "warning": null, "source": "textbook"}
+{"id": "J1-087", "split": "dev", "kind": "check", "lhs": "v", "rhs": "omega*r", "units": {"v": "m/s", "omega": "rad/s", "r": "m"}, "values": "quantities", "expected": "verified", "location": null, "warning": "angle", "source": "textbook"}
+{"id": "J1-088", "split": "dev", "kind": "check", "lhs": "E_k", "rhs": "3/2*k_B*T", "units": {"E_k": "J", "k_B": "J/K", "T": "K"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-089", "split": "holdout", "kind": "check", "lhs": "F", "rhs": "q*v*B", "units": {"F": "N", "q": "C", "v": "m/s", "B": "T"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-090", "split": "dev", "kind": "check", "lhs": "F", "rhs": "q*E", "units": {"F": "N", "q": "C", "E": "V/m"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-091", "split": "dev", "kind": "check", "lhs": "Q", "rhs": "m*c*dT", "units": {"Q": "J", "m": "kg", "c": "J/(kg*K)", "dT": "delta_degC"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-092", "split": "holdout", "kind": "check", "lhs": "I", "rhs": "V/R + t", "units": {"I": "A", "V": "V", "R": "ohm", "t": "s"}, "values": "quantities", "expected": "refuted", "location": "t", "warning": null, "source": "textbook"}
+{"id": "J1-093", "split": "dev", "kind": "check", "lhs": "a", "rhs": "v^2/r", "units": {"a": "m/s^2", "v": "m/s", "r": "m"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-094", "split": "dev", "kind": "check", "lhs": "a", "rhs": "v/r^2", "units": {"a": "m/s^2", "v": "m/s", "r": "m"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-095", "split": "holdout", "kind": "check", "lhs": "F", "rhs": "m*a*k", "units": {"F": "N", "m": "kg", "a": "m/s^2"}, "values": "quantities", "expected": "undecided", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-096", "split": "dev", "kind": "check", "lhs": "W", "rhs": "F*d*cos(theta)", "units": {"W": "J", "F": "N", "d": "m", "theta": "rad"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-097", "split": "dev", "kind": "check", "lhs": "y", "rhs": "log(x)", "units": {"y": "1", "x": "m"}, "values": "quantities", "expected": "refuted", "location": "log", "warning": null, "source": "textbook"}
+{"id": "J1-098", "split": "holdout", "kind": "check", "lhs": "y", "rhs": "x^n", "units": {"y": "m", "x": "m"}, "values": "quantities", "expected": "undecided", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-099", "split": "dev", "kind": "check", "lhs": "P", "rhs": "F*v", "units": {"P": "W", "F": "N", "v": "m/s"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-100", "split": "dev", "kind": "check", "lhs": "P", "rhs": "F/v", "units": {"P": "W", "F": "N", "v": "m/s"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-101", "split": "holdout", "kind": "check", "lhs": "E", "rhs": "1/2*C*V^2", "units": {"E": "J", "C": "F", "V": "V"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-102", "split": "dev", "kind": "check", "lhs": "E", "rhs": "1/2*C*V", "units": {"E": "J", "C": "F", "V": "V"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-103", "split": "dev", "kind": "check", "lhs": "lambda_", "rhs": "h/(m*v)", "units": {"lambda_": "m", "h": "J*s", "m": "kg", "v": "m/s"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-104", "split": "holdout", "kind": "check", "lhs": "tau", "rhs": "r*F", "units": {"tau": "N*m", "r": "m", "F": "N"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-105", "split": "dev", "kind": "check", "lhs": "Phi", "rhs": "B*A", "units": {"Phi": "Wb", "B": "T", "A": "m^2"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-106", "split": "dev", "kind": "check", "lhs": "Phi", "rhs": "B/A", "units": {"Phi": "Wb", "B": "T", "A": "m^2"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-107", "split": "holdout", "kind": "check", "lhs": "f", "rhs": "1/(2*pi*sqrt(L*C))", "units": {"f": "Hz", "L": "H", "C": "F"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-108", "split": "dev", "kind": "check", "lhs": "E", "rhs": "sigma*T^4", "units": {"E": "W/m^2", "sigma": "W/(m^2*K^4)", "T": "K"}, "values": "quantities", "expected": "verified", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-109", "split": "dev", "kind": "check", "lhs": "E", "rhs": "sigma*T^3", "units": {"E": "W/m^2", "sigma": "W/(m^2*K^4)", "T": "K"}, "values": "quantities", "expected": "refuted", "location": null, "warning": null, "source": "textbook"}
+{"id": "J1-110", "split": "holdout", "kind": "names", "lhs": "total_s", "rhs": "t_ms + t_s", "expected": "refuted", "location": "t_ms + t_s", "warning": null, "source": "own (code)"}
+{"id": "J1-111", "split": "dev", "kind": "names", "lhs": "d_m", "rhs": "v_kmh*t_hr", "expected": "refuted", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-112", "split": "dev", "kind": "names", "lhs": "d_km", "rhs": "v_kmh*t_hr", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-113", "split": "holdout", "kind": "names", "lhs": "d_m", "rhs": "v_kmh*t_hr*1000", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-114", "split": "dev", "kind": "names", "lhs": "y_m", "rhs": "x_m + t_s", "expected": "refuted", "location": "t_s + x_m", "warning": null, "source": "own (code)"}
+{"id": "J1-115", "split": "dev", "kind": "names", "lhs": "timeout_ms", "rhs": "timeout_s*1000", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-116", "split": "holdout", "kind": "names", "lhs": "y", "rhs": "sin(angle_deg)", "expected": "verified", "location": null, "warning": "degrees", "source": "own (code)"}
+{"id": "J1-117", "split": "dev", "kind": "names", "lhs": "y", "rhs": "sin(angle_deg*pi/180)", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-118", "split": "dev", "kind": "names", "lhs": "y_px", "rhs": "x_px + offset_px", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-119", "split": "holdout", "kind": "names", "lhs": "y_px", "rhs": "x_px + offset_m", "expected": "refuted", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-120", "split": "dev", "kind": "names", "lhs": "size_bytes", "rhs": "size_kib*1024", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-121", "split": "dev", "kind": "names", "lhs": "size_bytes", "rhs": "size_kib", "expected": "refuted", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-122", "split": "holdout", "kind": "names", "lhs": "wait", "rhs": "delayMs + timeoutSec", "expected": "refuted", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-123", "split": "dev", "kind": "names", "lhs": "area_m2", "rhs": "w_m*len_m", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-124", "split": "dev", "kind": "names", "lhs": "speed_mps", "rhs": "dist_km/dur_s", "expected": "refuted", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-125", "split": "holdout", "kind": "names", "lhs": "elapsed_s", "rhs": "end_ms - start_ms", "expected": "refuted", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-126", "split": "dev", "kind": "names", "lhs": "elapsed_s", "rhs": "(end_ms - start_ms)/1000", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-127", "split": "dev", "kind": "names", "lhs": "power_kw", "rhs": "energy_kwh/dur_hr", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-128", "split": "holdout", "kind": "names", "lhs": "y", "rhs": "cos(heading_rad)", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}
+{"id": "J1-129", "split": "dev", "kind": "names", "lhs": "dist_m", "rhs": "speed_mps*elapsed_s", "expected": "verified", "location": null, "warning": null, "source": "own (code)"}

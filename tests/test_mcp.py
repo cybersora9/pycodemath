@@ -26,6 +26,11 @@ from pycodemath.cli import mcp_server, repl
 from pycodemath.core.errors import DomainError
 from pycodemath.core.result import SOLVE_STATUSES, QuadratureResult, SolveResult
 
+#: The fields of every ``math_eval`` payload. I1 added ``result`` and ``certificate``
+#: (the FULL-series commands: the module's own result object and its X1
+#: certificate) — deliberately, and ``null`` for every command that existed before.
+EVAL_FIELDS = {"text", "solve", "quadrature", "result", "certificate", "error"}
+
 
 # --- POMIAR WYJŚCIOWY: co model dostawał PRZED modułem 6 ---------------------
 def test_the_old_shape_is_gone_and_prose_is_no_longer_the_only_channel():
@@ -36,7 +41,7 @@ def test_the_old_shape_is_gone_and_prose_is_no_longer_the_only_channel():
     #   {"result": "error: minimize does not converge for x**4 at x0=1.0 (...)"}
     # Teraz ten sam string nadal JEST (pole ``text``), ale obok niego jadą dane.
     payload = mcp_server.math_eval("root x^2-2 for x at 1")
-    assert set(payload) == {"text", "solve", "quadrature", "error"}
+    assert set(payload) == EVAL_FIELDS
     assert payload["text"] == "1.4142135623746899"
     assert payload["solve"] is not None
     assert payload["solve"]["converged"] is True
@@ -69,7 +74,7 @@ def test_every_response_has_the_same_four_fields(command, carrier):
     # JEDEN kształt na wszystko, co narzędzie umie odpowiedzieć — agent nie musi
     # zgadywać schematu per komenda (a przy 25 komendach nie miałby jak).
     payload = mcp_server.math_eval(command)
-    assert set(payload) == {"text", "solve", "quadrature", "error"}
+    assert set(payload) == EVAL_FIELDS
     assert isinstance(payload["text"], str) and payload["text"] != ""
     assert payload["error"] is None
     # dowód siedzi DOKŁADNIE w jednym polu — albo w żadnym
@@ -445,7 +450,7 @@ def test_the_declared_output_schema_names_every_field_an_agent_may_branch_on():
     tool = next(t for t in tools if t.name == "math_eval")
     schema = tool.outputSchema
     assert schema is not None
-    assert set(schema["required"]) == {"text", "solve", "quadrature", "error"}
+    assert set(schema["required"]) == EVAL_FIELDS
     defs = schema["$defs"]
     assert set(defs["SolveEvidence"]["required"]) == {
         "value",

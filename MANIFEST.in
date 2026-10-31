@@ -1,0 +1,5 @@
+# The Polish README is a first-class document (README.md links to it), but only
+# the ``readme`` named in pyproject reaches the sdist by default — measured before
+# module 7: the 0.3.0 sdist carried README.md and not README.pl.md, so the source
+# archive could not rebuild the docs it advertises.
+include README.pl.md

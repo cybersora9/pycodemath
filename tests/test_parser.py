@@ -101,11 +101,20 @@ def test_unknown_single_letter_function_is_multiplication():
 
 
 def test_unknown_multiletter_name_splits_into_symbols():
-    # split_symbols (cena notacji 2x): foo -> f*o**2; nadal czysta
-    # matematyka na symbolach, zero kodu Pythona
+    # split_symbols (cena notacji 2x): foo -> f*o**2 — od K1 tylko po włączeniu
+    # implicit (parse_mode(strict=False)); nadal czysta matematyka, zero kodu
+    from pycodemath.frontend.parser import parse_mode
+
     f, o = sp.Symbol("f"), sp.Symbol("o")
-    assert parse("foo").sy == f * o**2
-    assert parse("xy*(x+1)").sy == sp.Symbol("y") * x * (x + 1)
+    with parse_mode(strict=False):
+        assert parse("foo").sy == f * o**2
+        assert parse("xy*(x+1)").sy == sp.Symbol("y") * x * (x + 1)
+
+
+def test_unknown_multiletter_name_is_one_symbol_in_strict_mode():
+    # K1: domyślnie (strict) nazwa wieloliterowa to JEDNA zmienna
+    assert parse("foo").sy == sp.Symbol("foo")
+    assert parse("xy*(x+1)").sy == sp.Symbol("xy") * (x + 1)
 
 
 # V9 (znalezisko V4): WYWOŁANIE nazwy spoza białej listy to odmowa, nie iloczyn.
@@ -205,10 +214,14 @@ def test_trailing_digit_name_stays_single_symbol():
     assert parse("q1*q2").sy == sp.Symbol("q1") * sp.Symbol("q2")
     assert parse("x1+x2").sy == sp.Symbol("x1") + sp.Symbol("x2")
     assert parse("v0").sy == sp.Symbol("v0")
-    # multi-letter, no digits still splits into a product of letters —
-    # unaffected by the fix (same case test_unknown_multiletter_name_splits_into_symbols covers)
+    # multi-letter, no digits splits into a product of letters with implicit
+    # on (same case test_unknown_multiletter_name_splits_into_symbols covers)
+    from pycodemath.frontend.parser import parse_mode
+
     f, o = sp.Symbol("f"), sp.Symbol("o")
-    assert parse("foo*x").sy == f * o**2 * x
+    with parse_mode(strict=False):
+        assert parse("foo*x").sy == f * o**2 * x
+        assert parse("q1*q2").sy == sp.Symbol("q1") * sp.Symbol("q2")
 
 
 # V3 znalezisko 2 (naprawione 29.09) + V9: nawias zamykający bez otwartego albo

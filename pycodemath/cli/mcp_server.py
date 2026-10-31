@@ -153,6 +153,10 @@ structure), and no ``ok`` flag. The same discipline on the new fields:
 ``steps``       ``verify steps``: the derivation's ``status``, ``first_error``
                 (step number), ``counterexample``, and one ``checks`` entry per
                 step with its own verdict, ``effect`` and ``warning``
+``certificate`` (X1) the same check written down: the schema-1 certificate JSON
+                object (claim, verdict, counterexample, budget, versions,
+                sha256 digest) that ``pycodemath recheck`` re-runs. ``null``
+                on a usage message or a refusal
 ``error``       the refusal, as in ``math_eval``
 ==============  ================================================================
 
@@ -167,15 +171,23 @@ verdict payload ever carries a number JSON cannot express.
 from __future__ import annotations
 
 import math
+import re
+import warnings
+from typing import Any
+
+from sympy.utilities.exceptions import SymPyDeprecationWarning
+
 try:  # pydantic (pulled in by mcp) refuses typing.TypedDict below Python 3.12:
     # on 3.11 the module did not import at all, and CI was red on both 3.11 jobs.
     from typing_extensions import TypedDict
 except ImportError:  # no mcp installed, so no pydantic to satisfy
     from typing import TypedDict  # type: ignore[assignment]
 
+from ..core.errors import DomainError
 from ..core.result import QuadratureResult, SolveResult
+from ..frontend.parser import parse_mode
 from ..verify import StepsResult, Verdict
-from . import repl
+from . import full, repl
 
 try:
     from mcp.server.fastmcp import FastMCP
@@ -223,6 +235,8 @@ class MathResult(TypedDict):
     text: str
     solve: "SolveEvidence | None"
     quadrature: "QuadratureEvidence | None"
+    result: "dict[str, Any] | None"
+    certificate: "dict[str, Any] | None"
     error: "Refusal | None"
 
 
@@ -262,6 +276,7 @@ class VerifyResult(TypedDict):
     answer: "str | None"
     verdict: "VerdictEvidence | None"
     steps: "StepsEvidence | None"
+    certificate: "dict[str, Any] | None"
     error: "Refusal | None"
 
 
@@ -281,9 +296,12 @@ def _answer(
     *,
     solve: "SolveEvidence | None" = None,
     quadrature: "QuadratureEvidence | None" = None,
+    result: "dict[str, Any] | None" = None,
+    certificate: "dict[str, Any] | None" = None,
 ) -> MathResult:
     """Build the ANSWERED form: ``error`` is ``null``, whatever else it carries."""
-    return {"text": text, "solve": solve, "quadrature": quadrature, "error": None}
+    return {"text": text, "solve": solve, "quadrature": quadrature, "result": result,
+            "certificate": certificate, "error": None}
 
 
 def _refusal(exc: Exception) -> MathResult:
@@ -298,6 +316,8 @@ def _refusal(exc: Exception) -> MathResult:
         "text": f"error: {exc}",
         "solve": None,
         "quadrature": None,
+        "result": None,
+        "certificate": None,
         "error": _refused(exc),
     }
 
@@ -364,6 +384,35 @@ def math_eval(command: str) -> MathResult:
       ode_adaptive <expr> for y(t) from <t0> to <t1> at <y0> [rtol <r>] — ODE, adaptive step (DOPRI5)
       odedense <expr> for y(t) from <t0> to <t1> at <y0> at t=<point> [rtol <r>] — ODE, read y(t) at any point (dense output)
       odeevents <expr> for y(t) from <t0> to <t1> at <y0> zero <g> [dir <+1|-1>] [rtol <r>] [stop] — ODE + moments g(t,y)=0 (event detection; stop = terminal event, stop integration)
+      CALCULATOR (exact; every answer carries a certificate):
+      factor/isprime/nextprime/prevprime <n>; gcd/lcm <a> <b> ...; powmod <a> <e> <m>; modinv <a> <m>;
+      mod <a> <m> [floor|euclid|trunc]; crt <r1,r2> mod <m1,m2>; binomial/permutations/stirling2 <n> <k>;
+      bell/catalan/partitions/fibonacci/totient <n>; special <zeta|gamma|erf|...> <args> [digits <d>];
+      mean/median <x1> <x2> ...; var/std [sample|population] <x1> ...; quantile <q> [type 7] <x1> ...;
+      cdf/sf/pdf/pmf/ppf <normal|t|chi2|...> <x> [k=v]; samplesize p1=0.10 p2=0.12 [power=0.8];
+      power p1= p2= n=; ci wilson|exact <s>/<n>; ztest <s1>/<n1> <s2>/<n2>; holm|bonferroni <p1> <p2> ...
+      UNITS: convert 5 km/h to m/s (or just: 5 km/h to m/s); units F = m*v where F:N m:kg v:m/s [numbers];
+      dims m*v^2/2 where m:kg v:m/s
+      MONEY (exact decimals, ISO 4217 minor units): money round 2.675 PLN [mode half_even] [step 0.05];
+      money split 100 PLN into 3 | by 1:2:3; money vat 0.01,0.01,0.01 at 23% PLN;
+      money float round(x*1.23, 2) for x in 0.01..50.00 currency PLN; money loan 300000 PLN at 7.2% for 360 months;
+      money interest 1000 PLN at 5% for 12 months; money npv 10% -100,39,59; money irr -100,230,-132
+      GEOMETRY: quat2mat w x y z [order xyzw] [algebra jpl] [normalize]; euler2mat a b c seq zyx frame intrinsic [deg];
+      mat2euler [[..],[..],[..]] seq zyx frame intrinsic [deg]; rotcheck q1*q2 == R2@R1;
+      orient2d ax,ay bx,by cx,cy; orient3d; incircle; segment p1 p2 q1 q2; easing ease 0.5;
+      arclength (0,0) (1,2) (3,3) (4,0); emit quat_to_mat3 python|numpy|c|glsl; epsilon orient2d 1e-9
+      FLOAT CODE: stability/improve/ranges/maxsafe lines work here too; the typed tools math_stability,
+      math_ranges and math_check_code take structured input.
+      NUMBERS: an exact number answers with its proved decimal ("sqrt(2)/2  ≈ 0.707106781186548");
+      evalf <expr> <digits> or N(<expr>, <d>) — proved digits, result.rigorous says if they are
+      (false = agreement only, certificate undecided); identify <number> [digits <d>] — a closed form
+      only when >= 50 digits exclude a coincidence.
+      SETS: solve x^2-4 > 0 for x [in [a, b]] (inequality); solve x+y=3, x-y=1 for x, y (system,
+      completeness proved); solve sin(x) = 1/2 all (periodic families); reduce <relation>.
+      DEFINITE: integrate <f> dx from <a> to <b> [pv] — convergence or divergence proved, value
+      cross-checked by quadrature; no closed form -> certificate undecided with "value ≈ ..." in text
+      and result.approx; pv = principal value, only on request. nintegrate also takes -oo/oo bounds.
+      LOOPS: recurrence T(n) = 2*T(n/2) + n, T(1) = 1; master 2 2 n. Source code: math_iterations, math_lint.
       To CHECK an identity, a derivation or one of these answers, use the math_verify tool.
 
     TRAILING OPTIONS — ``key value`` pairs at the END of a command, any order,
@@ -394,6 +443,11 @@ def math_eval(command: str) -> MathResult:
                     converged, status. null for other commands
       quadrature    nintegrate: value, error_estimate, evaluations, refinements,
                     converged, status. null for other commands
+      result        calculator/units/money/geometry/float-code/wave-2 commands: the
+                    module's own result object (exact values as text). null otherwise
+      certificate   the same commands: an X1 certificate (verdict + sha256) that
+                    math_recheck re-runs; verdict.status says verified/refuted/
+                    undecided. null otherwise
       error         the request was REFUSED: type (exception class), message, and
                     route — the command that asks the same question numerically,
                     or null when there is none. null otherwise
@@ -466,7 +520,12 @@ def math_eval(command: str) -> MathResult:
     options are yours to add: ``nintegrate`` takes ``tol``.
     """
     try:
-        answer = repl.handle_full(command)
+        token = full.EXECUTE_FILES.set(False)  # I2: a path named by an agent is read, never run
+        try:
+            with parse_mode(strict=True):  # K1: an agent's names are never split
+                answer = repl.handle_full(command)
+        finally:
+            full.EXECUTE_FILES.reset(token)
     except Exception as exc:  # the agent gets DATA, not a traceback (measurement 2)
         # ``PycodemathError`` subclasses are the refusals module 2 typed; anything
         # else would be a bug in the library, and its class name says so just as
@@ -475,6 +534,10 @@ def math_eval(command: str) -> MathResult:
 
     evidence = answer.evidence
     text = answer.text or "(empty result)"
+    if answer.outcome is not None:  # a FULL-series command (I1): module result + certificate
+        cert = answer.outcome.certificate
+        return _answer(text, result=answer.outcome.result,
+                       certificate=None if cert is None else cert.to_dict())
     if isinstance(evidence, SolveResult):
         return _answer(text, solve=_solve_evidence(evidence))
     if isinstance(evidence, QuadratureResult):
@@ -519,6 +582,9 @@ def _checked(checked: "repl.Checked") -> VerifyResult:
             None if checked.verdict is None else _verdict_evidence(checked.verdict)
         ),
         "steps": None if checked.steps is None else _steps_evidence(checked.steps),
+        "certificate": (
+            None if checked.certificate is None else checked.certificate.to_dict()
+        ),
         "error": None,
     }
 
@@ -530,6 +596,7 @@ def _verify_refusal(exc: Exception) -> VerifyResult:
         "answer": None,
         "verdict": None,
         "steps": None,
+        "certificate": None,
         "error": _refused(exc),
     }
 
@@ -569,6 +636,9 @@ def math_verify(command: str) -> VerifyResult:
                 counterexample, and checks — one per step with its own verdict,
                 effect ("gains-roots" / "loses-roots" on an equation step that
                 changes the solution set) and warning. null otherwise
+      certificate  the check as a JSON certificate (schema 1, sha256 digest) —
+                save it and run `pycodemath recheck file.json` to reproduce
+                the verdict. null when nothing was checked
       error     the request was REFUSED: type (exception class), message, route.
                 null otherwise
 
@@ -598,17 +668,290 @@ def math_verify(command: str) -> VerifyResult:
     if head not in ("verify", "certify"):
         line = f"verify {line}"
     try:
-        checked = repl.handle_checked(line)
+        with parse_mode(strict=True):
+            checked = repl.handle_checked(line)
     except Exception as exc:  # the agent gets DATA, not a traceback (measurement 2)
         return _verify_refusal(exc)
     return _checked(checked)
 
 
+# --- the code pillar and certificates (I1) ------------------------------------
+# Three typed tools for the checks whose input does not fit one line — a function's
+# source, a dict of variable ranges — and ``math_recheck`` for certificates. They
+# share ONE response shape, ``CheckResult``: the same discipline as above (every
+# key always present, ``null`` for "not applicable", a refusal RETURNED as the
+# same ``Refusal``). The calculator, units, money and geometry are NOT separate
+# tools: they are lines of ``math_eval`` (one input box — the rule Wolfram|Alpha
+# and qalc follow), which costs their description a few lines instead of a schema
+# each; the I1 report measures the characters.
+class CheckResult(TypedDict):
+    """A check's answer: text, status, the module's result, its certificate; error when refused."""
+
+    text: str
+    kind: str
+    status: "str | None"
+    result: "dict[str, Any] | None"
+    certificate: "dict[str, Any] | None"
+    error: "Refusal | None"
+
+
+def _outcome(o: "full.Outcome") -> CheckResult:
+    return {
+        "text": o.text, "kind": o.kind, "status": o.status, "result": o.result,
+        "certificate": None if o.certificate is None else o.certificate.to_dict(),
+        "error": None,
+    }
+
+
+def _check_refusal(kind: str, exc: Exception) -> CheckResult:
+    return {"text": f"error: {exc}", "kind": kind, "status": None, "result": None,
+            "certificate": None, "error": _refused(exc)}
+
+
+#: Longest wall clock one typed tool call may ask for. C2 measured 1-70 s per
+#: formula; a client asking for more is refused, not queued behind a long run.
+MAX_TOOL_BUDGET = 120.0
+
+
+def _tool_budget(budget: float) -> float:
+    if not (isinstance(budget, (int, float)) and 0 < budget <= MAX_TOOL_BUDGET):
+        raise DomainError(f"budget must be in (0, {MAX_TOOL_BUDGET:g}] seconds, got {budget!r}")
+    return float(budget)
+
+
+def _pairs(ranges: "dict[str, list[Any]]", what: str) -> "dict[str, list[Any]]":
+    if not isinstance(ranges, dict) or not ranges:
+        raise DomainError(f"{what}: ranges must map each variable to [low, high]")
+    for name, pair in ranges.items():
+        if not isinstance(pair, list) or len(pair) not in (2, 3):
+            raise DomainError(f"{what}: range of {name!r} must be [low, high] (or [low, high, \"int\"])")
+    return ranges
+
+
+def math_check_code(
+    source: str,
+    formula: str,
+    function: "str | None" = None,
+    domain: "dict[str, str] | None" = None,
+    execute: bool = False,
+    emit_test: bool = False,
+    budget: float = 30.0,
+) -> CheckResult:
+    """Check that a Python function computes a formula: verified (a proof), refuted (a call that disagrees), or undecided.
+
+    source    the module text (the last top-level def is checked unless function names one)
+    formula   e.g. "n*(n+1)/2"; domain e.g. {"n": "integer, n>=0"}
+    execute   False (default): the code is only READ and proved — nothing runs, so a
+              difference that would need running the function to confirm stays
+              undecided (note "not_executed"). True: the function is run in an
+              isolated worker under a deadline, which is what turns a suspected bug
+              into refuted with a concrete call. Run only code you trust.
+    emit_test True: result.test_file is a pytest that pins the counterexample.
+    Float rounding alone is never a refutation here (use math_stability).
+    """
+    from ..code import frontend
+    from ..verify.certificate import code_execution, code_verdict, domain_text, from_verdict
+
+    try:
+        total = _tool_budget(budget)
+        with code_execution(bool(execute)):
+            result = frontend.check_code(source, formula, name=function, domain=domain or None,
+                                         budget=total)
+        verdict = code_verdict(result)
+        cert = from_verdict("code_equiv", [source, formula, result.function_name,
+                                           domain_text(result.domain)],
+                            verdict, budget=total, execute=bool(execute))
+        payload = result.to_dict()
+        if emit_test:
+            payload["test_file"] = frontend.emit_test(result) if result.refuted else None
+        text = f"{verdict.status.name} ({verdict.method}) — {verdict.detail}"
+        return _outcome(full.Outcome(text, "code_equiv", payload, cert))
+    except Exception as exc:  # the agent gets DATA, not a traceback
+        return _check_refusal("code_equiv", exc)
+
+
+def math_stability(
+    expr: str,
+    ranges: "dict[str, list[float]]",
+    dtype: str = "float64",
+    improve: bool = False,
+    samples: int = 256,
+    budget: float = 30.0,
+) -> CheckResult:
+    """Floating-point accuracy of a formula over input ranges: bits lost, the worst input, the culprit operation.
+
+    ranges {"x": [1e10, 1e15]}; dtype float64|float32. improve=true also returns a
+    rewrite PROVED equal (or a Taylor branch proved within the unit roundoff) and
+    MEASURED more accurate, with Python/NumPy/C code — never an unproved rewrite.
+    Runs are serialized (they share mpmath's interval precision) and bounded by budget.
+    """
+    from ..code import stability as S
+    from ..verify.certificate import issue, stability_args
+
+    try:
+        total = _tool_budget(budget)
+        rng = {k: (float(v[0]), float(v[1])) for k, v in _pairs(ranges, "math_stability").items()}
+        with full.NUMERIC_LOCK:
+            if improve:
+                imp = S.improve(expr, rng, dtype=dtype, samples=samples, budget=total)
+                cert = None
+                if imp.best is not None and imp.best.proof.method == "check_equal" \
+                        and not imp.best.proof.conditions:
+                    cert = issue("identity", imp.expression, imp.best.expression)
+                return _outcome(full.Outcome(imp.message, "identity" if cert else "stability",
+                                             imp.to_dict(), cert))
+            report = S.diagnose(expr, rng, dtype=dtype, samples=samples, budget=total)
+        args = stability_args(report)
+        cert = None if args is None else issue("stability", *args)
+        return _outcome(full.Outcome(f"{report.expression} [{report.dtype}]: {report.verdict}",
+                                     "stability", report.to_dict(), cert))
+    except Exception as exc:  # the agent gets DATA, not a traceback
+        return _check_refusal("stability", exc)
+
+
+def math_ranges(
+    expr: str,
+    ranges: "dict[str, list[Any]]",
+    dtype: str = "float32",
+    max_safe: "str | None" = None,
+    budget: float = 10.0,
+) -> CheckResult:
+    """Will this expression overflow, underflow, divide by zero, produce NaN or lose integer precision in a dtype?
+
+    ranges {"lo": [0, 2147483647], "hi": [0, 2147483647]} (exact bounds may be text, "1/3";
+    a third entry "int" marks an integer input in a float type). dtype int8..uint64,
+    float16, bfloat16, float32, float64. refuted = an event happened at a concrete input,
+    executed in NumPy (the witness); verified = proved safe; advice = rewrites proved
+    equivalent. max_safe="x": the largest safe x instead (other variables in ranges).
+    """
+    from ..code import ranges as R
+    from ..verify.certificate import _jtext, from_verdict, issue, range_verdict
+
+    try:
+        total = _tool_budget(budget)
+        with full.NUMERIC_LOCK:
+            if max_safe is not None:
+                others = {k: v for k, v in (ranges or {}).items() if k != max_safe} or None
+                safe = R.max_safe_input(expr, max_safe, dtype, others, budget=total)
+                return _outcome(full.Outcome(safe.detail, "range", full._todict(safe), None))
+            spec = full.check_bounds(_pairs(ranges, "math_ranges"))
+            report = R.analyze(expr, spec, dtype, budget=total)
+        verdict = range_verdict(report)
+        cert = from_verdict("range", [expr, _jtext(spec), dtype], verdict, budget=total)
+        return _outcome(full.Outcome(str(report), "range", report.to_dict(), cert))
+    except Exception as exc:  # the agent gets DATA, not a traceback
+        return _check_refusal("range", exc)
+
+
+#: Certificate kinds whose re-check RUNS the recorded code (C1, C5, L1 call witnesses).
+_EXECUTING_KINDS = ("code_equiv", "iterations", "complexity", "lint")
+
+
+# --- wave 2 (I2): the code-shaped inputs of C5 and L1 ---------------------------
+# K2 (evalf, identify, N(e, d)), K5 (inequalities, systems, ``all``, definite
+# integrals) and C5's ``recurrence`` / ``master`` fit ONE line, so they are routes of
+# math_eval (+~1 000 characters of description) — the I1 rule. A function's SOURCE
+# does not fit a line: C5's loop checks and L1's linter get a typed tool each
+# (measured in the I2 report: 2 tools instead of the 4 C5 + 1 L1 proposed).
+_COMPLEXITY_CLAIM = re.compile(r"^\s*(O|o|Θ|Theta|Ω|Omega|ω|omega|Big-?O)\s*\(", re.IGNORECASE)
+
+
+def math_iterations(
+    source: str,
+    claim: "str | None" = None,
+    function: "str | None" = None,
+    execute: bool = False,
+    budget: float = 30.0,
+) -> CheckResult:
+    """How many times do a function's loops run? The exact count, where it holds, and Θ proved by a limit.
+
+    claim None: the count. claim "n*(n-1)/2": refuted with the n where the loops run a
+    different number of times. claim "O(n log n)" (O/Theta/Omega/o/omega): decided by a
+    limit. execute False (default): nothing runs — the count is read and proved, a
+    refutation that needs counting stays undecided. True: the function is run and
+    counted in an isolated worker. Recurrences: math_eval "recurrence T(n) = 2*T(n/2) + n".
+    """
+    try:
+        total = _tool_budget(budget)
+        if claim and _COMPLEXITY_CLAIM.match(claim):
+            return _outcome(full.complexity_outcome(source, function, claim, execute=bool(execute),
+                                                    budget=total))
+        return _outcome(full.iterations_outcome(source, function, claim or None,
+                                                execute=bool(execute), budget=total))
+    except Exception as exc:  # the agent gets DATA, not a traceback
+        return _check_refusal("iterations", exc)
+
+
+def math_lint(
+    source: str,
+    path: str = "snippet.py",
+    select: "list[str] | None" = None,
+    execute: bool = False,
+    budget: float = 30.0,
+) -> CheckResult:
+    """Lint the math in Python source: precision loss, overflow, float money, ^ as power, == on floats, range off by one.
+
+    Every finding (result.findings) carries a witness — an input that was executed and
+    the exact value it should give — and a proved fix where one exists. select e.g.
+    ["PCM4", "PCM502"]. execute False (default): the code is only read; a :math: spec
+    whose refutation needs running the function is reported as PCM302 (no verdict).
+    True: such functions run in an isolated worker.
+    """
+    try:
+        total = _tool_budget(budget)
+        if not isinstance(source, str) or len(source) > MAX_LINT_SOURCE:
+            raise DomainError(f"math_lint: source must be text of at most {MAX_LINT_SOURCE} characters")
+        return _outcome(full.lint_outcome(source, path, select=list(select) if select else None,
+                                          execute=bool(execute), budget=total))
+    except Exception as exc:  # the agent gets DATA, not a traceback
+        return _check_refusal("lint", exc)
+
+
+#: Largest source math_lint reads (characters) — about 4 000 lines.
+MAX_LINT_SOURCE = 200_000
+
+
+#: Largest certificate text math_recheck reads (characters).
+MAX_CERTIFICATE_TEXT = 200_000
+
+
+def math_recheck(certificate: str, budget: "float | None" = None, execute: bool = False) -> CheckResult:
+    """Re-run a certificate (the JSON any tool returned in "certificate") from the record alone.
+
+    status verified = REPRODUCED (same verdict, digest intact, claim parses the same);
+    refuted = MISMATCH, the reasons in text and result.problems. A code_equiv
+    certificate whose function was executed needs execute=true to be re-run.
+    """
+    from ..verify.certificate import Certificate, recheck
+
+    try:
+        if not isinstance(certificate, str) or len(certificate) > MAX_CERTIFICATE_TEXT:
+            raise DomainError(f"certificate: expected JSON text of at most {MAX_CERTIFICATE_TEXT} characters")
+        cert = Certificate.from_json(certificate)
+        if cert.kind in _EXECUTING_KINDS and cert.claim["options"].get("execute") and not execute:
+            raise DomainError("certificate: re-checking it RUNS the recorded function — pass "
+                              "execute=true if you trust the source")
+        with full.NUMERIC_LOCK:
+            r = recheck(cert, budget=None if budget is None else _tool_budget(budget))
+        payload = {"ok": r.ok, "digest_ok": r.digest_ok, "claim_ok": r.claim_ok,
+                   "reproduced": r.reproduced, "verdict": r.verdict,
+                   "problems": list(r.problems), "notes": list(r.notes)}
+        status = "verified" if r.ok else "refuted"
+        return {"text": r.text(), "kind": cert.kind, "status": status, "result": payload,
+                "certificate": cert.to_dict(), "error": None}
+    except Exception as exc:  # the agent gets DATA, not a traceback
+        return _check_refusal("recheck", exc)
+
+
+#: The tools, in the order a client lists them.
+TOOLS = (math_eval, math_verify, math_check_code, math_stability, math_ranges, math_recheck,
+         math_iterations, math_lint)
+
 server: "FastMCP | None" = None
 if FastMCP is not None:
     server = FastMCP("pycodemath")
-    server.tool()(math_eval)
-    server.tool()(math_verify)
+    for _tool in TOOLS:
+        server.tool()(_tool)
 
 
 def run() -> None:
@@ -620,6 +963,8 @@ def run() -> None:
             "error: the MCP server requires the 'mcp' package "
             "(install: pip install pycodemath[mcp])."
         )
+    # SymPy's deprecation warnings went to the server's stderr (K1, N(pi, 50)).
+    warnings.filterwarnings("ignore", category=SymPyDeprecationWarning)
     server.run()
 
 
