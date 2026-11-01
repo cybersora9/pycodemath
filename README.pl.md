@@ -1,18 +1,61 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/pycodemath-lockup.svg">
-    <img alt="pycodemath" src="assets/pycodemath-lockup-light.svg" width="420">
-  </picture>
+  <img alt="pycodemath" src="assets/pycodemath-lockup-light.svg#gh-light-mode-only" width="420">
+  <img alt="pycodemath" src="assets/pycodemath-lockup.svg#gh-dark-mode-only" width="420">
 </p>
 
-**Twój kod wygląda dobrze. A matematyka?** Pycodemath sprawdza funkcje wobec ich
-wzorów i zwraca albo dowód, albo konkretne wejście, które je psuje. Bez
-zgadywania, bez losowych próbek. Do tego dokładny silnik matematyczny i serwer
-MCP dla agentów AI: zapisujesz matematykę w kilku znakach, a dostajesz dokładny
-wynik albo samodzielny, zoptymalizowany kod Python/NumPy — zamiast prosić model
-językowy, żeby „policzył w pamięci" albo ręcznie pisał pętle numeryczne.
+<p align="center">
+  <strong>Twój kod wygląda dobrze. A matematyka?</strong>
+</p>
+
+**Pycodemath sprawdza matematykę w twoim kodzie Pythona.** Podajesz funkcję i
+wzór, który ma liczyć. Dostajesz dowód, że się zgadzają, albo dokładne wejście,
+które funkcję psuje. Bez zgadywania, bez losowych próbek.
+
+```bash
+pip install pycodemath
+```
+
+```python
+# example.py
+from pycodemath import check_code
+
+SRC = '''
+def sum_to(n: int) -> int:      # ma zwracać 0 + 1 + ... + n
+    total = 0
+    for k in range(n):          # błąd o jeden: kończy na n-1
+        total += k
+    return total
+'''
+
+if __name__ == "__main__":      # wymagane na Windowsie: funkcja działa w osobnym procesie
+    r = check_code(SRC, "n*(n+1)/2")
+    print(r.verdict)               # refuted
+    print(r.counterexample.call)   # sum_to(n=1)
+    print(r.reason)                # sum_to(n=1) returns 0, the formula gives 1 ...
+```
+
+`REFUTED` zawsze niesie konkretne wejście, które naprawdę wykonano (*świadek*).
+`VERIFIED` to dowód. Wszystko inne to `UNDECIDED` z powodem. Popraw pętlę na
+`range(n + 1)`, powiedz, że `n` to nieujemna liczba całkowita
+(`domain={"n": "integer, n>=0"}`), a to samo wywołanie zwróci `VERIFIED`.
+
+Pycodemath to też dokładny silnik matematyczny i serwer MCP dla agentów AI
+(SymPy + NumPy): zapisujesz matematykę w kilku znakach, a dostajesz dokładny
+wynik albo samodzielny, zoptymalizowany kod Python/NumPy, zamiast prosić model
+językowy, żeby „policzył w pamięci".
 
 *English version of this document: [README.md](README.md).*
+
+**Spis treści:**
+[Sprawdź matematykę w swoim kodzie](#sprawdź-matematykę-w-swoim-kodzie) ·
+[Instalacja](#instalacja) ·
+[Szybki start](#szybki-start) ·
+[Weryfikacja](#weryfikacja-sprawdź-zamiast-policz) ·
+[Wyniki, po których można się rozgałęzić](#wyniki-po-których-można-się-rozgałęzić) ·
+[Generowanie kodu](#generowanie-kodu) ·
+[Kontrakty projektowe](#kontrakty-projektowe)
+
+## Co to robi
 
 Cienka, zdyscyplinowana warstwa nad SymPy + NumPy:
 

@@ -1,8 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/pycodemath-lockup.svg">
-    <img alt="pycodemath" src="assets/pycodemath-lockup-light.svg" width="420">
-  </picture>
+  <img alt="pycodemath" src="assets/pycodemath-lockup-light.svg#gh-light-mode-only" width="420">
+  <img alt="pycodemath" src="assets/pycodemath-lockup.svg#gh-dark-mode-only" width="420">
 </p>
 
 <p align="center">
