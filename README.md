@@ -18,14 +18,55 @@
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
 
-Pycodemath checks functions against
-their formulas and returns either a proof or a concrete input that breaks them.
-No guessing, no random samples. Also an exact math engine and MCP server for AI
-agents: write math in a few characters, get an exact answer or standalone,
-optimized Python/NumPy code back — instead of asking a language model to "do
-arithmetic in its head" or to hand-write numerical loops.
+**Pycodemath checks the math in your Python code.** Give it a function and the
+formula it should compute. You get a proof that they match, or the exact input
+that breaks the function. No guessing, no random samples.
+
+```bash
+pip install pycodemath
+```
+
+```python
+# example.py
+from pycodemath import check_code
+
+SRC = '''
+def sum_to(n: int) -> int:      # should return 0 + 1 + ... + n
+    total = 0
+    for k in range(n):          # off by one: stops at n-1
+        total += k
+    return total
+'''
+
+if __name__ == "__main__":      # needed on Windows: your function runs in a worker process
+    r = check_code(SRC, "n*(n+1)/2")
+    print(r.verdict)               # refuted
+    print(r.counterexample.call)   # sum_to(n=1)
+    print(r.reason)                # sum_to(n=1) returns 0, the formula gives 1 ...
+```
+
+`REFUTED` always comes with a concrete input that was really executed (the
+*witness*). `VERIFIED` is a proof. Anything else is `UNDECIDED`, with a reason.
+Fix the loop to `range(n + 1)`, tell it `n` is a non-negative integer
+(`domain={"n": "integer, n>=0"}`), and the same call comes back `VERIFIED`.
+
+Pycodemath is also an exact math engine and an MCP server for AI agents
+(SymPy + NumPy): write math in a few characters, get an exact answer or
+standalone, optimized Python/NumPy code back, instead of asking a language model
+to "do arithmetic in its head".
 
 *Polska wersja tego dokumentu: [README.pl.md](README.pl.md).*
+
+**Contents:**
+[Check the math in your code](#check-the-math-in-your-code) ·
+[Install](#install) ·
+[Quick start](#quick-start) ·
+[Verify](#verify-check-instead-of-compute) ·
+[Results you can branch on](#results-you-can-branch-on) ·
+[Code generation](#code-generation) ·
+[Design contracts](#design-contracts)
+
+## What it does
 
 Built as a thin, disciplined layer over SymPy + NumPy:
 
