@@ -1,6 +1,5 @@
 <p align="center">
-  <img alt="pycodemath" src="assets/pycodemath-lockup-light.svg#gh-light-mode-only" width="420">
-  <img alt="pycodemath" src="assets/pycodemath-lockup.svg#gh-dark-mode-only" width="420">
+  <img alt="pycodemath" src="assets/pycodemath-lockup.svg" width="420">
 </p>
 
 <p align="center">
