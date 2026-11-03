@@ -251,6 +251,78 @@ def series(
     return Expr(res)
 
 
+#: Largest power of k (and lower bound) the binomial-moment rule takes on: the
+#: Stirling sum has m+1 terms, and the self-check evaluates m+2 brute-force sums.
+_BINOMIAL_MOMENT_MAX = 60
+
+
+def _binomial_moment_sum(e: sp.Expr, k: sp.Symbol, a: sp.Basic, b: sp.Basic) -> "sp.Expr | None":
+    """``sum_{k=a}^{N} p(k) * binomial(N, k)`` for a polynomial ``p``, exactly (0.5.1).
+
+    SymPy has no closed form for ``k^3*binomial(n,k)``. Writing ``p(k) =
+    sum_m c_m k^m`` and ``k^m = sum_j S(m,j) k^(j)`` (falling factorials,
+    ``S`` the Stirling numbers of the second kind), every term is the textbook
+    ``sum_k binomial(N,k) k^(j) = N^(j) 2^(N-j)`` (the j-th derivative of
+    ``(1+x)^N`` at ``x = 1``), so
+
+        sum_k k^m binomial(N, k) = sum_j S(m, j) N!/(N-j)! 2^(N-j).
+
+    That derivation is the proof. Before returning, the polynomial part ``Q(N) =
+    2^(d-N) * sum_{k=0}^{N} p(k) C(N,k)`` (degree <= ``deg``) is also checked
+    against the brute-force sum at ``N = 0 .. deg + 1``: given the identity's
+    form (2^N times a polynomial of degree <= deg) that is deg + 2 points, more
+    than enough to fix the polynomial, so a slip in the coefficients cannot pass.
+    A mismatch returns ``None`` (the caller then says "no closed form"), never a
+    wrong answer. A lower bound ``a > 0`` subtracts the ``a`` terms below it
+    (valid for ``N >= a - 1``). ``None`` for any other shape: exactly one
+    ``binomial(N, k)`` factor whose top is the upper bound, a polynomial cofactor
+    in ``k``, a non-negative integer lower bound.
+    """
+    if not (isinstance(a, sp.Integer) and 0 <= a <= _BINOMIAL_MOMENT_MAX) or b.has(k):
+        return None
+    binoms = [t for t in e.atoms(sp.binomial) if t.has(k)]
+    if len(binoms) != 1 or binoms[0].args != (b, k):
+        return None
+    B, N = binoms[0], b
+    cofactor = sp.cancel(e / B)
+    if cofactor.has(sp.binomial):
+        return None
+    try:
+        P = sp.Poly(cofactor, k)
+    except (sp.PolynomialError, sp.GeneratorsNeeded):
+        return None
+    if P.degree() > _BINOMIAL_MOMENT_MAX or any(c.has(k) for c in P.coeffs()):
+        return None
+    d = max(P.degree(), 0)
+    stirling2 = sp.functions.combinatorial.numbers.stirling
+    # Q(N) = 2^(d-N) * sum_{k=0}^{N} p(k) C(N, k): a polynomial in N.
+    Q = sp.Integer(0)
+    for (m,), c in P.terms():
+        Q += c * sum((stirling2(m, j) * sp.expand_func(sp.ff(N, j)) * 2 ** (d - j)
+                      for j in range(m + 1)), sp.Integer(0))
+    Q = sp.factor(sp.expand(Q))
+    head = [sp.expand_func(e.subs(k, i)) for i in range(int(a))]
+    closed = Q * 2 ** (N - d) - sum(head, sp.Integer(0))
+    # The self-check (see above): Q against brute force at deg + 2 values of N,
+    # when N is one symbol. ``deg`` bounds the degree in N of Q: d plus that of the
+    # coefficients of p.
+    free = N.free_symbols
+    if len(free) == 1:
+        (n,) = free
+        if N != n:
+            return None
+        if not all(c.is_polynomial(n) for c in P.coeffs()):
+            return None
+        deg = d + max(sp.degree(c, n) if c.has(n) else 0 for c in P.coeffs())
+        for v in range(deg + 2):
+            brute = sum((e.subs({n: v, k: i}) for i in range(v + 1)), sp.Integer(0))
+            if sp.expand(Q.subs(n, v) * 2 ** (v - d) - sp.expand_func(brute)) != 0:
+                return None
+    elif free:
+        return None
+    return closed
+
+
 @under_budget("summation")
 def summation(
     expr: Expr,
@@ -280,6 +352,9 @@ def summation(
     # try. The message keeps saying so; module 10 made the ABSENCE readable as
     # data (``route is None``) rather than only as English.
     if res.has(sp.Sum):
+        rule = _binomial_moment_sum(expr.sy, sym, a, b)
+        if rule is not None:
+            return Expr(rule)
         raise NoClosedFormError(
             "summation: no closed form — try finite bounds "
             "(partial sum) or compute numerically"
