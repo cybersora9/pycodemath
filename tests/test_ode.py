@@ -33,7 +33,10 @@ def test_dsolve_no_closed_form_suggests_numeric():
     # y' = y^y ma tylko rozwiązanie uwikłane — dsolve odsyła do numeryki
     with pytest.raises(PycodemathError) as ei:
         ode.dsolve(parse("y^y"), "y", "t")
-    assert "solve_ode_num" in str(ei.value)
+    # 0.5.1: the hint names the CLI command (as solve names root), not the
+    # Python function — the message is read in the REPL and by agents over MCP
+    assert "ode <expr> for y(t) from <t0> to <t1> at <y0>" in str(ei.value)
+    assert ei.value.route == "ode"
 
 
 def test_dsolve_rejects_same_names():
