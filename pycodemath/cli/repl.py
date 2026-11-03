@@ -191,6 +191,14 @@ GEOMETRY:
                              multi-letter name as ONE variable (speed*time);
                              on splits it into letters (2xy = 2*x*y). One-shot:
                              python -m pycodemath --implicit "<command>"
+  intro [--static] [--no-logo] [--lang pl] [--once]
+                           — the presentation: the logo, one live demo, what it
+                             can do (--once: only the first time in a session)
+  commands                 — every command, grouped by topic, one line each
+  help <topic>             — the help of one topic: solve, calculus, verify, code,
+                             numbers, money, units, geometry, ode, stats, start
+  examples <topic>         — 3-5 runnable examples of a topic
+  tour                     — five short live demos (Enter = next, q = quit)
   help                     — help
   quit / exit              — exit
 
@@ -1682,6 +1690,10 @@ def run() -> None:
         print(answer.text)
         result = answer.outcome.result if answer.outcome is not None else None
         raise SystemExit(int((result or {}).get("exit_code", 2)))
+    from . import discover  # intro / commands / help <topic> / examples / tour
+
+    if args and discover.handles(args):
+        raise SystemExit(discover.main(args))
     if args:
         try:
             out = handle(" ".join(args))
@@ -1692,7 +1704,9 @@ def run() -> None:
             print(out)
         return
 
-    print(BANNER)
+    from .intro import repl_banner
+
+    print(repl_banner())
     while True:
         try:
             line = input("pcm> ")
@@ -1704,6 +1718,14 @@ def run() -> None:
         setting = _implicit_setting(line)
         if setting is not None:
             print(setting)
+            continue
+        if discover.handles([line]):
+            try:
+                discover.main([line])
+            except KeyboardInterrupt:
+                print()
+            except Exception as exc:  # in the REPL an error must not kill the session
+                print(f"error: {exc}")
             continue
         try:
             line = _read_steps(line, input)

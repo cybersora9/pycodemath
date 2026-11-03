@@ -10,7 +10,7 @@
   <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11 to 3.14" src="https://img.shields.io/badge/python-3.11%20to%203.14-3776ab.svg">
-  <img alt="2914 tests passing" src="https://img.shields.io/badge/tests-2914%20passing-2ea043.svg">
+  <img alt="3025 tests passing" src="https://img.shields.io/badge/tests-3025%20passing-2ea043.svg">
   <img alt="mypy: clean" src="https://img.shields.io/badge/mypy-clean-2ea043.svg">
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -57,6 +57,7 @@ to "do arithmetic in its head".
 **Contents:**
 [Check the math in your code](#check-the-math-in-your-code) ·
 [Install](#install) ·
+[First run](#first-run) ·
 [Quick start](#quick-start) ·
 [Verify](#verify-check-instead-of-compute) ·
 [Results you can branch on](#results-you-can-branch-on) ·
@@ -437,6 +438,48 @@ pip install -e .[dev]             # + pytest
 Requires Python ≥ 3.11. The package ships a `py.typed` marker, so everything
 below is fully typed for an installed caller — including the overloads that
 make `full_result=True` change the return type. No `cast()` anywhere.
+
+## First run
+
+```bash
+pycodemath intro
+```
+
+<p align="center">
+  <img alt="pycodemath intro: the logo, a live demo that finds and proves an off-by-one bug, and a map of what the tool does" src="assets/intro.svg" width="680">
+</p>
+
+A short presentation: the logo, one live demo (a loop is read as a formula,
+REFUTED with the call that really ran, fixed, then VERIFIED; every number comes
+from the engine as you watch) and a map of what it can do, each area with a
+command to paste. It animates only on a terminal; piped, or with `--static` or
+`PYCODEMATH_NO_ANIM=1`, it prints the final screen. `NO_COLOR` is respected.
+Flags: `--static`, `--no-logo`, `--lang pl`, `--once`.
+
+Then find your way with:
+
+```bash
+pycodemath commands           # every command, by topic, one line each
+pycodemath help money         # the help of one topic (solve, calculus, verify, code,
+                              #   numbers, money, units, geometry, ode, stats)
+pycodemath examples money     # 3-5 runnable examples of a topic
+pycodemath tour               # five short live demos, Enter = next, q = quit
+```
+
+**For agents.** `pycodemath intro --once` shows the intro the first time it is
+called in a session and prints nothing (exit 0) after that. A session is, in
+order: `PYCODEMATH_SESSION` if you set it, the Claude Code session
+(`CLAUDE_CODE_SESSION_ID`), the terminal's own id (`TERM_SESSION_ID`,
+`WT_SESSION`, tmux pane, ...), else the shell's process session plus the boot
+time. The marker lives in the user cache directory (`PYCODEMATH_CACHE_DIR` to
+move it). Over MCP the same map comes from the `intro` tool, as plain text and
+data. One-shot commands (`pycodemath "solve ..."`) never print a banner, so
+their output stays clean for scripts; only the interactive REPL greets you,
+in three lines.
+
+The SVG is recorded from the real command by `scripts/record_intro_svg.py`; the
+terminal logo is rasterized from `assets/pycodemath-sygnet.svg` by
+`scripts/gen_logo.py`.
 
 ## Quick start
 
@@ -1309,7 +1352,7 @@ Event detection from the API:
   access are rejected outright, and evaluation cost is bounded so a single
   expression (e.g. `9**9**9`) can't exhaust memory.
 - Tests measure real numbers first, then assert them with a margin —
-  **2914 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+  **3025 tests**, all green, on Ubuntu and Windows (CI + mypy included).
   Every example in this file is one of them: they are extracted and executed
   by `tests/test_docs.py`.
 
