@@ -1223,8 +1223,8 @@ $ python -m pycodemath "sum k^3*binomial(n,k) for k from 0 to n"
 2**(n - 3)*n**2*(n + 3)
 ```
 
-`sum_k p(k)·binomial(n, k)` for a polynomial `p` (where SymPy finds no closed
-form) is proved by Stirling numbers of the second kind: `k^m = Σ_j S(m,j)·k(k-1)…(k-j+1)`
+`sum_k p(k)·binomial(n, k)` for a polynomial `p` (SymPy finds no closed form
+for most of these, and spends minutes on some) is proved by Stirling numbers of the second kind: `k^m = Σ_j S(m,j)·k(k-1)…(k-j+1)`
 and `Σ_k binomial(n,k)·k(k-1)…(k-j+1) = n!/(n-j)!·2^(n-j)` (the j-th derivative of
 `(1+x)^n` at 1); the result is checked against the brute-force sum before it is
 returned.
