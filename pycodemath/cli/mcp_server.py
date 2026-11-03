@@ -395,8 +395,10 @@ def math_eval(command: str) -> MathResult:
       dims m*v^2/2 where m:kg v:m/s
       MONEY (exact decimals, ISO 4217 minor units): money round 2.675 PLN [mode half_even] [step 0.05];
       money split 100 PLN into 3 | by 1:2:3; money vat 0.01,0.01,0.01 at 23% PLN;
-      money float round(x*1.23, 2) for x in 0.01..50.00 currency PLN; money loan 300000 PLN at 7.2% for 360 months;
-      money interest 1000 PLN at 5% for 12 months; money npv 10% -100,39,59; money irr -100,230,-132
+      money float round(x*1.23, 2) for x in 0.01..50.00 currency PLN; money loan 300000 PLN at 7.2% for 25 years
+      (a duration, paid monthly: 300 instalments; add "yearly" for one instalment a year);
+      money interest 1000 PLN at 5% for 12 months (compounded once per month/year/period);
+      money npv 10% -100,39,59; money irr -100,230,-132
       GEOMETRY: quat2mat w x y z [order xyzw] [algebra jpl] [normalize]; euler2mat a b c seq zyx frame intrinsic [deg];
       mat2euler [[..],[..],[..]] seq zyx frame intrinsic [deg]; rotcheck q1*q2 == R2@R1;
       orient2d ax,ay bx,by cx,cy; orient3d; incircle; segment p1 p2 q1 q2; easing ease 0.5;
