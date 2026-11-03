@@ -2,13 +2,15 @@
 
 Four colours and nothing else (no glow, no shadow, no other hues):
 
-    ink  #0e0e12   the panel the logo is drawn on
-    krew #e11d33   accent: the mark, headings, step numbers, the VERIFIED badge
+    krew #e11d33   the mark (integral, cursor), the header box, headings, step numbers
     hot  #ff3a52   REFUTED
-    kosc #f6f2f3   light strokes and text, only ever on ink or krew
+    kosc #f6f2f3   the mark's chevron, VERIFIED, ``py``/``math`` of the name
+    gray #8a8a94   secondary text: the version, the byline
+    ink  #0e0e12   the background of the recorded SVG only
 
-``kosc`` is never used on the terminal's own background: it would vanish on a
-light theme. Plain text keeps the terminal's default colour.
+The mark has a transparent background (owner decision, PR #2): a cell is
+coloured only where the shape is. Plain text keeps the terminal's default
+colour.
 
 Colour depth, decided once per stream (``color_mode``):
 
@@ -31,6 +33,7 @@ PALETTE: dict[str, tuple[int, int, int]] = {
     "krew": (0xE1, 0x1D, 0x33),
     "hot": (0xFF, 0x3A, 0x52),
     "kosc": (0xF6, 0xF2, 0xF3),
+    "gray": (0x8A, 0x8A, 0x94),
 }
 
 
@@ -116,37 +119,46 @@ class Style:
         return self.paint(text, fg="hot", bold=True)
 
     def verified(self, text: str) -> str:
-        return self.paint(f" {text} ", fg="kosc", bg="krew", bold=True) if self.color else text
+        return self.paint(text, fg="kosc", bold=True)
+
+    def dim(self, text: str) -> str:
+        return self.paint(text, fg="gray")
 
 
 def logo_rows(grid: "tuple[str, ...]", style: Style) -> list[str]:
     """Half-block rows of a pixel grid from ``_logo`` (``.``/``r``/``k``).
 
-    In colour the mark sits on an ink panel one column wider on each side, so
-    its light stroke reads on any terminal theme; in mono the shapes alone.
+    Transparent: per cell with top pixel ``t`` and bottom pixel ``b`` —
+    both empty: a space; only ``t``: ``▀`` in t's colour; only ``b``: ``▄``
+    in b's colour; both the same colour: ``█``; different: ``▀`` with t as the
+    foreground and b as the background. Mono draws the same glyphs without
+    a single escape.
     """
-    names = {"r": "krew", "k": "kosc", ".": "ink"}
+    names = {"r": "krew", "k": "kosc"}
     rows = []
     for top, bottom in zip(grid[0::2], grid[1::2]):
-        if not style.color:
-            rows.append("".join(
-                " ▀▄█"[(t != ".") + 2 * (b != ".")] for t, b in zip(top, bottom)))
-            continue
-        # runs of one (glyph, fg, bg) share one escape sequence
-        runs: list[list] = []
-        for t, b in zip("." + top + ".", "." + bottom + "."):
-            key = (" ", None, "ink") if t == "." and b == "." else ("▀", names[t], names[b])
+        runs: list[list] = []  # cells of one (glyph, fg, bg) share one escape
+        for t, b in zip(top, bottom):
+            if t == "." and b == ".":
+                key: tuple = (" ", None, None)
+            elif b == ".":
+                key = ("▀", names[t], None)
+            elif t == ".":
+                key = ("▄", names[b], None)
+            elif t == b:
+                key = ("█", names[t], None)
+            else:
+                key = ("▀", names[t], names[b])
             if runs and runs[-1][0] == key:
                 runs[-1][1] += 1
             else:
                 runs.append([key, 1])
-        cells = [style.paint(glyph * n, fg=fg, bg=bg) for (glyph, fg, bg), n in runs]
-        rows.append("".join(cells))
+        rows.append("".join(style.paint(glyph * n, fg=fg, bg=bg) for (glyph, fg, bg), n in runs))
     return rows
 
 
-def logo_width(grid: "tuple[str, ...]", style: Style) -> int:
-    return len(grid[0]) + (2 if style.color else 0)
+def logo_width(grid: "tuple[str, ...]") -> int:
+    return len(grid[0])
 
 
 def visible_len(text: str) -> int:

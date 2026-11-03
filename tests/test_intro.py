@@ -6,11 +6,12 @@ What is pinned here, and why:
 * a one-shot command NEVER prints a banner (stdout of ``pycodemath "<cmd>"`` is
   the answer and nothing else — scripts and agents parse it);
 * not a TTY / ``NO_COLOR`` -> not one escape byte, no animation;
-* the intro's final frame fits 80 columns and ~25 lines, and every number in
-  its demo comes from the engine at run time (the engine is replaced and the
-  screen must change);
+* the intro's final frame fits 80 columns and ~34 lines, and every number in
+  its demo and its header comes from the engine / the command tables at run
+  time (they are replaced and the screen must change);
 * every listed example really runs (exit code 0, no usage message);
-* ``--once`` shows, then stays silent, per session key.
+* the intro plays by itself once per installed version, on a TTY only, before
+  the command's own unchanged output; ``--once`` follows the same marker.
 """
 
 from __future__ import annotations
@@ -61,9 +62,9 @@ def _words(lines: list[str]) -> list[str]:
     return [" ".join(re.sub("[▀▄█]", " ", x).split()) for x in lines]
 
 
-def _static(lang: str = "en", logo: bool = True) -> str:
+def _static(logo: bool = True) -> str:
     buf = io.StringIO()
-    intro.show(buf, static=True, lang=lang, logo=logo, env={})
+    intro.show(buf, static=True, logo=logo, env={})
     return buf.getvalue()
 
 
@@ -79,17 +80,65 @@ def _run(argv: list[str], monkeypatch: pytest.MonkeyPatch, capsys: pytest.Captur
 
 
 # --- intro: the final frame -----------------------------------------------------------
-@pytest.mark.parametrize("lang", ["en", "pl"])
 @pytest.mark.parametrize("logo", [True, False])
-def test_the_final_frame_fits_80_columns_and_25_lines(lang: str, logo: bool) -> None:
-    lines = _static(lang, logo).splitlines()
-    assert len(lines) <= 25, len(lines)
+def test_the_final_frame_fits_80_columns_and_34_lines(logo: bool) -> None:
+    lines = _static(logo).splitlines()
+    assert len(lines) <= 34, len(lines)
     for line in lines:
         assert len(line) <= 80, (len(line), line)
-    tty = FakeTTY()  # in colour the logo sits on a panel two columns wider
-    intro.show(tty, static=True, lang=lang, logo=logo, env={"COLORTERM": "truecolor"})
+    tty = FakeTTY()
+    intro.show(tty, static=True, logo=logo, env={"COLORTERM": "truecolor"})
     for line in tty.getvalue().splitlines():
         assert visible_len(line) <= 80, (visible_len(line), ANSI.sub("", line))
+
+
+def test_the_header_is_an_80_column_rounded_box_of_12_rows() -> None:
+    lines = _static().splitlines()
+    box = lines[:12]
+    assert box[0] == "╭" + "─" * 78 + "╮" and box[-1] == "╰" + "─" * 78 + "╯"
+    assert all(len(x) == 80 and x[0] == "│" and x[-1] == "│" for x in box[1:-1])
+    assert lines[12] == ""
+    from pycodemath.cli.term import logo_rows
+
+    logo = logo_rows(_logo.FULL, Style("mono"))
+    assert len(logo) == 10 and len(_logo.FULL[0]) == 36
+    for row, line in zip(logo, box[1:-1]):  # one space, the logo, two spaces, the text
+        assert line[1:38] == " " + row and line[38:40] == "  "
+    text = [x[40:-1].rstrip() for x in box[1:-1]]
+    n, m = intro.counts()
+    assert text == ["", "", f"pycodemath  v{__version__}", "Checks the math in your code.", "",
+                    f"{n} commands · {m} API functions", "by cybersora", "", "", ""]
+    assert "100+" not in _static()
+
+
+def test_the_box_is_krew_and_the_name_is_py_kosc_code_krew_math_kosc() -> None:
+    tty = FakeTTY()
+    intro.show(tty, static=True, env={"COLORTERM": "truecolor"})
+    raw = tty.getvalue()
+    krew, kosc, gray = (";".join(map(str, PALETTE[c])) for c in ("krew", "kosc", "gray"))
+    assert raw.startswith(f"\x1b[38;2;{krew}m╭")
+    assert (f"\x1b[1;38;2;{kosc}mpy\x1b[0m\x1b[1;38;2;{krew}mcode\x1b[0m"
+            f"\x1b[1;38;2;{kosc}mmath\x1b[0m  \x1b[38;2;{gray}mv{__version__}\x1b[0m") in raw
+    assert f"\x1b[38;2;{gray}mby cybersora\x1b[0m" in raw
+    assert "48;2;" + ";".join(map(str, PALETTE["ink"])) not in raw  # no ink panel any more
+
+
+def test_the_header_counts_come_from_the_command_tables_and_the_api(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    import pycodemath
+    from pycodemath.cli import full
+
+    real = intro.counts()
+    import inspect
+
+    assert real == (len(set(repl._COMMANDS) | set(full.COMMANDS)),
+                    sum(inspect.isfunction(getattr(pycodemath, n)) for n in pycodemath.__all__))
+    # the union, not the sum: a name in both tables counts once
+    monkeypatch.setattr(repl, "_COMMANDS", {"a": None, "b": None, "shared": None})
+    monkeypatch.setattr(full, "COMMANDS", {"shared": None, "c": None})
+    monkeypatch.setattr(pycodemath, "__all__", ["parse", "check_code", "Expr", "__version__"])
+    assert intro.counts() == (4, 2)  # parse and check_code are functions; Expr, __version__ not
+    assert "4 commands · 2 API functions" in _static()
 
 
 def test_the_final_frame_has_logo_tagline_demo_map_and_next_steps() -> None:
@@ -99,11 +148,11 @@ def test_the_final_frame_has_logo_tagline_demo_map_and_next_steps() -> None:
 
     for row in logo_rows(_logo.FULL, mono_logo):
         assert row.rstrip() in text
-    assert f"pycodemath {__version__}" in text
-    assert intro.STRINGS["en"]["tagline"] in text
+    assert f"pycodemath  v{__version__}" in text
+    assert "Checks the math in your code." == intro.S["tagline"] and intro.S["tagline"] in text
     assert "REFUTED" in text and "VERIFIED" in text
     assert "sum_to(n=1) returned 0, not 1" in text
-    for _topic, label, _pl, example in discover.MAP:
+    for _topic, label, example in discover.MAP:
         assert f'{label}' in text and f'pycodemath "{example}"' in text
     assert text.rstrip().endswith(
         "next: pycodemath commands · pycodemath examples <topic> · pycodemath tour")
@@ -125,7 +174,7 @@ def test_a_real_pipe_gets_the_static_frame_without_ansi() -> None:
                        text=True, encoding="utf-8", env=env, cwd=ROOT, timeout=120)
     assert p.returncode == 0, p.stderr
     assert "\x1b" not in p.stdout and "\r" not in p.stdout
-    assert "WHAT ELSE IT DOES" in p.stdout and f"pycodemath {__version__}" in p.stdout
+    assert "WHAT ELSE IT DOES" in p.stdout and f"pycodemath  v{__version__}" in p.stdout
 
 
 def test_no_color_on_a_tty_writes_no_colour() -> None:
@@ -176,10 +225,10 @@ def test_256_colour_fallback_maps_to_the_nearest_palette_entries() -> None:
     used = _sgr_colours(tty.getvalue())
     allowed = {("256", (nearest_256(rgb),)) for rgb in PALETTE.values()}
     assert used and used <= allowed
-    # the mapping really is nearest: krew is red, kosc is near-white, ink near-black
+    # the mapping really is nearest: krew is red, kosc is near-white, gray is grey
     assert nearest_256(PALETTE["krew"]) == 161
     assert nearest_256(PALETTE["kosc"]) in (255, 231)
-    assert nearest_256(PALETTE["ink"]) in (232, 233, 16)
+    assert nearest_256(PALETTE["gray"]) in range(244, 247)
 
 
 def test_the_text_on_screen_is_the_same_in_colour_and_mono() -> None:
@@ -249,52 +298,116 @@ def test_the_tour_numbers_come_from_the_engine(monkeypatch: pytest.MonkeyPatch) 
     assert "33.34" not in text
 
 
-# --- intro --once ---------------------------------------------------------------------------
-def test_once_shows_then_stays_silent_per_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
-                                                  capsys: pytest.CaptureFixture[str]) -> None:
+# --- once per installed version ------------------------------------------------------
+def _tty_run(argv: list[str], monkeypatch: pytest.MonkeyPatch) -> tuple[int, str]:
+    """``repl.run()`` with a TTY stdout (no animation, to keep it fast)."""
+    tty = FakeTTY()
+    monkeypatch.setattr(sys, "stdout", tty)
+    monkeypatch.setattr(sys, "argv", ["pycodemath", *argv])
+    monkeypatch.setenv("PYCODEMATH_NO_ANIM", "1")
+    monkeypatch.setenv("NO_COLOR", "1")  # compare with the mono frame
+    code = 0
+    try:
+        repl.run()
+    except SystemExit as exc:
+        code = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
+    return code, tty.getvalue()
+
+
+@pytest.fixture
+def cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("PYCODEMATH_CACHE_DIR", str(tmp_path))
-    monkeypatch.setenv("PYCODEMATH_SESSION", "session-a")
+    monkeypatch.delenv("PYCODEMATH_NO_INTRO", raising=False)
+    return tmp_path
+
+
+def test_first_tty_run_shows_the_intro_then_the_unchanged_answer(cache: Path,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    code, out = _tty_run(["2+2"], monkeypatch)
+    assert code == 0
+    assert out.startswith(_static()) and out == _static() + "\n" + "4\n"
+    assert (cache / "intro-shown").read_text().strip() == __version__
+
+
+def test_second_run_does_not_show_it(cache: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _tty_run(["2+2"], monkeypatch)
+    code, out = _tty_run(["diff x^2 dx"], monkeypatch)
+    assert (code, out) == (0, "2*x\n")
+
+
+def test_a_new_version_shows_it_again(cache: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (cache / "intro-shown").write_text("0.4.9\n")
+    code, out = _tty_run(["2+2"], monkeypatch)
+    assert "WHAT ELSE IT DOES" in out and out.endswith("\n4\n")
+    assert (cache / "intro-shown").read_text().strip() == __version__
+    assert _tty_run(["2+2"], monkeypatch) == (0, "4\n")
+
+
+def test_the_interactive_repl_on_a_first_run_gets_the_intro_then_its_banner(
+        cache: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("builtins.input", lambda prompt="": "quit")
+    code, out = _tty_run([], monkeypatch)
+    assert out.startswith(_static()) and f"pycodemath  v{__version__}" in out.splitlines()[31]
+
+
+def test_never_off_a_tty(cache: Path, monkeypatch: pytest.MonkeyPatch,
+                         capsys: pytest.CaptureFixture[str]) -> None:
+    assert _run(["2+2"], monkeypatch, capsys) == (0, "4\n", "")
+    assert not (cache / "intro-shown").exists()  # so a later TTY run still gets it
+    assert intro.first_run(io.StringIO()) is False
+
+
+def test_the_env_var_disables_it(cache: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYCODEMATH_NO_INTRO", "1")
+    assert _tty_run(["2+2"], monkeypatch) == (0, "4\n")
+    assert not (cache / "intro-shown").exists()
+
+
+def test_the_auto_intro_animates_on_a_real_tty(cache: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = []
+    monkeypatch.setattr(intro, "show", lambda out, **kw: calls.append(kw))
+    assert intro.first_run(FakeTTY(), env={"PYCODEMATH_CACHE_DIR": str(cache)}) is True
+    assert calls == [{"env": {"PYCODEMATH_CACHE_DIR": str(cache)}}]  # not static: it may animate
+
+
+def test_the_intro_command_on_a_first_run_is_shown_once_not_twice(
+        cache: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    code, out = _tty_run(["intro", "--static"], monkeypatch)
+    assert code == 0 and out.count("WHAT ELSE IT DOES") == 1
+    assert intro.seen() and _tty_run(["2+2"], monkeypatch) == (0, "4\n")
+
+
+def test_an_unwritable_cache_means_no_auto_intro_rather_than_one_every_run(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    blocker = tmp_path / "file"
+    blocker.write_text("")
+    monkeypatch.setenv("PYCODEMATH_CACHE_DIR", str(blocker / "sub"))
+    monkeypatch.delenv("PYCODEMATH_NO_INTRO", raising=False)
+    assert intro.mark_seen() is False  # no exception
+    assert _tty_run(["2+2"], monkeypatch) == (0, "4\n")
+
+
+def test_once_shows_only_if_this_version_was_not_shown_yet(cache: Path, monkeypatch: pytest.MonkeyPatch,
+                                                           capsys: pytest.CaptureFixture[str]) -> None:
     code, out, err = _run(["intro", "--once", "--static"], monkeypatch, capsys)
-    assert code == 0 and "WHAT ELSE IT DOES" in out
-    code, out, err = _run(["intro", "--once"], monkeypatch, capsys)
-    assert (code, out, err) == (0, "", "")
-    monkeypatch.setenv("PYCODEMATH_SESSION", "session-b")
+    assert code == 0 and "WHAT ELSE IT DOES" in out  # off a TTY too: an agent asked for it
+    assert _run(["intro", "--once"], monkeypatch, capsys) == (0, "", "")
+    (cache / "intro-shown").write_text("0.4.9\n")  # an upgrade
     code, out, _ = _run(["intro", "--once"], monkeypatch, capsys)
     assert code == 0 and "WHAT ELSE IT DOES" in out
     code, out, _ = _run(["intro"], monkeypatch, capsys)  # without --once: always
     assert "WHAT ELSE IT DOES" in out
+    monkeypatch.setenv("PYCODEMATH_NO_INTRO", "1")
+    (cache / "intro-shown").unlink()
+    assert _run(["intro", "--once"], monkeypatch, capsys) == (0, "", "")
 
 
-def test_once_markers_keyed_by_pid_expire(tmp_path: Path) -> None:
-    env = {"PYCODEMATH_CACHE_DIR": str(tmp_path)}
-    key, pid_based = intro.session_key(env)
-    assert pid_based and key.startswith(("sid:", "ppid:"))
-    assert not intro.seen_this_session(env)
-    intro.mark_seen(env)
-    assert intro.seen_this_session(env)
-    marker = next(tmp_path.glob("intro-*"))
-    old = time.time() - 25 * 3600
-    os.utime(marker, (old, old))
-    assert not intro.seen_this_session(env)
+def test_the_mcp_server_does_not_go_through_the_first_run_hook() -> None:
+    src = (ROOT / "pycodemath" / "cli" / "mcp_server.py").read_text(encoding="utf-8")
+    assert "first_run" not in src and "repl.run" not in src
 
 
-def test_session_key_order() -> None:
-    assert intro.session_key({"PYCODEMATH_SESSION": "x", "CLAUDE_CODE_SESSION_ID": "y"}) == ("explicit:x", False)
-    assert intro.session_key({"CLAUDE_CODE_SESSION_ID": "y", "WT_SESSION": "w"}) == ("claude-code:y", False)
-    assert intro.session_key({"TMUX": "/t", "TMUX_PANE": "%1", "WT_SESSION": "w"}) == ("tmux:/t:%1", False)
-    assert intro.session_key({"WT_SESSION": "w"}) == ("WT_SESSION:w", False)
-    assert intro.session_key({"TERM_SESSION_ID": "t"}) == ("TERM_SESSION_ID:t", False)
-
-
-def test_an_unwritable_cache_is_not_an_error(tmp_path: Path) -> None:
-    blocker = tmp_path / "file"
-    blocker.write_text("")
-    env = {"PYCODEMATH_CACHE_DIR": str(blocker / "sub"), "PYCODEMATH_SESSION": "z"}
-    intro.mark_seen(env)  # no exception
-    assert not intro.seen_this_session(env)
-
-
-@pytest.mark.parametrize("argv", [["intro", "--bogus"], ["intro", "--lang", "de"]])
+@pytest.mark.parametrize("argv", [["intro", "--bogus"], ["intro", "--lang", "pl"], ["tour", "--lang", "pl"]])
 def test_intro_refuses_unknown_flags(argv: list[str], monkeypatch: pytest.MonkeyPatch,
                                      capsys: pytest.CaptureFixture[str]) -> None:
     code, out, err = _run(argv, monkeypatch, capsys)
@@ -302,8 +415,8 @@ def test_intro_refuses_unknown_flags(argv: list[str], monkeypatch: pytest.Monkey
 
 
 def test_intro_as_one_quoted_argument(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    code, out, _ = _run(["intro --no-logo --lang pl"], monkeypatch, capsys)
-    assert code == 0 and "CO JESZCZE UMIE" in out and "▀" not in out
+    code, out, _ = _run(["intro --no-logo --static"], monkeypatch, capsys)
+    assert code == 0 and "WHAT ELSE IT DOES" in out and not re.search("[▀▄█]", out)
 
 
 # --- one-shot commands never print a banner (regression) -------------------------------
@@ -329,7 +442,7 @@ def test_the_interactive_repl_shows_the_three_line_banner() -> None:
     p = subprocess.run([sys.executable, "-m", "pycodemath"], input="2+2\nquit\n", capture_output=True,
                        text=True, encoding="utf-8", cwd=ROOT, timeout=120)
     lines = p.stdout.splitlines()
-    assert f"Pycodemath {__version__}" in lines[0]
+    assert lines[0].startswith("∫>_") and f"pycodemath  v{__version__}" in lines[0]
     assert "intro" in lines[1] and "commands" in lines[1] and "help <topic>" in lines[1]
     assert lines[3].startswith("pcm> 4")
     assert "\x1b" not in p.stdout
@@ -338,7 +451,8 @@ def test_the_interactive_repl_shows_the_three_line_banner() -> None:
 def test_repl_banner_is_three_lines_within_80_columns() -> None:
     for out in (io.StringIO(), FakeTTY()):
         banner = intro.repl_banner(out)
-        assert len(banner.splitlines()) == 3
+        assert ("\x1b" in banner) == isinstance(out, FakeTTY)
+        assert len((banner + "\n").splitlines()) == 3 and banner.endswith("\n")  # 2 + a blank
         assert all(visible_len(x) <= 80 for x in banner.splitlines())
         assert __version__ in banner
 
@@ -468,7 +582,7 @@ def test_mcp_intro_returns_plain_text_logo_and_map() -> None:
     assert set(r) == {"text", "logo", "version", "tagline", "areas", "next"}
     assert r["version"] == __version__
     assert r["logo"].splitlines()[0].strip() and "█" in r["logo"]
-    assert [a["example"] for a in r["areas"]] == [m[3] for m in discover.MAP]
+    assert [a["example"] for a in r["areas"]] == [m[2] for m in discover.MAP]
     assert all(a["commands"] for a in r["areas"])
     for line in r["text"].splitlines():
         assert len(line) <= 80
@@ -476,10 +590,26 @@ def test_mcp_intro_returns_plain_text_logo_and_map() -> None:
 
 # --- the logo is the SVG's -------------------------------------------------------------------
 def test_the_committed_logo_is_what_the_generator_makes_from_the_svg() -> None:
+    pytest.importorskip("PIL.Image", reason="the generator needs Pillow (dev only)")
     sys.path.insert(0, str(ROOT / "scripts"))
     try:
         import gen_logo
     finally:
         sys.path.remove(str(ROOT / "scripts"))
-    for name, (height, threshold) in gen_logo.SIZES.items():
-        assert tuple(gen_logo.rasterize(height, threshold)) == getattr(_logo, name.upper())
+    assert (gen_logo.COLS, gen_logo.STROKE) == (36, 12)  # the approved look
+    assert tuple(gen_logo.rasterize()) == _logo.FULL
+
+
+def test_the_logo_is_transparent_half_blocks() -> None:
+    from pycodemath.cli.term import logo_rows
+
+    grid = ("r.rk", ".rrr")  # only top, only bottom, same, different
+    krew, kosc = (";".join(map(str, PALETTE[c])) for c in ("krew", "kosc"))
+    assert logo_rows(grid, Style("mono")) == ["▀▄█▀"]
+    assert logo_rows(grid, Style("truecolor")) == [
+        f"\x1b[38;2;{krew}m▀\x1b[0m\x1b[38;2;{krew}m▄\x1b[0m\x1b[38;2;{krew}m█\x1b[0m"
+        f"\x1b[38;2;{kosc};48;2;{krew}m▀\x1b[0m"]
+    assert logo_rows(("..", ".."), Style("truecolor")) == ["  "]  # empty cells: no colour at all
+    colour = logo_rows(_logo.FULL, Style("truecolor"))
+    assert [ANSI.sub("", x) for x in colour] == logo_rows(_logo.FULL, Style("mono"))
+    assert _logo.FULL[0].strip(".") and _logo.FULL[-1].strip(".")  # trimmed

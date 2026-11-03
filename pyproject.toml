@@ -44,8 +44,9 @@ Changelog = "https://github.com/cybersora9/pycodemath/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 # jsonschema: L1's SARIF test validates against the OASIS schema; pyyaml: its
-# pre-commit hook file test (both skipped without them — I2, L1 §11)
-dev = ["pytest>=7", "mypy>=1.8", "hypothesis>=6.100", "jsonschema>=4", "pyyaml>=6"]
+# pre-commit hook file test (both skipped without them — I2, L1 §11); pillow:
+# scripts/gen_logo.py and its committed-art test (never a runtime dependency)
+dev = ["pytest>=7", "mypy>=1.8", "hypothesis>=6.100", "jsonschema>=4", "pyyaml>=6", "pillow>=10"]
 mcp = ["mcp>=1.0,<2.0"]
 # C3 (pycodemath.code.ranges): real bfloat16 and Z3 integer proofs; both optional
 ranges = ["ml_dtypes>=0.3", "z3-solver>=4.12"]

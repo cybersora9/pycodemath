@@ -191,9 +191,10 @@ GEOMETRY:
                              multi-letter name as ONE variable (speed*time);
                              on splits it into letters (2xy = 2*x*y). One-shot:
                              python -m pycodemath --implicit "<command>"
-  intro [--static] [--no-logo] [--lang pl] [--once]
+  intro [--static] [--no-logo] [--once]
                            — the presentation: the logo, one live demo, what it
-                             can do (--once: only the first time in a session)
+                             can do (shown by itself once per installed version;
+                             --once: only if not shown for this version yet)
   commands                 — every command, grouped by topic, one line each
   help <topic>             — the help of one topic: solve, calculus, verify, code,
                              numbers, money, units, geometry, ode, stats, start
@@ -1675,6 +1676,12 @@ def run() -> None:
     if args and args[0] == "--implicit":  # one-shot opt-in to name splitting
         set_strict(False)
         args = args[1:]
+    from . import discover, intro  # intro / commands / help <topic> / examples / tour
+
+    # Once per installed version, on a TTY only: the intro, then the command as usual.
+    # Never off a TTY (scripts, pipes, agents) — their stdout is the answer alone.
+    if not (args and discover.handles(args) and discover._words(args)[0].lower() == "intro"):
+        intro.first_run(sys.stdout)
     if args and args[0].split(None, 1)[0].lower() == "lint":
         # L1 (I2): ruff's exit codes for ``lint`` ONLY — 0 clean, 1 findings, 2 usage
         # or error; every other command keeps 0 = answered, 1 = refused. One quoted
@@ -1690,8 +1697,6 @@ def run() -> None:
         print(answer.text)
         result = answer.outcome.result if answer.outcome is not None else None
         raise SystemExit(int((result or {}).get("exit_code", 2)))
-    from . import discover  # intro / commands / help <topic> / examples / tour
-
     if args and discover.handles(args):
         raise SystemExit(discover.main(args))
     if args:
@@ -1704,9 +1709,7 @@ def run() -> None:
             print(out)
         return
 
-    from .intro import repl_banner
-
-    print(repl_banner())
+    print(intro.repl_banner())
     while True:
         try:
             line = input("pcm> ")

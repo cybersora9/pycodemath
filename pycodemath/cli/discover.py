@@ -133,20 +133,19 @@ TOPICS: dict[str, Topic] = {
     ),
 }
 
-#: The capability map of ``intro``: (topic, label en, label pl, example). The
-#: example is the topic's first one, so the test that runs every example
-#: covers the map too.
-MAP: tuple[tuple[str, str, str, str], ...] = tuple(
-    (topic, en, pl, TOPICS[topic].examples[0][1])
-    for topic, en, pl in (
-        ("solve", "Solve, with a proof", "Rozwiązuje, z dowodem"),
-        ("calculus", "Calculus and ODEs", "Analiza i równania różniczkowe"),
-        ("verify", "Check a claim or a derivation", "Sprawdza tezę albo wyprowadzenie"),
-        ("code", "Overflow and float error in code", "Przepełnienia i błędy float"),
-        ("numbers", "Exact numbers and statistics", "Dokładne liczby i statystyka"),
-        ("money", "Money to the cent", "Pieniądze co do grosza"),
-        ("units", "Units and dimensions", "Jednostki i wymiary"),
-        ("geometry", "Geometry and rotations", "Geometria i obroty"),
+#: The capability map of ``intro``: (topic, label, example). The example is the
+#: topic's first one, so the test that runs every example covers the map too.
+MAP: tuple[tuple[str, str, str], ...] = tuple(
+    (topic, label, TOPICS[topic].examples[0][1])
+    for topic, label in (
+        ("solve", "Solve, with a proof"),
+        ("calculus", "Calculus and ODEs"),
+        ("verify", "Check a claim or a derivation"),
+        ("code", "Overflow and float error in code"),
+        ("numbers", "Exact numbers and statistics"),
+        ("money", "Money to the cent"),
+        ("units", "Units and dimensions"),
+        ("geometry", "Geometry and rotations"),
     )
 )
 
@@ -302,7 +301,7 @@ def tour_demo_beats(demo: Demo, style: "Style") -> "list[Beat]":
 
 
 def tour(out: "IO[str] | None" = None, read: "Callable[[str], str] | None" = None,
-         lang: str = "en", static: bool = False) -> int:
+         static: bool = False) -> int:
     from .intro import demo_beats, play, should_animate
     from .term import Style, color_mode
 
@@ -311,7 +310,7 @@ def tour(out: "IO[str] | None" = None, read: "Callable[[str], str] | None" = Non
     animate = should_animate(out, static)
     interactive = animate and sys.stdin.isatty()
     read = input if read is None else read
-    demos: "list[Callable[[], list[Beat]]]" = [partial(demo_beats, style, lang, "  ")]
+    demos: "list[Callable[[], list[Beat]]]" = [partial(demo_beats, style, "  ")]
     demos += [partial(tour_demo_beats, d, style) for d in TOUR]
     total = len(demos)
     for n, make in enumerate(demos, 1):
@@ -361,16 +360,9 @@ def main(args: Sequence[str], out: "IO[str] | None" = None) -> int:
 
         return intro.main(rest, out)
     if cmd == "tour":
-        lang, static = "en", False
-        while rest:
-            a = rest.pop(0)
-            if a == "--static":
-                static = True
-            elif a == "--lang" and rest and rest[0].lower() in ("en", "pl"):
-                lang = rest.pop(0).lower()
-            else:
-                return _fail(out, "Usage: tour [--static] [--lang en|pl]")
-        return tour(out, lang=lang, static=static)
+        if any(a != "--static" for a in rest):
+            return _fail(out, "Usage: tour [--static]")
+        return tour(out, static=bool(rest))
     if cmd == "commands":
         if rest:
             return _fail(out, "Usage: commands")

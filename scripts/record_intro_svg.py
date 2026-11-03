@@ -1,6 +1,6 @@
 """Record ``pycodemath intro`` into an animated SVG (assets/intro.svg).
 
-    python scripts/record_intro_svg.py [--lang en|pl] [--out assets/intro.svg]
+    python scripts/record_intro_svg.py [--out assets/intro.svg]
 
 Reproducible: the intro runs for real (its numbers come from the engine) into
 a recording stream that claims to be a truecolor TTY, so the animation and its
@@ -9,9 +9,10 @@ written; the SVG shows it from that moment (CSS animation, plays once). With
 ``prefers-reduced-motion`` the SVG shows the final frame at once, the same rule
 the CLI follows. The spinner is not recorded, only the lines it resolves into.
 
-Half-block cells (the mark) are drawn as two rectangles, not as the ``▀``
-glyph, so the logo is exact whatever monospace font the viewer has. The page
-background is ink and default text is kosc — the closed palette, nothing else.
+Half-block cells (the mark) are drawn as rectangles, not as the ``▀▄█``
+glyphs, so the logo is exact whatever monospace font the viewer has; an empty
+half stays transparent, as in the terminal. The page background is ink and
+default text is kosc — the closed palette, nothing else.
 """
 
 from __future__ import annotations
@@ -104,9 +105,13 @@ def line_svg(row: int, line: str) -> str:
     text_runs: list[tuple[int, str, str, bool]] = []
     for col, (ch, fg, bg, bold) in enumerate(cells(line)):
         x = PAD + col * CW
-        if ch == "▀":
-            parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{CW + 0.2:.1f}" height="{LH / 2 + 0.2:.1f}" fill="{_hex(fg or "kosc")}"/>')
-            parts.append(f'<rect x="{x:.1f}" y="{y + LH / 2:.1f}" width="{CW + 0.2:.1f}" height="{LH / 2:.1f}" fill="{_hex(bg or "ink")}"/>')
+        if ch in "▀▄█":
+            top = fg if ch in "▀█" else bg
+            bottom = fg if ch in "▄█" else bg
+            if top:
+                parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{CW + 0.2:.1f}" height="{LH / 2 + 0.2:.1f}" fill="{_hex(top)}"/>')
+            if bottom:
+                parts.append(f'<rect x="{x:.1f}" y="{y + LH / 2:.1f}" width="{CW + 0.2:.1f}" height="{LH / 2:.1f}" fill="{_hex(bottom)}"/>')
             continue
         if bg:
             parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{CW + 0.2:.1f}" height="{LH:.1f}" fill="{_hex(bg)}"/>')
@@ -125,13 +130,13 @@ def line_svg(row: int, line: str) -> str:
     return "".join(parts)
 
 
-def render(lines: list[tuple[float, str]], lang: str) -> str:
+def render(lines: list[tuple[float, str]]) -> str:
     width = PAD * 2 + 80 * CW
     height = PAD * 2 + len(lines) * LH
     groups = []
     for row, (t, line) in enumerate(lines):
         groups.append(f'<g class="l" style="animation-delay:{t:.2f}s">{line_svg(row, line)}</g>')
-    title = "pycodemath intro" + ("" if lang == "en" else f" ({lang})")
+    title = "pycodemath intro"
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" height="{height:.0f}" '
         f'viewBox="0 0 {width:.0f} {height:.0f}" role="img" aria-label="{title}">\n'
@@ -151,14 +156,12 @@ def render(lines: list[tuple[float, str]], lang: str) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--lang", default="en", choices=sorted(intro.STRINGS))
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
-    out = Path(args.out) if args.out else ROOT / "assets" / (
-        "intro.svg" if args.lang == "en" else f"intro.{args.lang}.svg")
+    out = Path(args.out) if args.out else ROOT / "assets" / "intro.svg"
     rec = Recorder()
-    intro.show(rec, lang=args.lang, env={"COLORTERM": "truecolor", "TERM": "xterm-256color"})  # type: ignore[arg-type]
-    out.write_text(render(rec.lines, args.lang), encoding="utf-8")
+    intro.show(rec, env={"COLORTERM": "truecolor", "TERM": "xterm-256color"})  # type: ignore[arg-type]
+    out.write_text(render(rec.lines), encoding="utf-8")
     print(f"wrote {out.relative_to(ROOT)} ({len(rec.lines)} lines, {rec.lines[-1][0]:.1f} s)")
 
 

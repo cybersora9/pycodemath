@@ -441,12 +441,16 @@ make `full_result=True` change the return type. No `cast()` anywhere.
 
 ## First run
 
+The first time you run `pycodemath` in a terminal after installing or
+upgrading, it plays a short intro, then runs your command as usual. It shows
+once per installed version. Replay it any time:
+
 ```bash
 pycodemath intro
 ```
 
 <p align="center">
-  <img alt="pycodemath intro: the logo, a live demo that finds and proves an off-by-one bug, and a map of what the tool does" src="assets/intro.svg" width="680">
+  <img alt="pycodemath intro: the logo in a box with the tagline, a live demo that finds and proves an off-by-one bug, and a map of what the tool does" src="assets/intro.svg" width="680">
 </p>
 
 A short presentation: the logo, one live demo (a loop is read as a formula,
@@ -454,7 +458,12 @@ REFUTED with the call that really ran, fixed, then VERIFIED; every number comes
 from the engine as you watch) and a map of what it can do, each area with a
 command to paste. It animates only on a terminal; piped, or with `--static` or
 `PYCODEMATH_NO_ANIM=1`, it prints the final screen. `NO_COLOR` is respected.
-Flags: `--static`, `--no-logo`, `--lang pl`, `--once`.
+Flags: `--static`, `--no-logo`, `--once`.
+
+It never shows by itself when stdout is not a terminal (scripts, pipes, AI
+agents running a shell), never in the MCP server, and never with
+`PYCODEMATH_NO_INTRO=1`. The version it was shown for is kept in
+`intro-shown` in the user cache directory (`PYCODEMATH_CACHE_DIR` to move it).
 
 Then find your way with:
 
@@ -466,20 +475,16 @@ pycodemath examples money     # 3-5 runnable examples of a topic
 pycodemath tour               # five short live demos, Enter = next, q = quit
 ```
 
-**For agents.** `pycodemath intro --once` shows the intro the first time it is
-called in a session and prints nothing (exit 0) after that. A session is, in
-order: `PYCODEMATH_SESSION` if you set it, the Claude Code session
-(`CLAUDE_CODE_SESSION_ID`), the terminal's own id (`TERM_SESSION_ID`,
-`WT_SESSION`, tmux pane, ...), else the shell's process session plus the boot
-time. The marker lives in the user cache directory (`PYCODEMATH_CACHE_DIR` to
-move it). Over MCP the same map comes from the `intro` tool, as plain text and
-data. One-shot commands (`pycodemath "solve ..."`) never print a banner, so
-their output stays clean for scripts; only the interactive REPL greets you,
-in three lines.
+**For agents.** `pycodemath intro --once` shows the intro only if it has not
+been shown for the installed version on this machine yet, and prints nothing
+(exit 0) after that. Over MCP the same map comes from the `intro` tool, as
+plain text and data. One-shot commands (`pycodemath "solve ..."`) never print a
+banner off a terminal, so their output stays clean for scripts; only the
+interactive REPL greets you, in two lines.
 
 The SVG is recorded from the real command by `scripts/record_intro_svg.py`; the
 terminal logo is rasterized from `assets/pycodemath-sygnet.svg` by
-`scripts/gen_logo.py`.
+`scripts/gen_logo.py` (Pillow, offline; the package does not need it).
 
 ## Quick start
 

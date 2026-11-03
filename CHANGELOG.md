@@ -10,19 +10,25 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 
 ### Added
 - **First run and way-finding.** `pycodemath intro` (also `python -m
-  pycodemath intro` and `intro` in the REPL): the logo, rasterized from
-  `assets/pycodemath-sygnet.svg` into half-block text art by
-  `scripts/gen_logo.py`, a tagline, one live demo (an off-by-one loop read as a
+  pycodemath intro` and `intro` in the REPL): an 80-column header box with the
+  logo (rasterized from `assets/pycodemath-sygnet.svg` by `scripts/gen_logo.py`:
+  36 columns, stroke 12, transparent half blocks), the name, version, tagline
+  "Checks the math in your code.", the number of commands and API functions
+  (counted at run time), then one live demo (an off-by-one loop read as a
   formula, REFUTED with the executed call, fixed, VERIFIED; every number comes
   from `check_code` at run time) and a capability map of eight areas, each with
   a runnable command. Animated only on a TTY, under 6 s; `--static`,
-  `PYCODEMATH_NO_ANIM=1` or a pipe print the final frame (under 25 lines, 80
+  `PYCODEMATH_NO_ANIM=1` or a pipe print the final frame (30 lines, 80
   columns). Truecolor, a 256-colour fallback mapped to the nearest palette
   entries, monochrome under `NO_COLOR` or off a TTY. Flags: `--static`,
-  `--no-logo`, `--lang en|pl`, `--once`.
-- `pycodemath intro --once`: shows the intro once per session (session key:
-  `PYCODEMATH_SESSION`, `CLAUDE_CODE_SESSION_ID`, the terminal's own id, else
-  the process session + boot time), then prints nothing and exits 0.
+  `--no-logo`, `--once`.
+- The intro plays by itself once per installed version: on the first run of
+  `pycodemath` / `python -m pycodemath` with a TTY stdout after installing or
+  upgrading, before the command's own output. Never off a TTY, never in the MCP
+  server, never with `PYCODEMATH_NO_INTRO=1`. The shown version is kept in
+  `intro-shown` in the user cache directory. `pycodemath intro --once` shows it
+  only if this version's intro has not been shown yet, else prints nothing and
+  exits 0.
 - `pycodemath commands` (every command by topic), `pycodemath help <topic>`
   (the REPL help, cut by topic: solve, calculus, verify, code, numbers, money,
   units, geometry, ode, stats, start), `pycodemath examples <topic>` (3-5
@@ -30,12 +36,13 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
   short live demos; Enter = next, q = quit; sequential off a TTY).
 - MCP tool `intro`: the logo as plain text, the tagline and the capability map
   as text and data (no ANSI, no engine call). The existing tools are unchanged.
-- `assets/intro.svg` / `assets/intro.pl.svg`, recorded from the real command by
+- `assets/intro.svg`, recorded from the real command by
   `scripts/record_intro_svg.py`, in a new "First run" section of both READMEs.
 
 ### Changed
-- The interactive REPL greets with a 3-line banner (mini logo, version, where
-  to start). One-shot commands still print no banner — pinned by a test.
+- The interactive REPL greets with a 2-line banner (the text mark `∫>_`,
+  version, where to start). One-shot commands still print no banner off a TTY
+  — pinned by a test.
 
 ## [0.5.0] - 2026-10-30
 
