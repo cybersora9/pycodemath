@@ -8,6 +8,47 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 
 ## [Unreleased]
 
+## [0.5.1] - unreleased
+
+A patch release from a hands-on test session against 0.5.0 (49 CLI calls).
+
+### Changed
+- **`money loan ... for N years` is now a duration paid MONTHLY** (N×12
+  instalments): `money loan 300000 PLN at 7.2% for 25 years` gives 300
+  instalments of 2158.77 PLN. 0.5.0 read `years` as N *annual* instalments
+  (26208.67 PLN) — what nobody taking a mortgage means. Annual instalments are
+  asked for explicitly: `... for 25 years yearly` (also `annual`, `annually`);
+  `yearly` with a duration in months is refused. The answer now names the
+  schedule (`300 monthly instalments: payment ...`). Same on the CLI/REPL and
+  MCP `math_eval` (whose description says so); the Python API
+  (`amortization_schedule`, `annuity_payment`) was never ambiguous — it takes
+  `periods` and `periods_per_year` — and is unchanged.
+- `money interest` keeps its meaning (the unit is the compounding period:
+  `for 10 years` compounds yearly, `for 12 months` monthly) and the answer now
+  says so (`compounded yearly, 10 years`).
+- `dsolve` without a closed form names the CLI command in its hint — `solve it
+  numerically instead (ode <expr> for y(t) from <t0> to <t1> at <y0>)` — instead
+  of the Python function `solve_ode_num`, as `solve` already names `root`.
+  `route` stays `"ode"`.
+- `sum(...)`, `Sum(...)`, `summation(...)`, `integrate(...)`, `Integral(...)` and
+  `integral(...)` inside an expression (`verify sum(k, (k,0,n)) == ...`, `evalf
+  integrate(x, (x,0,1)) 60`) are refused with a pointer to the `sum ... for k
+  from .. to ..` / `integrate ... dx from .. to ..` commands instead of "write
+  sum*(...) if a product is meant".
+
+### Added
+- `sum p(k)*binomial(n,k) for k from a to n` with `p` a polynomial in `k`: closed
+  form via Stirling numbers of the second kind, `Σ_k k^m C(n,k) = Σ_j S(m,j)
+  n!/(n-j)! 2^(n-j)` (e.g. `sum k^3*binomial(n,k) for k from 0 to n` =
+  `2**(n - 3)*n**2*(n + 3)`). Proved by that identity; the result is also checked
+  against the brute-force sum before it is returned (tests: n = 0..20).
+- Definite integrals of the Bose–Einstein / Fermi–Dirac family on (0, oo):
+  `∫ x^(s-1)/(e^(cx) - 1) = Γ(s)ζ(s)/c^s` (s > 1) and `∫ x^(s-1)/(e^(cx) + 1) =
+  (1-2^(1-s))Γ(s)ζ(s)/c^s` (s > 0), used where SymPy finds no closed form;
+  convergence is proved and the value cross-checked against the independent
+  quadrature as for every other definite integral (`integrate x^3/(exp(x)-1) dx
+  from 0 to oo` = `pi**4/15`, VERIFIED, was a value without a closed form).
+
 ## [0.5.0] - 2026-10-30
 
 ### Added

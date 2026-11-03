@@ -240,9 +240,19 @@ certificate: VERIFIED (exact) — sign change (or exact zero) of the square-free
 ```
 
 Do tego `money round` (8 nazwanych trybów, kroki gotówkowe), `money vat` (od
-pozycji a od sumy, z udowodnionym najgorszym przypadkiem), `money interest`,
-`money loan` (ostatnia rata koryguje zaokrąglenia) i `money npv`. W środku
-żadnych floatów: dokładne ułamki, `Decimal` w skali waluty według ISO 4217. W
+pozycji a od sumy, z udowodnionym najgorszym przypadkiem), `money interest`
+(kapitalizacja raz na miesiąc, rok albo okres, jak podano — odpowiedź mówi
+który), `money loan` (ostatnia rata koryguje zaokrąglenia) i `money npv`. `for
+25 years` to czas trwania kredytu spłacanego co miesiąc — 300 rat; `yearly`
+daje jedną ratę rocznie:
+
+```console
+$ python -m pycodemath "money loan 300000 PLN at 7.2% for 25 years"
+300 monthly instalments: payment 2158.77 PLN, last 2155.59; total paid 647627.82, interest 347627.82 (instalment x count differs by -3.18)
+certificate: VERIFIED (exact) — principal parts sum to the loan exactly; payments == interest + principal; every row: payment == interest + principal; balance never negative, ends at 0
+```
+
+W środku żadnych floatów: dokładne ułamki, `Decimal` w skali waluty według ISO 4217. W
 Pythonie: `allocate`, `round_money`, `float_money_hazard`, `pycodemath.money`.
 
 ### Geometria i grafika
@@ -342,6 +352,10 @@ certificate: VERIFIED (interval-arithmetic) — period 2*pi proved (the two side
 
 `reduce x^2 < 4 for x` czyta się tak samo; `for x in [0, 2*pi]` ogranicza
 nierówność trygonometryczną; wartość główna Cauchy'ego tylko na życzenie (`pv`).
+Tam, gdzie SymPy nie ma formy zamkniętej, całki Bosego–Einsteina i Fermiego–Diraca
+`∫_0^oo x^(s-1)/(e^(cx) ∓ 1) dx` zamykają ich znane wartości `Γ(s)ζ(s)/c^s` i
+`(1-2^(1-s))Γ(s)ζ(s)/c^s` (`integrate x^3/(exp(x)-1) dx from 0 to oo` daje
+`pi**4/15`) — i nadal sprawdza je kwadratura, jak każdą inną odpowiedź.
 Na zestawie oceny (96 przypadków): 0 zweryfikowanych złych odpowiedzi, wobec 3 dla
 surowego SymPy 1.14 i 5 dla Maximy 5.46. W Pythonie: `solve_inequality`,
 `solve_system`, `periodic_solutions`, `definite_integral`.
@@ -1320,7 +1334,7 @@ def f(x):
   atrybutów są odrzucane wprost, a koszt ewaluacji jest ograniczony, żeby
   pojedyncze wyrażenie (np. `9**9**9`) nie wyczerpało pamięci.
 - Testy najpierw mierzą prawdziwe liczby, potem asertują je z marginesem —
-  **2914 testów**, wszystkie zielone, na Ubuntu i Windows (CI + mypy w
+  **2943 testów**, wszystkie zielone, na Ubuntu i Windows (CI + mypy w
   zestawie). Każdy przykład w tym pliku jest jednym z nich: wyłuskuje je i
   wykonuje `tests/test_docs.py`.
 

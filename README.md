@@ -10,7 +10,7 @@
   <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11 to 3.14" src="https://img.shields.io/badge/python-3.11%20to%203.14-3776ab.svg">
-  <img alt="2914 tests passing" src="https://img.shields.io/badge/tests-2914%20passing-2ea043.svg">
+  <img alt="2943 tests passing" src="https://img.shields.io/badge/tests-2943%20passing-2ea043.svg">
   <img alt="mypy: clean" src="https://img.shields.io/badge/mypy-clean-2ea043.svg">
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -241,9 +241,19 @@ certificate: VERIFIED (exact) — sign change (or exact zero) of the square-free
 ```
 
 Also `money round` (8 named modes, cash steps), `money vat` (per line vs on the
-total, with the proven worst case), `money interest`, `money loan` (the last
-instalment corrects the rounding) and `money npv`. No floats inside: exact
-fractions, `Decimal` at the currency's ISO 4217 scale. In Python: `allocate`,
+total, with the proven worst case), `money interest` (compounded once per month,
+year or period, as given — the answer says which), `money loan` (the last
+instalment corrects the rounding) and `money npv`. `for 25 years` is the
+duration of a loan paid monthly — 300 instalments; add `yearly` for one
+instalment a year:
+
+```console
+$ python -m pycodemath "money loan 300000 PLN at 7.2% for 25 years"
+300 monthly instalments: payment 2158.77 PLN, last 2155.59; total paid 647627.82, interest 347627.82 (instalment x count differs by -3.18)
+certificate: VERIFIED (exact) — principal parts sum to the loan exactly; payments == interest + principal; every row: payment == interest + principal; balance never negative, ends at 0
+```
+
+No floats inside: exact fractions, `Decimal` at the currency's ISO 4217 scale. In Python: `allocate`,
 `round_money`, `float_money_hazard`, `pycodemath.money`.
 
 ### Geometry and graphics
@@ -340,7 +350,11 @@ certificate: VERIFIED (interval-arithmetic) — period 2*pi proved (the two side
 ```
 
 `reduce x^2 < 4 for x` reads the same; `for x in [0, 2*pi]` bounds a
-trigonometric inequality; the Cauchy principal value only on request (`pv`). On
+trigonometric inequality; the Cauchy principal value only on request (`pv`).
+Where SymPy has no closed form, the Bose–Einstein and Fermi–Dirac integrals
+`∫_0^oo x^(s-1)/(e^(cx) ∓ 1) dx` are closed by their known values `Γ(s)ζ(s)/c^s`
+and `(1-2^(1-s))Γ(s)ζ(s)/c^s` (`integrate x^3/(exp(x)-1) dx from 0 to oo` gives
+`pi**4/15`) — and still checked against the quadrature like any other answer. On
 an evaluation set of 96 cases: 0 verified wrong answers, against 3 for raw
 SymPy 1.14 and 5 for Maxima 5.46. In Python: `solve_inequality`, `solve_system`,
 `periodic_solutions`, `definite_integral`.
@@ -1204,7 +1218,16 @@ n**2/2 + n/2
 
 $ python -m pycodemath "sum 1/k^2 for k from 1 to oo"
 pi**2/6
+
+$ python -m pycodemath "sum k^3*binomial(n,k) for k from 0 to n"
+2**(n - 3)*n**2*(n + 3)
 ```
+
+`sum_k p(k)·binomial(n, k)` for a polynomial `p` (where SymPy finds no closed
+form) is proved by Stirling numbers of the second kind: `k^m = Σ_j S(m,j)·k(k-1)…(k-j+1)`
+and `Σ_k binomial(n,k)·k(k-1)…(k-j+1) = n!/(n-j)!·2^(n-j)` (the j-th derivative of
+`(1+x)^n` at 1); the result is checked against the brute-force sum before it is
+returned.
 
 A divergent sum or a nonexistent limit refuses with a readable error instead
 of returning a symbolic echo.
@@ -1309,7 +1332,7 @@ Event detection from the API:
   access are rejected outright, and evaluation cost is bounded so a single
   expression (e.g. `9**9**9`) can't exhaust memory.
 - Tests measure real numbers first, then assert them with a margin —
-  **2914 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+  **2943 tests**, all green, on Ubuntu and Windows (CI + mypy included).
   Every example in this file is one of them: they are extracted and executed
   by `tests/test_docs.py`.
 
