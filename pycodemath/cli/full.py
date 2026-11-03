@@ -438,7 +438,8 @@ _MONEY_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("interest", re.compile(r"^interest\s+(?P<amount>\S+)\s+(?P<cur>[A-Za-z]{3}|\d+)\s+at\s+(?P<rate>\S+)\s+for\s+"
                             r"(?P<n>\d+)\s+(?P<unit>months|years|periods)(?P<opts>(?:\s+\S+\s+\S+)*)$", re.I)),
     ("loan", re.compile(r"^loan\s+(?P<amount>\S+)\s+(?P<cur>[A-Za-z]{3}|\d+)\s+at\s+(?P<rate>\S+)\s+for\s+"
-                        r"(?P<n>\d+)\s+(?P<unit>months|years)(?P<flags>(?:\s+(?:equal_principal|schedule))*)"
+                        r"(?P<n>\d+)\s+(?P<unit>months|years)"
+                        r"(?P<flags>(?:\s+(?:equal_principal|schedule|monthly|yearly|annual|annually))*)"
                         r"(?P<opts>(?:\s+\S+\s+\S+)*)$", re.I)),
     ("npv", re.compile(r"^npv\s+(?P<rate>\S+)\s+(?P<flows>[-\d.,\s]+?)(?:\s+currency\s+(?P<cur>[A-Za-z]{3}))?$", re.I)),
     ("irr", re.compile(r"^irr\s+(?P<flows>[-\d.,\s]+)$", re.I)),
@@ -448,7 +449,9 @@ MONEY_USAGE = """Usage: money round <amount> <CUR> [mode half_even] [step 0.05]
        money vat <net1,net2,...> at <rate>% <CUR> [mode half_up]
        money float <float expression> for <x> in <lo>..<hi> [step 0.01] [currency <CUR>] [mode half_up]
        money interest <amount> <CUR> at <rate>% for <n> months|years|periods [mode ...]
-       money loan <amount> <CUR> at <rate>% for <n> months|years [equal_principal] [schedule]
+           (compounded once per month / year / period)
+       money loan <amount> <CUR> at <rate>% for <n> months|years [yearly] [equal_principal] [schedule]
+           (paid monthly: "for 25 years" = 300 monthly instalments; "yearly" = one a year)
        money npv <rate>% <c0,c1,...>   |   money irr <c0,c1,...>
    (e.g. money split 100 PLN into 3)"""
 
@@ -492,9 +495,21 @@ def _money(op: str, m: re.Match, source: str) -> Outcome:
     elif op == "loan":
         o = _opts(opts_raw, {"mode": _MODE})
         flags = (m["flags"] or "").lower().split()
-        inputs = {"principal": m["amount"], "rate": _rate(m["rate"]), "periods": int(m["n"]),
+        # 0.5.1: "for 25 years" is the DURATION of the loan, paid monthly (300
+        # instalments) — what a borrower means. 0.5.0 read it as 25 annual
+        # instalments. Annual instalments are asked for explicitly with "yearly".
+        yearly = any(f in ("yearly", "annual", "annually") for f in flags)
+        if yearly and "monthly" in flags:
+            raise ParseError("money loan: choose one of 'monthly' and 'yearly'")
+        n, unit = int(m["n"]), m["unit"].lower()
+        if yearly and unit == "months":
+            raise ParseError("money loan: 'yearly' instalments need a duration in years "
+                             f"(for {n} months is paid monthly)")
+        per_year = 1 if yearly else 12
+        inputs = {"principal": m["amount"], "rate": _rate(m["rate"]),
+                  "periods": n * 12 if unit == "years" and not yearly else n,
                   "currency": m["cur"].upper(), "mode": o.get("mode", "half_up").upper(),
-                  "per_year": 12 if m["unit"].lower() == "months" else 1,
+                  "per_year": per_year,
                   "schedule": "equal_principal" if "equal_principal" in flags else "annuity"}
     elif op == "npv":
         inputs = {"rate": _rate(m["rate"]), "cashflows": _amounts(m["flows"]),
@@ -530,10 +545,17 @@ def _money_text(op: str, v: dict[str, Any], g: dict[str, Any]) -> list[str]:
                        f" ({v['hazards']} of {v['checked']} inputs wrong)")
         return out
     if op == "interest":
+        # The unit is the COMPOUNDING period (and the duration counts those periods):
+        # say so, so "for 10 years" is not mistaken for monthly capitalisation.
+        unit = (g.get("unit") or "periods").lower()
+        every = {"months": "monthly", "years": "yearly", "periods": "once per period"}[unit]
         return [f"{v['once']} {cur} rounded once, {v['stepwise']} rounded every period"
-                f" (difference {v['difference']})"]
+                f" (difference {v['difference']}); compounded {every}, {v['periods']} {unit}"]
     if op == "loan":
-        out = [f"payment {v['regular_payment']} {cur}, last {v['last_payment']}; total paid "
+        flags = (g.get("flags") or "").lower().split()
+        often = "yearly" if any(f in ("yearly", "annual", "annually") for f in flags) else "monthly"
+        out = [f"{v['periods']} {often} instalments: payment {v['regular_payment']} {cur}, last "
+               f"{v['last_payment']}; total paid "
                f"{v['total_paid']}, interest {v['total_interest']} (instalment x count differs by "
                f"{v['naive_difference']})"]
         if "schedule" in (g.get("flags") or "").lower():

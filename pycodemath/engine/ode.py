@@ -85,8 +85,9 @@ def dsolve(expr: Expr, func: str = "y", var: str = "t") -> list[Expr]:
     — the right-hand sides of EXPLICIT solutions (with constants ``C1``… as
     symbols), consistent with ``symbolic.solve``.
 
-    No closed form or an implicit solution -> ``NoClosedFormError`` with a hint to
-    use ``solve_ode_num`` and ``route="ode"`` (module 10). Both refusals below are
+    No closed form or an implicit solution -> ``NoClosedFormError`` with a hint
+    naming the CLI command ``ode`` (as ``solve`` names ``root``; from Python that
+    is ``solve_ode_num``) and ``route="ode"`` (module 10). Both refusals below are
     that class rather than ``UnsupportedFormError``, and the reason is how
     ``sp.dsolve`` works: it CLASSIFIES the equation first and raises
     ``NotImplementedError`` only once its classification has found nothing that
@@ -105,7 +106,8 @@ def dsolve(expr: Expr, func: str = "y", var: str = "t") -> list[Expr]:
     def refuse() -> NoClosedFormError:
         return NoClosedFormError(
             f"dsolve: cannot find a closed-form solution for "
-            f"{func}'({var}) = {rhs} — use solve_ode_num",
+            f"{func}'({var}) = {rhs} — solve it numerically instead "
+            f"(ode <expr> for {func}({var}) from <t0> to <t1> at <y0>)",
             route="ode",
         )
 

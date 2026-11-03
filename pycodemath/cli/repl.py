@@ -174,7 +174,11 @@ MONEY (exact decimals at the currency's ISO 4217 scale):
   money vat <net1,net2,...> at <rate>% <CUR> — VAT per line vs on the total
   money float <expr> for <x> in <lo>..<hi> [step 0.01] [currency <CUR>]
                                         — which input loses a cent in floats?
-  money interest | loan <amount> <CUR> at <rate>% for <n> months|years [equal_principal] [schedule]
+  money interest <amount> <CUR> at <rate>% for <n> months|years|periods
+                                        — compounded once per month/year/period
+  money loan <amount> <CUR> at <rate>% for <n> months|years [yearly] [equal_principal] [schedule]
+                                        — paid MONTHLY (for 25 years = 300 instalments);
+                                          yearly = one instalment a year
   money npv <rate>% <c0,c1,...>;  money irr <c0,c1,...> — every IRR, not one
 
 GEOMETRY:

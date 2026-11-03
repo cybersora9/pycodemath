@@ -164,11 +164,31 @@ def _refuse_unknown_calls(tokens, local_dict, global_dict):
             and tok_val not in global_dict
             and _has_top_level_comma(tokens, i + 1)
         ):
+            command = _COMMAND_FOR_CALL.get(tok_val)
+            if command is not None:
+                # ``sum(k^3, (k, 0, n))`` is a SymPy/Python spelling of something
+                # the grammar has a COMMAND for; "write sum*(...)" pointed at a
+                # product nobody meant (0.5.1, from a hands-on session).
+                raise ParseError(
+                    f"{tok_val}(...) is not part of an expression here — "
+                    f"use the command: {command}"
+                )
             raise ParseError(
                 f"unknown function {tok_val!r} — write {tok_val}*(...) "
                 "if a product is meant"
             )
     return tokens
+
+
+#: Calls written the SymPy/Python way that the CLI answers with a command instead.
+_SUM_COMMAND = "sum <expr> for <k> from <lo> to <hi>"
+_INTEGRATE_COMMAND = ("integrate <expr> dx from <a> to <b> "
+                      "(or integrate <expr> dx for an antiderivative)")
+_COMMAND_FOR_CALL = {
+    "sum": _SUM_COMMAND, "Sum": _SUM_COMMAND, "summation": _SUM_COMMAND,
+    "integrate": _INTEGRATE_COMMAND, "Integral": _INTEGRATE_COMMAND,
+    "integral": _INTEGRATE_COMMAND,
+}
 
 
 def _has_top_level_comma(tokens, open_at: int) -> bool:
