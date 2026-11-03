@@ -338,6 +338,12 @@ def summation(
     """
     sym = sp.Symbol(var)
     a, b = _point(lo), _point(hi)
+    # The binomial-moment rule goes FIRST: it is proved and self-checked, and SymPy
+    # spends ~95 s on k^5*binomial(n,k) before giving up (measured on Windows,
+    # py3.12), which ran past the time budget under load. Other shapes -> None.
+    rule = _binomial_moment_sum(expr.sy, sym, a, b)
+    if rule is not None:
+        return Expr(rule)
     try:
         res = sp.summation(expr.sy, (sym, a, b))
     except (NotImplementedError, ValueError) as exc:
@@ -352,9 +358,6 @@ def summation(
     # try. The message keeps saying so; module 10 made the ABSENCE readable as
     # data (``route is None``) rather than only as English.
     if res.has(sp.Sum):
-        rule = _binomial_moment_sum(expr.sy, sym, a, b)
-        if rule is not None:
-            return Expr(rule)
         raise NoClosedFormError(
             "summation: no closed form — try finite bounds "
             "(partial sum) or compute numerically"

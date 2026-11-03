@@ -10,7 +10,7 @@
   <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11 to 3.14" src="https://img.shields.io/badge/python-3.11%20to%203.14-3776ab.svg">
-  <img alt="2943 tests passing" src="https://img.shields.io/badge/tests-2943%20passing-2ea043.svg">
+  <img alt="2944 tests passing" src="https://img.shields.io/badge/tests-2944%20passing-2ea043.svg">
   <img alt="mypy: clean" src="https://img.shields.io/badge/mypy-clean-2ea043.svg">
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
@@ -1332,7 +1332,7 @@ Event detection from the API:
   access are rejected outright, and evaluation cost is bounded so a single
   expression (e.g. `9**9**9`) can't exhaust memory.
 - Tests measure real numbers first, then assert them with a margin —
-  **2943 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+  **2944 tests**, all green, on Ubuntu and Windows (CI + mypy included).
   Every example in this file is one of them: they are extracted and executed
   by `tests/test_docs.py`.
 

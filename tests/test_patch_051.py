@@ -108,6 +108,18 @@ def test_sum_binomial_moment_matches_brute_force(expr: str, lo: int):
         assert sp.nsimplify(closed.subs(n, v)) == _brute(expr, lo, v), (expr, v)
 
 
+def test_sum_binomial_rule_runs_before_sympy(monkeypatch: pytest.MonkeyPatch):
+    # SymPy spends ~95 s on k^5*binomial(n,k) before giving up; the proved rule must
+    # answer without it, or the CLI hangs and the time budget runs out under load.
+    def no_sympy(*args: object, **kwargs: object) -> None:
+        raise AssertionError("sp.summation called for a binomial-moment sum")
+
+    monkeypatch.setattr(symbolic.sp, "summation", no_sympy)
+    closed = symbolic.summation(parse("k^5*binomial(n,k)"), "k", 0, "n").sy
+    n = sp.Symbol("n")
+    assert sp.expand(closed - 2**(n - 5)*n**2*(n**3 + 10*n**2 + 15*n - 10)) == 0
+
+
 def test_sum_binomial_other_shapes_still_refused():
     # top of the binomial is not the upper bound: not this rule
     with pytest.raises(NoClosedFormError):
