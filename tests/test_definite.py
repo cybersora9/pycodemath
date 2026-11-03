@@ -102,9 +102,12 @@ def test_reversed_and_empty_bounds():
 
 
 def test_no_closed_form_keeps_the_number():
+    # 0.5.1: the old example here, x/(exp(x)-1), is now closed (pi^2/6) by the
+    # Bose–Einstein rule; e^x + 2 is outside that family and SymPy's reach
     with pytest.raises(IntegralNoClosedForm) as exc:
-        definite_integral("x/(exp(x)-1)", "x", 0, "oo")
-    assert exc.value.route == "nintegrate" and exc.value.approx.startswith("1.644934066848")
+        definite_integral("x/(exp(x)+2)", "x", 0, "oo")
+    assert exc.value.route == "nintegrate" and exc.value.approx.startswith("0.718373183441")
+    assert definite_integral("x/(exp(x)-1)", "x", 0, "oo").value == "pi**2/6"
 
 
 def test_integrand_not_real_is_a_domain_error():
