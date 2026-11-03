@@ -751,6 +751,57 @@ def _closed_form(f: sp.Expr, x: sp.Symbol, seq: list[sp.Expr], route: str) -> "s
     return V
 
 
+def _bose_fermi(f: sp.Expr, x: sp.Symbol, lo: sp.Expr, hi: sp.Expr) -> "tuple[sp.Expr, str] | None":
+    """The Bose–Einstein / Fermi–Dirac family on (0, oo), which SymPy does not close (0.5.1):
+
+        ∫_0^oo x^(s-1) / (e^(c x) - 1) dx = Γ(s) ζ(s) / c^s          (s > 1)
+        ∫_0^oo x^(s-1) / (e^(c x) + 1) dx = (1 - 2^(1-s)) Γ(s) ζ(s) / c^s = Γ(s) η(s) / c^s   (s > 0)
+
+    (expand ``1/(e^t ∓ 1)`` in the geometric series of ``e^(-n t)`` and integrate
+    term by term: ``∫ t^(s-1) e^(-n t) dt = Γ(s)/n^s``, summed to ζ(s) or η(s)).
+    Only that exact shape — a constant times ``x^a`` over a constant times
+    ``exp(c x) ± 1`` with ``c > 0``, ``s = a + 1`` real. The caller treats the value
+    like SymPy's: convergence was proved first, and it must agree with the
+    independent quadrature or the answer is refused. ``None`` for anything else.
+    """
+    if lo != 0 or hi != sp.oo:
+        return None
+    num, den = sp.fraction(sp.together(f))
+    k_num, xa = num.as_independent(x, as_Add=False)
+    if xa == 1:
+        a: sp.Expr = sp.Integer(0)
+    elif xa == x:
+        a = sp.Integer(1)
+    elif xa.is_Pow and xa.base == x and not xa.exp.has(x):
+        a = xa.exp
+    else:
+        return None
+    k_den, rest = den.as_independent(x, as_Add=False)
+    if not rest.is_Add or len(rest.args) != 2:
+        return None
+    const, ex = rest.as_independent(x, as_Add=True)
+    scale, ee = ex.as_coeff_Mul()
+    if not isinstance(ee, sp.exp) or scale == 0:
+        return None
+    sign = const / scale
+    c = sp.simplify(ee.args[0] / x)
+    if c.has(x) or not (c.is_real and c.is_positive):
+        return None
+    s = sp.nsimplify(a + 1)
+    if not s.is_real:
+        return None
+    if sign == -1 and s > 1:
+        core, name = sp.gamma(s) * sp.zeta(s), "Bose–Einstein integral Γ(s)ζ(s)"
+    elif sign == 1 and s > 0:
+        core, name = sp.gamma(s) * sp.dirichlet_eta(s), "Fermi–Dirac integral (1-2^(1-s))Γ(s)ζ(s)"
+    else:
+        return None
+    value = sp.simplify(k_num / (k_den * scale) * core / c**s)
+    if not _finite_closed_form(value):
+        return None
+    return value, f"the {name} with s = {s}"
+
+
 def _agrees(V: sp.Expr, q: mpmath.mpf, err: mpmath.mpf) -> bool:
     with mpmath.workdps(_DPS_HI):
         scale = max(mpmath.mpf(1), abs(q))
@@ -772,6 +823,11 @@ def _convergent(f: sp.Expr, x: sp.Symbol, seq: list[sp.Expr], pieces: tuple[tupl
     except Exception as exc:  # noqa: BLE001 — mpmath has many ways to fail
         q, err, method = None, None, f"failed: {type(exc).__name__}"
     V = _closed_form(f, x, seq, "definite")
+    route = "SymPy's definite integral"
+    if V is None:
+        family = _bose_fermi(f, x, lo, hi)
+        if family is not None:
+            V, route = family
     if q is None:
         raise IntegralUndecided(f"definite_integral: the quadrature failed ({method})",
                                 sympy_value=None if V is None else _s(V), reason="quadrature")
@@ -787,7 +843,6 @@ def _convergent(f: sp.Expr, x: sp.Symbol, seq: list[sp.Expr], pieces: tuple[tupl
             f"definite_integral: the quadrature error estimate {err_s} is too large to vouch for "
             f"{V}", approx=approx_s, error=err_s, sympy_value=_s(V), reason="accuracy")
     refuted: "sp.Expr | None" = None
-    route = "SymPy's definite integral"
     if not _agrees(V, q, err):
         # SymPy's definite answer is contradicted by the number. Measured on the
         # issue-tracker cases (#24004, #27050): its definite routine can return 0 where
