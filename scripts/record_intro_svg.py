@@ -158,7 +158,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
-    out = Path(args.out) if args.out else ROOT / "assets" / "intro.svg"
+    out = Path(args.out).resolve() if args.out else ROOT / "assets" / "intro.svg"
     rec = Recorder()
     intro.show(rec, env={"COLORTERM": "truecolor", "TERM": "xterm-256color"})  # type: ignore[arg-type]
     out.write_text(render(rec.lines), encoding="utf-8")
