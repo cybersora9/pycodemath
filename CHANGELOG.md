@@ -10,7 +10,50 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 
 ## [0.5.1] - unreleased
 
-A patch release from a hands-on test session against 0.5.0 (49 CLI calls).
+Fixes from a hands-on test session against 0.5.0 (49 CLI calls), plus a
+first-run intro and commands for finding your way around.
+
+### Added
+- `sum p(k)*binomial(n,k) for k from a to n` with `p` a polynomial in `k`: closed
+  form via Stirling numbers of the second kind, `Σ_k k^m C(n,k) = Σ_j S(m,j)
+  n!/(n-j)! 2^(n-j)` (e.g. `sum k^3*binomial(n,k) for k from 0 to n` =
+  `2**(n - 3)*n**2*(n + 3)`). Proved by that identity; the result is also checked
+  against the brute-force sum before it is returned (tests: n = 0..20).
+- Definite integrals of the Bose–Einstein / Fermi–Dirac family on (0, oo):
+  `∫ x^(s-1)/(e^(cx) - 1) = Γ(s)ζ(s)/c^s` (s > 1) and `∫ x^(s-1)/(e^(cx) + 1) =
+  (1-2^(1-s))Γ(s)ζ(s)/c^s` (s > 0), used where SymPy finds no closed form;
+  convergence is proved and the value cross-checked against the independent
+  quadrature as for every other definite integral (`integrate x^3/(exp(x)-1) dx
+  from 0 to oo` = `pi**4/15`, VERIFIED, was a value without a closed form).
+- **First run and way-finding.** `pycodemath intro` (also `python -m
+  pycodemath intro` and `intro` in the REPL): an 80-column header box with the
+  logo (rasterized from `assets/pycodemath-sygnet.svg` by `scripts/gen_logo.py`:
+  36 columns, stroke 12, transparent half blocks), the name, version, tagline
+  "Checks the math in your code.", the number of commands and API functions
+  (counted at run time), then one live demo (an off-by-one loop read as a
+  formula, REFUTED with the executed call, fixed, VERIFIED; every number comes
+  from `check_code` at run time) and a capability map of eight areas, each with
+  a runnable command. Animated only on a TTY, under 6 s; `--static`,
+  `PYCODEMATH_NO_ANIM=1` or a pipe print the final frame (30 lines, 80
+  columns). Truecolor, a 256-colour fallback mapped to the nearest palette
+  entries, monochrome under `NO_COLOR` or off a TTY. Flags: `--static`,
+  `--no-logo`, `--once`.
+- The intro plays by itself once per installed version: on the first run of
+  `pycodemath` / `python -m pycodemath` with a TTY stdout after installing or
+  upgrading, before the command's own output. Never off a TTY, never in the MCP
+  server, never with `PYCODEMATH_NO_INTRO=1`. The shown version is kept in
+  `intro-shown` in the user cache directory. `pycodemath intro --once` shows it
+  only if this version's intro has not been shown yet, else prints nothing and
+  exits 0.
+- `pycodemath commands` (every command by topic), `pycodemath help <topic>`
+  (the REPL help, cut by topic: solve, calculus, verify, code, numbers, money,
+  units, geometry, ode, stats, start), `pycodemath examples <topic>` (3-5
+  runnable examples each; a test runs every one) and `pycodemath tour` (five
+  short live demos; Enter = next, q = quit; sequential off a TTY).
+- MCP tool `intro`: the logo as plain text, the tagline and the capability map
+  as text and data (no ANSI, no engine call). The existing tools are unchanged.
+- `assets/intro.svg`, recorded from the real command by
+  `scripts/record_intro_svg.py`, in a new "First run" section of both READMEs.
 
 ### Changed
 - **`money loan ... for N years` is now a duration paid MONTHLY** (N×12
@@ -35,19 +78,10 @@ A patch release from a hands-on test session against 0.5.0 (49 CLI calls).
   integrate(x, (x,0,1)) 60`) are refused with a pointer to the `sum ... for k
   from .. to ..` / `integrate ... dx from .. to ..` commands instead of "write
   sum*(...) if a product is meant".
+- The interactive REPL greets with a 2-line banner (the text mark `∫>_`,
+  version, where to start). One-shot commands still print no banner off a TTY
+  — pinned by a test.
 
-### Added
-- `sum p(k)*binomial(n,k) for k from a to n` with `p` a polynomial in `k`: closed
-  form via Stirling numbers of the second kind, `Σ_k k^m C(n,k) = Σ_j S(m,j)
-  n!/(n-j)! 2^(n-j)` (e.g. `sum k^3*binomial(n,k) for k from 0 to n` =
-  `2**(n - 3)*n**2*(n + 3)`). Proved by that identity; the result is also checked
-  against the brute-force sum before it is returned (tests: n = 0..20).
-- Definite integrals of the Bose–Einstein / Fermi–Dirac family on (0, oo):
-  `∫ x^(s-1)/(e^(cx) - 1) = Γ(s)ζ(s)/c^s` (s > 1) and `∫ x^(s-1)/(e^(cx) + 1) =
-  (1-2^(1-s))Γ(s)ζ(s)/c^s` (s > 0), used where SymPy finds no closed form;
-  convergence is proved and the value cross-checked against the independent
-  quadrature as for every other definite integral (`integrate x^3/(exp(x)-1) dx
-  from 0 to oo` = `pi**4/15`, VERIFIED, was a value without a closed form).
 
 ## [0.5.0] - 2026-10-30
 

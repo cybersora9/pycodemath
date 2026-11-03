@@ -945,9 +945,38 @@ def math_recheck(certificate: str, budget: "float | None" = None, execute: bool 
         return _check_refusal("recheck", exc)
 
 
+class IntroArea(TypedDict):
+    """One capability area: topic, label, example (a math_eval command), commands."""
+
+    topic: str
+    label: str
+    example: str
+    commands: list[str]
+
+
+class IntroResult(TypedDict):
+    """The presentation as plain text (no ANSI) plus logo, tagline and areas as data."""
+
+    text: str
+    logo: str
+    version: str
+    tagline: str
+    areas: list[IntroArea]
+    next: list[str]
+
+
+def intro() -> IntroResult:
+    """What Pycodemath can do: the logo (plain text), a one-line tagline and the capability
+    map — areas with one runnable example each (send it to math_eval). No ANSI; fast, no
+    engine call. Show `text` to the user the first time Pycodemath is used in a session."""
+    from . import intro as presentation
+
+    return presentation.capabilities()  # type: ignore[return-value]
+
+
 #: The tools, in the order a client lists them.
 TOOLS = (math_eval, math_verify, math_check_code, math_stability, math_ranges, math_recheck,
-         math_iterations, math_lint)
+         math_iterations, math_lint, intro)
 
 server: "FastMCP | None" = None
 if FastMCP is not None:

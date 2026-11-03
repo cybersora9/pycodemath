@@ -48,6 +48,7 @@ językowy, żeby „policzył w pamięci".
 **Spis treści:**
 [Sprawdź matematykę w swoim kodzie](#sprawdź-matematykę-w-swoim-kodzie) ·
 [Instalacja](#instalacja) ·
+[Pierwsze uruchomienie](#pierwsze-uruchomienie) ·
 [Szybki start](#szybki-start) ·
 [Weryfikacja](#weryfikacja-sprawdź-zamiast-policz) ·
 [Wyniki, po których można się rozgałęzić](#wyniki-po-których-można-się-rozgałęzić) ·
@@ -455,6 +456,56 @@ Wymaga Pythona ≥ 3.11. Pakiet niesie znacznik `py.typed`, więc wszystko poni�
 jest w pełni otypowane także dla ZAINSTALOWANEGO wołającego — łącznie z
 przeciążeniami, przez które `full_result=True` zmienia typ zwracany. Nigdzie
 żadnego `cast()`.
+
+## Pierwsze uruchomienie
+
+Przy pierwszym uruchomieniu `pycodemath` w terminalu po instalacji albo
+aktualizacji pokazuje się krótkie intro, a potem twoja komenda działa jak
+zwykle. Intro pojawia się raz na zainstalowaną wersję. Można je odtworzyć w
+każdej chwili (intro jest po angielsku):
+
+```bash
+pycodemath intro
+```
+
+<p align="center">
+  <img alt="pycodemath intro: logo w ramce z hasłem, demo na żywo, które znajduje i dowodzi błąd o jeden, oraz mapa możliwości" src="assets/intro.svg" width="680">
+</p>
+
+Krótka prezentacja: logo, jedno demo na żywo (pętla odczytana jako wzór,
+REFUTED z wywołaniem, które naprawdę zostało uruchomione, poprawka, potem
+VERIFIED; każda liczba pochodzi z silnika na twoich oczach) i mapa możliwości,
+każdy obszar z komendą do wklejenia. Animuje się tylko w terminalu; przez
+potok, z `--static` albo `PYCODEMATH_NO_ANIM=1` drukuje ekran końcowy.
+`NO_COLOR` jest respektowane. Flagi: `--static`, `--no-logo`, `--once`.
+
+Samo nigdy się nie pokazuje, gdy stdout nie jest terminalem (skrypty, potoki,
+agenci AI wołający powłokę), nigdy w serwerze MCP i nigdy z
+`PYCODEMATH_NO_INTRO=1`. Wersja, dla której intro zostało pokazane, jest
+zapisana w pliku `intro-shown` w katalogu cache użytkownika
+(`PYCODEMATH_CACHE_DIR`, żeby go przenieść).
+
+Dalej:
+
+```bash
+pycodemath commands           # wszystkie komendy, według tematu, po jednej linii
+pycodemath help money         # pomoc jednego tematu (solve, calculus, verify, code,
+                              #   numbers, money, units, geometry, ode, stats)
+pycodemath examples money     # 3-5 działających przykładów tematu
+pycodemath tour               # pięć krótkich dem na żywo, Enter = dalej, q = koniec
+```
+
+**Dla agentów.** `pycodemath intro --once` pokazuje intro tylko wtedy, gdy na
+tej maszynie nie zostało jeszcze pokazane dla zainstalowanej wersji, a potem
+nie drukuje nic (kod wyjścia 0). Przez MCP tę samą mapę daje narzędzie
+`intro`, jako zwykły tekst i dane. Komendy jednorazowe
+(`pycodemath "solve ..."`) poza terminalem nigdy nie drukują bannera, więc ich
+wyjście zostaje czyste dla skryptów; wita cię tylko interaktywny REPL, w dwóch
+liniach.
+
+SVG jest nagrywane z prawdziwej komendy przez `scripts/record_intro_svg.py`;
+logo w terminalu jest rasteryzowane z `assets/pycodemath-sygnet.svg` przez
+`scripts/gen_logo.py` (Pillow, offline; pakiet go nie potrzebuje).
 
 ## Szybki start
 
@@ -1334,7 +1385,7 @@ def f(x):
   atrybutów są odrzucane wprost, a koszt ewaluacji jest ograniczony, żeby
   pojedyncze wyrażenie (np. `9**9**9`) nie wyczerpało pamięci.
 - Testy najpierw mierzą prawdziwe liczby, potem asertują je z marginesem —
-  **2944 testów**, wszystkie zielone, na Ubuntu i Windows (CI + mypy w
+  **3065 testów**, wszystkie zielone, na Ubuntu i Windows (CI + mypy w
   zestawie). Każdy przykład w tym pliku jest jednym z nich: wyłuskuje je i
   wykonuje `tests/test_docs.py`.
 
