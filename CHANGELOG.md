@@ -8,7 +8,7 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 
 ## [Unreleased]
 
-## [0.5.1] - unreleased
+## [0.5.1] - 2026-11-04
 
 Fixes from a hands-on test session against 0.5.0 (49 CLI calls), plus a
 first-run intro and commands for finding your way around.
@@ -81,6 +81,24 @@ first-run intro and commands for finding your way around.
 - The interactive REPL greets with a 2-line banner (the text mark `∫>_`,
   version, where to start). One-shot commands still print no banner off a TTY
   — pinned by a test.
+
+### Fixed
+- `sum p(k)*binomial(n,k)` answers in about 2 s instead of about 95 s for
+  `k^5`: the proved rule now runs before SymPy, which used to grind until it
+  gave up.
+- The time budget no longer fires into cleanup code. When a deadline passed
+  while the thread was in a `__del__`, a gc callback or a `weakref.finalize`
+  finalizer, Python printed `Exception ignored in ...`, cut the cleanup short
+  and dropped the interrupt. The watchdog now waits for the cleanup to finish
+  and interrupts 50 ms later. This was also a flaky CI failure.
+- `solve` and `certify solve` take an equation: `solve x^2 = 4 for x` and
+  `solve x^2-5*x+6 == 0 for x` are solved as `lhs - rhs`. `==` used to compare
+  the two sides as Python objects and printed "(no solutions)". An `=` anywhere
+  else in an expression is now a `ParseError` that points to `solve` / `verify`.
+- Strict mode no longer guesses on `2ab` when `a` and `b` are also variables of
+  the same expression: `verify (a+b)^2 == a^2 + 2ab + b^2` came back REFUTED
+  (it read `ab` as one variable). It is now a `ParseError` asking for `a*b` or a
+  rename. Names like `speed`, `alpha` or a lone `ab` still parse as before.
 
 
 ## [0.5.0] - 2026-10-30

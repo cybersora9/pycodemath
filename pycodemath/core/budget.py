@@ -130,10 +130,12 @@ from __future__ import annotations
 
 import ctypes
 import functools
+import gc
 import math
 import sys
 import threading
 import time
+import weakref
 from types import CodeType, FrameType, TracebackType
 from typing import Callable, Literal, ParamSpec, TypeVar
 
@@ -190,7 +192,7 @@ class _Deadline(BaseException):
 
 # --- the shared watchdog ---------------------------------------------------
 # One daemon thread for the process. ``_ARMED`` maps a thread id to its slot:
-# [deadline, depth, fired, chosen, injected, saved]. ``chosen`` is the ALLOWANCE
+# [deadline, depth, fired, chosen, injected, saved, entry]. ``chosen`` is the ALLOWANCE
 # THE CALLER ASKED FOR, kept beside the absolute deadline because those are the two
 # different numbers a message and a timer respectively need: the deadline is a
 # ``time.monotonic()`` reading and would make every message machine-dependent, and
@@ -250,6 +252,37 @@ def _a_handler_would_be_skipped(frame: FrameType) -> bool:
     return any(start <= offset < end for start, end in _handler_ranges(frame.f_code))
 
 
+#: Finalizers registered with ``weakref.finalize`` run through this method.
+_FINALIZE_CALL = weakref.finalize.__call__.__code__
+
+
+def _in_cleanup(top: FrameType, entry: "FrameType | None") -> bool:
+    """Is the thread running a ``__del__``, a gc callback or a weakref finalizer?
+
+    Python runs those in the middle of whatever the thread was doing, and an
+    exception raised inside one is "unraisable": the interpreter prints
+    ``Exception ignored in ...`` to stderr, cuts the cleanup short and DROPS the
+    exception. An interrupt delivered there is lost, and the cleanup it hit (a file
+    close, a lock release, hypothesis' gc timer) is left half done. Seen on CI as a
+    flaky ``test_trailing_options`` (Windows / 3.12, 03.11.2026). The watchdog
+    holds back exactly as for ``_NO_INJECT`` and tries again 50 ms later.
+
+    Walks from the top frame down to ``entry`` (the frame that armed the budget):
+    frames below it are outside the guarded call, so a budget armed INSIDE a
+    ``__del__`` still gets interrupted. Paid only on a passed deadline.
+    """
+    callbacks = {
+        getattr(getattr(cb, "__func__", cb), "__code__", None) for cb in gc.callbacks
+    }
+    frame: "FrameType | None" = top
+    while frame is not None and frame is not entry:
+        code = frame.f_code
+        if code.co_name == "__del__" or code is _FINALIZE_CALL or code in callbacks:
+            return True
+        frame = frame.f_back
+    return False
+
+
 def _set_async_exc(tid: int, exc: "type[BaseException] | None") -> None:
     """Raise ``exc`` in thread ``tid`` — or clear a pending one when ``None``."""
     ctypes.pythonapi.PyThreadState_SetAsyncExc(
@@ -307,6 +340,7 @@ def _watch() -> None:
                             _HANDLERS_SKIPPED_IN_RAISING_FRAME
                             and _a_handler_would_be_skipped(top)
                         )
+                        and not _in_cleanup(top, slot[6])
                     ):
                         slot[4] = True
                         _set_async_exc(tid, _Deadline)
@@ -380,7 +414,11 @@ class _Budget:
             _ensure_watchdog()
             slot = _ARMED.get(self._tid)
             if slot is None:
-                _ARMED[self._tid] = [deadline, 1, False, self.seconds, False, []]
+                # [6] is the frame that armed the budget: ``_in_cleanup`` walks down
+                # to it and no further. Dropped with the slot in ``_release``.
+                _ARMED[self._tid] = [
+                    deadline, 1, False, self.seconds, False, [], sys._getframe(1),
+                ]
             else:
                 # RE-ENTRANT, and the TIGHTER deadline wins in both directions. A
                 # nested call must never be able to extend the allowance its caller

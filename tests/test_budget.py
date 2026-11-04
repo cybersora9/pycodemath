@@ -39,7 +39,9 @@ nigdy go nie czyta jako tekstu.
 
 from __future__ import annotations
 
+import gc
 import math
+import sys
 import threading
 import time
 
@@ -634,3 +636,54 @@ def test_the_handler_check_sees_try_with_and_finally() -> None:
     assert budget_mod._handler_ranges(frames["try"].f_code)  # type: ignore[attr-defined]
     assert budget_mod._handler_ranges(frames["bare"].f_code) == ()  # type: ignore[attr-defined]
     assert budget_mod._HANDLERS_SKIPPED_IN_RAISING_FRAME == (sys.version_info[:2] == (3, 13))
+
+
+# --- the deadline never lands in cleanup code (0.5.1) --------------------------------
+# A __del__ or a gc callback (hypothesis registers one) runs in the middle of the
+# guarded thread. An interrupt delivered there is "unraisable": Python prints
+# "Exception ignored in ..." to stderr, cuts the cleanup short and drops the
+# interrupt. Seen on CI as a flaky failure of
+# test_trailing_options::test_a_small_budget_refuses_what_the_default_would_have_answered.
+def _busy(seconds: float) -> None:
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        pass
+
+
+_CLEANED: list[str] = []
+
+
+class _SlowDel:
+    def __del__(self) -> None:
+        _busy(0.4)
+        _CLEANED.append("__del__")
+
+
+def _slow_gc_callback(phase: str, info: dict) -> None:
+    if phase == "start":
+        _busy(0.4)
+        _CLEANED.append("gc callback")
+
+
+@pytest.mark.parametrize("kind", ["__del__", "gc callback"])
+def test_deadline_never_lands_in_cleanup_code(kind: str, monkeypatch: pytest.MonkeyPatch):
+    lost: list[object] = []
+    monkeypatch.setattr(sys, "unraisablehook", lambda u: lost.append(u.exc_type))
+    _CLEANED.clear()
+    if kind == "gc callback":
+        gc.callbacks.append(_slow_gc_callback)
+    try:
+        with pytest.raises(TimeBudgetError):
+            with time_budget(0.1):
+                if kind == "__del__":
+                    obj = _SlowDel()
+                    del obj  # __del__ runs here, past the 0.1 s deadline
+                else:
+                    gc.collect()  # the callback runs here, past the deadline
+                _busy(5.0)  # the interrupt must land here instead
+    finally:
+        if kind == "gc callback":
+            gc.callbacks.remove(_slow_gc_callback)
+    assert _CLEANED == [kind], "the cleanup was cut short"
+    assert budget_mod._Deadline not in lost  # type: ignore[attr-defined]
+    assert not budget_mod._ARMED  # type: ignore[attr-defined]

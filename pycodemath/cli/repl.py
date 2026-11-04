@@ -252,7 +252,9 @@ from ..core.errors import DomainError, ParseError, PycodemathError
 from ..core.ir import Matrix
 from ..core.result import QuadratureResult, SolveResult
 from ..engine import linalg, numerics, ode, symbolic
-from ..frontend.parser import KNOWN_NAMES, is_strict, parse, parse_mode, set_strict
+from ..frontend.parser import (
+    KNOWN_NAMES, equation_as_zero, is_strict, parse, parse_mode, set_strict,
+)
 from . import full
 from ..verify import (
     Certificate,
@@ -457,13 +459,14 @@ def _parse_for(texts: "Sequence[str]", names: "Sequence[str]") -> list:
     return exprs
 
 
-def _expr(m: re.Match) -> Any:
-    """The command's ``expr`` group, parsed and checked against its variable(s)."""
+def _expr(m: re.Match, text: "str | None" = None) -> Any:
+    """The command's ``expr`` group (or ``text``), parsed and checked against its
+    variable(s)."""
     groups = m.groupdict()
     names = [groups["var"]] if groups.get("var") else []
     if groups.get("vars"):
         names = _split_names(groups["vars"])
-    return _parse_for([m["expr"]], names)[0]
+    return _parse_for([m["expr"] if text is None else text], names)[0]
 
 
 # --- command handlers (receive the regex match, return text) --------
@@ -481,7 +484,8 @@ def _cmd_solve(m: re.Match) -> str:
     # restores the full set of roots.
     def run() -> str:
         real = not bool(m["complex"])
-        roots = symbolic.solve(_expr(m), m["var"], real=real)
+        # ``solve x^2 = 4 for x`` / ``... == ...``: an equation is solved as lhs - rhs
+        roots = symbolic.solve(_expr(m, equation_as_zero(m["expr"])), m["var"], real=real)
         return ", ".join(str(r) for r in roots) if roots else "(no solutions)"
 
     return _budgeted(m, run)
@@ -856,12 +860,13 @@ def _cert_diff(m: re.Match) -> _Certified:
 
 
 def _cert_solve(m: re.Match) -> _Certified:
-    expr, real, budget = _expr(m), not bool(m["complex"]), _cert_budget(m)
+    source = equation_as_zero(m["expr"])  # an equation is solved as lhs - rhs
+    expr, real, budget = _expr(m, source), not bool(m["complex"]), _cert_budget(m)
     roots = _budgeted(m, lambda: symbolic.solve(expr, m["var"], real=real))
     text = ", ".join(str(r) for r in roots) if roots else "(no solutions)"
     verdict = certify_solve(expr, m["var"], roots, real=real, budget=budget)
     return _Certified(text, verdict, "roots",
-                      [m["expr"], m["var"], list(roots)], {"real": real}, budget)
+                      [source, m["var"], list(roots)], {"real": real}, budget)
 
 
 def _cert_limit(m: re.Match) -> _Certified:
