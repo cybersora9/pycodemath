@@ -196,3 +196,49 @@ def test_ordinary_notation_is_not_mistaken_for_a_command(line: str) -> None:
         repl.handle(line)
     except ParseError as exc:
         assert "unknown command" not in str(exc) and "side by side" not in str(exc)
+
+
+# --- 0.5.1 live test: equations and ``2ab`` ---------------------------------
+
+
+@pytest.mark.parametrize(
+    "line", ["solve x^2-5*x+6 == 0 for x", "solve x^2-5*x+6 = 0 for x",
+             "solve x^2 = 5*x - 6 for x"],
+)
+def test_solve_takes_an_equation(line: str) -> None:
+    # ``==`` used to compare the two trees and answer "(no solutions)"
+    assert repl.handle(line) == "2, 3"
+
+
+def test_certify_solve_takes_an_equation() -> None:
+    out = repl.handle("certify solve x^2 = 4 for x")
+    assert out.startswith("-2, 2") and "VERIFIED" in out
+
+
+@pytest.mark.parametrize("text", ["x == 1", "x = 1", "x = 1 = 2"])
+def test_an_equals_sign_in_an_expression_is_refused_with_directions(text: str) -> None:
+    with pytest.raises(ParseError, match="makes an equation"):
+        parse(text)
+
+
+@pytest.mark.parametrize("text", ["x <= 1", "x >= 1", "x != 1"])
+def test_comparisons_are_not_mistaken_for_equations(text: str) -> None:
+    try:
+        parse(text)
+    except ParseError as exc:
+        assert "makes an equation" not in str(exc)
+
+
+def test_letters_beside_their_product_are_refused_not_guessed() -> None:
+    # was REFUTED "at a = 0, ab = 2, b = 1/2": strict mode read 2ab as one variable
+    with pytest.raises(ParseError, match=r"'ab' one variable or the product a\*b"):
+        check_equal("(a+b)^2", "a^2 + 2ab + b^2")
+    assert check_equal("(a+b)^2", "a^2 + 2*a*b + b^2").status.name == "VERIFIED"
+
+
+@pytest.mark.parametrize("text", ["ab + c", "speed*t", "alpha*a*l*p*h", "[[1, 2]]"])
+def test_names_without_competing_letters_still_parse(text: str) -> None:
+    try:
+        parse(text)
+    except ParseError as exc:
+        assert "one variable or the product" not in str(exc)

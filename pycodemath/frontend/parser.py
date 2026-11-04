@@ -612,6 +612,70 @@ def _refuse_stray_close(source: str, what: str) -> None:
                 )
 
 
+#: ``=`` or ``==`` that is not part of ``<=``, ``>=``, ``!=`` or ``===``.
+_EQUALS = re.compile(r"(?<![<>!=])==?(?!=)")
+
+
+def equation_as_zero(text: str) -> str:
+    """``a = b`` / ``a == b`` -> ``(a) - (b)``, so ``solve`` can take an equation.
+
+    Anything else (no equals sign, or more than one) comes back unchanged, and
+    ``parse`` then refuses it with the message below.
+    """
+    parts = _EQUALS.split(text)
+    if len(parts) != 2 or not parts[0].strip() or not parts[1].strip():
+        return text
+    return f"({parts[0].strip()}) - ({parts[1].strip()})"
+
+
+def _refuse_equation(source: str) -> None:
+    """An ``=`` / ``==`` inside an expression is a ``ParseError`` with directions.
+
+    ``a = b`` used to fail as "invalid syntax", and ``a == b`` was worse: Python's
+    ``==`` compared the two TREES and the line answered ``False`` — so
+    ``solve x^2-5*x+6 == 0 for x`` printed "(no solutions)" (0.5.1, live test).
+    """
+    if _EQUALS.search(source):
+        raise ParseError(
+            f"cannot understand expression {source!r}: '=' makes an equation, not an "
+            f"expression — solve it (solve <lhs> = <rhs> for <x>) or check an "
+            f"identity (verify <a> == <b>)"
+        )
+
+
+_PURE_LETTERS = re.compile(r"[A-Za-z]{2,}")
+
+
+def _refuse_letters_beside_their_product(sy: sp.Basic, source: str) -> None:
+    """Strict mode: ``2ab`` beside ``a`` and ``b`` is ambiguous — refuse, do not guess.
+
+    Strict mode reads ``ab`` as ONE variable (K1), which is right for ``speed`` and
+    wrong for the textbook ``(a+b)^2 == a^2 + 2ab + b^2`` — that came back REFUTED
+    "at a = 0, ab = 2, b = 1/2" (0.5.1, live test). When every letter of a
+    multi-letter name is ALSO a variable of the same expression, the two readings
+    really do compete, so the parser asks instead of picking one. Greek names
+    (``alpha``, ``theta``) are names, never products.
+    """
+    # A list literal ([[1, 2]]) is not an expression: Expr() refuses it as a domain error.
+    if not _STRICT.get() or not isinstance(sy, sp.Basic):
+        return
+    from sympy.core.alphabets import greeks
+
+    names = {s.name for s in sy.free_symbols}
+    for name in sorted(names):
+        if (
+            _PURE_LETTERS.fullmatch(name)
+            and name.lower() not in greeks
+            and all(ch in names for ch in name)
+        ):
+            product = "*".join(name)
+            raise ParseError(
+                f"cannot understand expression {source!r}: is {name!r} one variable or "
+                f"the product {product}? {', '.join(sorted(set(name)))} are variables "
+                f"here too — write {product} for the product, or rename the variable"
+            )
+
+
 def parse(source: str) -> Expr:
     """Parse mathematical text into IR.
 
@@ -645,6 +709,7 @@ def parse(source: str) -> Expr:
     hang or OOM the process.
     """
     _refuse_stray_close(source, "expression")
+    _refuse_equation(source)
     try:
         _guard_cost(source)
     except _CostExceeded as exc:
@@ -660,6 +725,7 @@ def parse(source: str) -> Expr:
             transformations=_TRANSFORMS,
             evaluate=True,
         )
+        _refuse_letters_beside_their_product(sy, source)
         return Expr(sy)
     # NameError: notation emitting a name outside _GLOBAL_DICT (e.g. lambda);
     # AttributeError: attribute access (x.y) — both are a refusal, not a crash.

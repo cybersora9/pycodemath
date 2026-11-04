@@ -1385,7 +1385,7 @@ def f(x):
   atrybutów są odrzucane wprost, a koszt ewaluacji jest ograniczony, żeby
   pojedyncze wyrażenie (np. `9**9**9`) nie wyczerpało pamięci.
 - Testy najpierw mierzą prawdziwe liczby, potem asertują je z marginesem —
-  **3065 testów**, wszystkie zielone, na Ubuntu i Windows (CI + mypy w
+  **3082 testów**, wszystkie zielone, na Ubuntu i Windows (CI + mypy w
   zestawie). Każdy przykład w tym pliku jest jednym z nich: wyłuskuje je i
   wykonuje `tests/test_docs.py`.
 
