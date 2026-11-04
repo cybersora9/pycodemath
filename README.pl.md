@@ -55,6 +55,47 @@ językowy, żeby „policzył w pamięci".
 [Generowanie kodu](#generowanie-kodu) ·
 [Kontrakty projektowe](#kontrakty-projektowe)
 
+## Cztery sprawdzenia w 0.5.1, w minutę
+
+<p align="center"><img alt="certify znajduje brakujący pierwiastek exp(x) = 3x" src="assets/przyklad-0.5.1-certify.png" width="420"></p>
+
+**1. Solver, który po cichu gubi pierwiastek.** `exp(x) = 3x` ma dwa rozwiązania rzeczywiste;
+`solve` z SymPy zwraca jedno. `certify` sprawdza odpowiedź i znajduje brakujący pierwiastek:
+
+```console
+$ python -m pycodemath "certify solve exp(x) = 3*x for x"
+-LambertW(-1/3)
+certificate: REFUTED (sign-scan) — a root is missing: the expression changes sign at x ≈ 1.51213455165784 (confirmed at 30 and 60 digits), where no listed root lies
+```
+
+**2. Układ równań z dowodem, że to wszystkie rozwiązania:**
+
+```console
+$ python -m pycodemath "solve x^2 + y^2 = 25, x + y = 7 for x, y"
+x = 3, y = 4; x = 4, y = 3
+  proof: every solution substituted gives 0; the number of distinct complex solutions equals the dimension of Q[vars]/radical(I) (Seidenberg), so the list is complete
+certificate: VERIFIED (groebner) — every solution substituted gives 0; the number of distinct complex solutions equals the dimension of Q[vars]/radical(I) (Seidenberg), so the list is complete
+```
+
+**3. Wzór, który traci precyzję, przepisany i udowodniony jako równy:**
+
+```console
+$ python -m pycodemath "improve sqrt(x+1)-sqrt(x) for x in [1e6, 1e12]"
+1 / (sqrt(x + 1) + sqrt(x)): 28.5 -> 0.4 bits of error on average (39.9 -> 1.6 at worst), proved by check_equal
+  proof: verified (check_equal) — left - right simplifies to 0; agree numerically at 32 of 32 sample points
+certificate: VERIFIED (symbolic) — left - right simplifies to 0; agree numerically at 32 of 32 sample points
+```
+
+**4. Podział kwoty co do grosza, nic nie ginie:**
+
+```console
+$ python -m pycodemath "money split 100 PLN into 3"
+33.34 + 33.33 + 33.33 = 100.00 PLN  (hamilton; sums exactly: True)
+certificate: VERIFIED (exact) — shares sum to the total exactly (rational sum); zero weights get zero; every share within one unit of its quota; equal split: spread <= one unit; shares re-added in exact fractions
+```
+
+88 komend w 11 działach: pełna lista to `pycodemath commands`, przewodnik to `pycodemath tour`.
+
 ## Co to robi
 
 Cienka, zdyscyplinowana warstwa nad SymPy + NumPy:
