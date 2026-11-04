@@ -64,6 +64,45 @@ to "do arithmetic in its head".
 [Code generation](#code-generation) ·
 [Design contracts](#design-contracts)
 
+## Four checks in 0.5.1, in one minute
+
+**1. A solver that silently drops a root.** `exp(x) = 3x` has two real solutions;
+SymPy's `solve` returns one. `certify` re-checks the answer and finds the missing root:
+
+```console
+$ python -m pycodemath "certify solve exp(x) = 3*x for x"
+-LambertW(-1/3)
+certificate: REFUTED (sign-scan) — a root is missing: the expression changes sign at x ≈ 1.51213455165784 (confirmed at 30 and 60 digits), where no listed root lies
+```
+
+**2. A system of equations, with proof the list is complete:**
+
+```console
+$ python -m pycodemath "solve x^2 + y^2 = 25, x + y = 7 for x, y"
+x = 3, y = 4; x = 4, y = 3
+  proof: every solution substituted gives 0; the number of distinct complex solutions equals the dimension of Q[vars]/radical(I) (Seidenberg), so the list is complete
+certificate: VERIFIED (groebner) — every solution substituted gives 0; the number of distinct complex solutions equals the dimension of Q[vars]/radical(I) (Seidenberg), so the list is complete
+```
+
+**3. A formula that loses precision, rewritten and proved equal:**
+
+```console
+$ python -m pycodemath "improve sqrt(x+1)-sqrt(x) for x in [1e6, 1e12]"
+1 / (sqrt(x + 1) + sqrt(x)): 28.5 -> 0.4 bits of error on average (39.9 -> 1.6 at worst), proved by check_equal
+  proof: verified (check_equal) — left - right simplifies to 0; agree numerically at 32 of 32 sample points
+certificate: VERIFIED (symbolic) — left - right simplifies to 0; agree numerically at 32 of 32 sample points
+```
+
+**4. Money split to the cent, with no lost grosz:**
+
+```console
+$ python -m pycodemath "money split 100 PLN into 3"
+33.34 + 33.33 + 33.33 = 100.00 PLN  (hamilton; sums exactly: True)
+certificate: VERIFIED (exact) — shares sum to the total exactly (rational sum); zero weights get zero; every share within one unit of its quota; equal split: spread <= one unit; shares re-added in exact fractions
+```
+
+88 commands in 11 sections: run `pycodemath commands` for the full list, or `pycodemath tour`.
+
 ## What it does
 
 Built as a thin, disciplined layer over SymPy + NumPy:
