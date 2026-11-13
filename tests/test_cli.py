@@ -269,3 +269,33 @@ def test_repl_odeevents_command():
     assert none == "(no events)"
     # niekompletna komenda -> komunikat użycia
     assert repl.handle("odeevents cos(t) for y(t) from 0.5 to 10 at 1").startswith("Usage")
+
+
+def test_cli_mcp_subcommand_starts_the_server(monkeypatch):
+    # 0.5.2: the MCP registry launches a PyPI server as `uvx pycodemath ...`, so
+    # the `pycodemath` script itself has to start the server: `pycodemath mcp`.
+    from pycodemath.cli import mcp_server
+
+    started = []
+    monkeypatch.setattr(mcp_server, "run", lambda: started.append(True))
+    monkeypatch.setattr(sys, "argv", ["pycodemath", "mcp"])
+    repl.run()
+    assert started == [True]
+
+
+def test_server_json_matches_package():
+    # server.json (MCP registry entry) must carry the package version and the
+    # same server name as the ownership marker in README.md (it becomes the
+    # PyPI description the registry checks).
+    import json
+
+    import pycodemath
+
+    root = Path(__file__).resolve().parent.parent
+    data = json.loads((root / "server.json").read_text(encoding="utf-8"))
+    assert data["version"] == pycodemath.__version__
+    assert data["packages"][0]["version"] == pycodemath.__version__
+    assert data["packages"][0]["identifier"] == "pycodemath"
+    assert len(data["description"]) <= 100
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    assert f"<!-- mcp-name: {data['name']} -->" in readme

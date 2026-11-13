@@ -8,6 +8,17 @@ Pre-release history (0.1.0, 0.2.0) was reconstructed from the git log.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-11-14
+
+Listing in the official MCP Registry.
+
+### Added
+- `pycodemath mcp` starts the MCP server over stdio, so it runs straight from
+  PyPI: `uvx --with "mcp>=1.0,<2.0" pycodemath mcp`. `pycodemath-mcp` and
+  `python -m pycodemath.cli.mcp_server` still work.
+- `server.json` for the MCP Registry (`io.github.cybersora9/pycodemath`) and the
+  ownership marker in README.md that the registry checks on PyPI.
+
 ## [0.5.1] - 2026-11-04
 
 Fixes from a hands-on test session against 0.5.0 (49 CLI calls), plus a
