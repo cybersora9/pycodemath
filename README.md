@@ -10,10 +10,12 @@
   <a href="https://pypi.org/project/pycodemath/"><img alt="PyPI" src="https://img.shields.io/pypi/v/pycodemath.svg?color=e11d33"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-e11d33.svg"></a>
   <img alt="Python 3.11 to 3.14" src="https://img.shields.io/badge/python-3.11%20to%203.14-3776ab.svg">
-  <img alt="3082 tests passing" src="https://img.shields.io/badge/tests-3082%20passing-2ea043.svg">
+  <img alt="3084 tests passing" src="https://img.shields.io/badge/tests-3084%20passing-2ea043.svg">
   <img alt="mypy: clean" src="https://img.shields.io/badge/mypy-clean-2ea043.svg">
   <a href="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/cybersora9/pycodemath/actions/workflows/ci.yml/badge.svg"></a>
 </p>
+
+<!-- mcp-name: io.github.cybersora9/pycodemath -->
 
 **Pycodemath checks the math in your Python code.** Give it a function and the
 formula it should compute. You get a proof that they match, or the exact input
@@ -586,9 +588,13 @@ restores the default; a certificate records which mode its claim was read in.
 ### MCP server (math for any AI agent)
 
 ```bash
-pip install -e .[mcp]
-claude mcp add pycodemath -- python -m pycodemath.cli.mcp_server
+claude mcp add pycodemath -- uvx --with "mcp>=1.0,<2.0" pycodemath mcp
 ```
+
+Or from a regular install: `pip install pycodemath[mcp]`, then
+`claude mcp add pycodemath -- pycodemath mcp`. Also listed in the
+[MCP Registry](https://registry.modelcontextprotocol.io) as
+`io.github.cybersora9/pycodemath`.
 
 Exposes `math_eval`, that accepts the same commands as the REPL —
 an agent sends `diff sin(x)*x dx` and receives `x*cos(x) + sin(x)` exactly,
@@ -1419,7 +1425,7 @@ Event detection from the API:
   access are rejected outright, and evaluation cost is bounded so a single
   expression (e.g. `9**9**9`) can't exhaust memory.
 - Tests measure real numbers first, then assert them with a margin —
-  **3082 tests**, all green, on Ubuntu and Windows (CI + mypy included).
+  **3084 tests**, all green, on Ubuntu and Windows (CI + mypy included).
   Every example in this file is one of them: they are extracted and executed
   by `tests/test_docs.py`.
 

@@ -1682,6 +1682,14 @@ def run() -> None:
     warnings.filterwarnings("ignore", category=SymPyDeprecationWarning)
 
     args = sys.argv[1:]
+    if args == ["mcp"]:
+        # The MCP server over stdio. The MCP registry launches a PyPI server as
+        # ``uvx pycodemath ...``, so this script has to start it too (0.5.2);
+        # ``pycodemath-mcp`` and ``python -m pycodemath.cli.mcp_server`` still work.
+        from . import mcp_server
+
+        mcp_server.run()
+        return
     if args and args[0] == "--implicit":  # one-shot opt-in to name splitting
         set_strict(False)
         args = args[1:]

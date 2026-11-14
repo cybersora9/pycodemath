@@ -142,7 +142,7 @@ from .engine.ode import (
 from .engine.symbolic import limit, series, summation
 from .frontend.parser import parse
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 if TYPE_CHECKING:
     from .code import geometry, money, ranges, stability
